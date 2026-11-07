@@ -94,10 +94,12 @@ python3 scripts/memo.py list
 
 ```bash
 BRANCH="$(python3 scripts/memo.py config branch)"   # push 先（memo.config.json）
+[ "$(git branch --show-current)" = "$BRANCH" ] || { echo "今いるブランチが $BRANCH ではないので止める（commit も push もせずにユーザーに確認する）"; exit 1; }
 git fetch origin "$BRANCH"          # 遅れていれば rebase
-git add -A "$(dirname "$(python3 scripts/memo.py path NAME)")"   # src/（原本）だけ。dist/ はコミットしない
+git add "$(python3 scripts/memo.py path NAME)"   # このメモの原本だけ（複数なら 1 本ずつ）。dist/ はコミットしない
+git status --short                  # 対象以外の変更（下書きなど）がステージされていないか確かめる
 git commit -m "Add memo: <タイトル>"
-git push origin HEAD:"$BRANCH"
+git push origin "$BRANCH"
 ```
 
 push すると GitHub Actions（Deploy MEMO）が build して dist ブランチにデプロイし、公開される（数分）。原本のブランチに Actions がコミットすることはない。

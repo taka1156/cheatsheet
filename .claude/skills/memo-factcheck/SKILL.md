@@ -39,6 +39,7 @@ python3 scripts/memo.py path NAME     # 実ファイルのパス
 ### サブエージェントが使えない環境
 
 サブエージェント用のツールが無い場合は、書き手（自分）が同じ手順で直接チェックし、報告の冒頭に **「独立チェックではない（書き手による確認）」** と明記する。黙って代用しない。
+このときは指摘が 0 件でも、push の前に必ずユーザーに確認する（どの流れから呼ばれた場合も）。ユーザーがその場にいない（スケジュール実行など）ときは push しない。
 
 ### 検証用プロンプト
 
@@ -94,13 +95,16 @@ python3 scripts/memo.py path NAME     # 実ファイルのパス
 python3 scripts/memo.py lint NAME      # OK になること
 python3 scripts/memo.py build          # dist/ で崩れがないか確かめる（コミットするのは src/ の原本だけ）
 BRANCH="$(python3 scripts/memo.py config branch)"   # push 先（memo.config.json）
+[ "$(git branch --show-current)" = "$BRANCH" ] || { echo "今いるブランチが $BRANCH ではないので止める（commit も push もせずにユーザーに確認する）"; exit 1; }
 git fetch origin "$BRANCH"              # 遅れていれば rebase
-git add -A "$(dirname "$(python3 scripts/memo.py path NAME)")"
+git add "$(python3 scripts/memo.py path NAME)"   # このメモの原本だけ（複数なら 1 本ずつ）。dist/ はコミットしない
+git status --short                  # 対象以外の変更（下書きなど）がステージされていないか確かめる
 git commit -m "Fix memo: <タイトル>（ファクトチェック）"
-git push origin HEAD:"$BRANCH"
+git push origin "$BRANCH"
 ```
 
 - 修正では事実の記述だけを変え、構成やデザインは変えない。`memo:date` は更新しない（作成日のまま）。
+- 誤り・古い記述を直したら、同じ事柄をほかのメモも書いていないか、その主張の語で Markdown 版を探す（`grep -Fril '<語>' dist/md/`）。同じ誤りや食い違う説明が見つかったら、報告に「ほかのメモにも同じ記述」として挙げ、直すかはユーザーに確認する（勝手に直さない）。
 - 複数メモを直したときは 1 コミットにまとめてよい（メッセージは `Fix memos: ファクトチェック（N 本）`）。
 
 ## 5. 報告

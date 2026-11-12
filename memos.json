@@ -1,5 +1,17 @@
 [
  {
+  "file": "cf-config.html",
+  "title": "cf/config チートシート",
+  "desc": "Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。",
+  "tags": [
+   "Cloudflare",
+   "Workers",
+   "TypeScript"
+  ],
+  "date": "2026-11-13",
+  "quizzes": 0
+ },
+ {
   "file": "vite-plus.html",
   "title": "Vite+ と vp コマンド チートシート",
   "desc": "Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。",

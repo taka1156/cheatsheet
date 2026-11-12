@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cf/config チートシート</title>
+<meta name="description" content="Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。">
+<meta name="memo:tags" content="Cloudflare, Workers, TypeScript">
+<meta name="memo:date" content="2026-11-13">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+  --c-warn: #b45309;
+  --c-ok: #15803d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+    --c-warn: #f59e0b;
+    --c-ok: #4ade80;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+  line-height: 1.55;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.summary { border-left: 3px solid var(--accent); }
+.summary li { margin-left: 1.2em; }
+.note { color: var(--fg-2); font-size: 0.85rem; }
+.warn { border-left: 3px solid var(--c-warn); }
+.warn strong { color: var(--c-warn); }
+
+/* 表 */
+.tbl-wrap { overflow-x: auto; margin: 8px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--chip); font-weight: 700; font-size: 0.8rem; }
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; }
+.req { display: inline-block; font-size: 0.7rem; padding: 0 6px; border-radius: 999px; border: 1px solid var(--c-warn); color: var(--c-warn); margin-left: 4px; }
+
+/* 絞り込み */
+.filter { width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); font: inherit; font-size: 0.9rem; margin-bottom: 8px; }
+
+/* 図 */
+.flow { display: grid; gap: 10px; }
+.flow-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; }
+.box b { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); display: block; font-size: 0.85rem; }
+.box.main { border: 2px solid var(--accent); text-align: center; }
+.flow-row.three { grid-template-columns: repeat(3, 1fr); }
+.arrow { color: var(--fg-2); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-align: center; white-space: nowrap; }
+.arrow .v { display: none; }
+.flow-down { text-align: center; color: var(--fg-2); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.mini { color: var(--fg-2); font-size: 0.75rem; }
+@media (max-width: 560px) {
+  .flow-row, .flow-row.three { grid-template-columns: 1fr; }
+  .arrow .h { display: none; }
+  .arrow .v { display: inline; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="cf/config チートシート">
+<meta property="og:description" content="Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。">
+<meta property="og:url" content="https://cs.taka1156.site/cf-config.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>cf/config</h1>
+  <p class="subtitle">Cloudflare の新 CLI「cf」の設定ファイル <code>cloudflare.config.ts</code> を書くためのモジュール（open beta）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li><code>cf/config</code> は <code>cloudflare.config.ts</code> で import するヘルパー集。<code>wrangler.jsonc</code> / <code>wrangler.toml</code> の代わりに、Worker の設定を<strong>型付きの TypeScript</strong> で書く</li>
+      <li>中心は <code>defineConfig</code>（default export）。バインディングは <code>bindings.*</code>、起動条件は <code>triggers.*</code>、Durable Object などは <code>exports.*</code> で組み立てる</li>
+      <li>関数形式にすると <code>{ mode, isPreview }</code> を受け取れ、<code>--mode</code> やプレビューごとに設定を切り替えられる。2026 年 9 月 28 日開始の open beta なので形式は変わりうる</li>
+    </ul>
+  </div>
+
+  <h2 id="overview">全体像（どのコマンドが何を読むか）</h2>
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box"><b>cf/config</b>defineConfig / bindings / triggers / exports などを提供<br><span class="mini">npm i -D cf で解決できるようにする</span></div>
+      <div class="arrow"><span class="h">import →</span><span class="v">↓ import</span></div>
+      <div class="box main"><b>cloudflare.config.ts</b>Worker・Containers・アカウントの設定<br><span class="mini">cf は一番近いこのファイルを読む</span></div>
+    </div>
+    <div class="flow-down">↓ 読み込むコマンド</div>
+    <div class="flow-row three">
+      <div class="box"><b>cf dev / build / deploy</b>設定を丸ごと読み、ビルドツールに渡す<br><span class="mini">Cloudflare Vite プラグイン（既定）か Wrangler 4.136.0 以降</span></div>
+      <div class="box"><b>cf d1 list などの API コマンド</b>読むのは <code>accountId</code> と <code>complianceRegion</code> だけ</div>
+      <div class="box"><b>cf workers types</b>設定を評価して<br><code>.cloudflare/types/index.d.ts</code>（<code>Env</code> 型）を書き出す</div>
+    </div>
+  </div>
+  <p class="note">cf 自体は dev サーバーもバンドラーも持たず、Vite（など）か Wrangler に処理を渡す。<code>package.json</code> の scripts も実行しないので、追加のビルド手順は自分の <code>build</code> スクリプトにつなげる。</p>
+
+  <h2 id="requirements">動かす前提</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>項目</th><th>内容</th><th>守らないと</th></tr>
+    <tr><td>Node.js 22.18 以上</td><td>Bun は非対応</td><td><code>cloudflare.config.ts loading is not supported on Bun</code></td></tr>
+    <tr><td><code>"type": "module"</code></td><td><code>package.json</code> に書く</td><td>未指定だと毎回警告。<code>"commonjs"</code> だと <code>Cannot use import statement outside a module</code></td></tr>
+    <tr><td><code>cf</code> を devDependency に</td><td><code>npm i -D cf</code>（<code>cf init</code> で作ったプロジェクトには入っている）</td><td><code>cf/config</code> が解決できない</td></tr>
+    <tr><td>import に <code>.ts</code> 拡張子</td><td>別ファイルの設定を import するとき（Node は拡張子を補わない）</td><td><code>ERR_MODULE_NOT_FOUND</code></td></tr>
+    <tr><td><code>tsconfig.json</code></td><td><code>allowImportingTsExtensions</code> を有効にし、<code>.cloudflare/types</code> を <code>include</code> に明示</td><td>型が効かない（ワイルドカードはドットで始まるフォルダを拾わない）</td></tr>
+  </table></div>
+<pre><code>// tsconfig.json
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "cloudflare.config.ts", ".cloudflare/types"]
+}</code></pre>
+
+  <h2 id="exports">cf/config が export するもの</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>名前</th><th>用途</th></tr>
+    <tr><td><code>defineConfig</code></td><td>設定本体。<code>export default</code> で使う。オブジェクト・Promise・<code>({ mode, isPreview }) =&gt; 設定</code> の関数のどれでも渡せる</td></tr>
+    <tr><td><code>defineWorker</code></td><td>別の設定ファイルから import できる Worker 定義を作る（default export の代わりにはならない）</td></tr>
+    <tr><td><code>defineContainer</code></td><td>Container の定義を Durable Object の export と top-level の <code>containers</code> で共有する</td></tr>
+    <tr><td><code>bindings</code></td><td><code>worker.env</code> に入れるバインディングのビルダー（<code>bindings.d1()</code> など）</td></tr>
+    <tr><td><code>triggers</code></td><td><code>fetch</code> / <code>queue</code> / <code>scheduled</code> / <code>email</code> / <code>connect</code> の起動条件ビルダー</td></tr>
+    <tr><td><code>exports</code></td><td><code>worker</code> / <code>durableObject</code> / <code>workflow</code> の名前付き export のビルダー</td></tr>
+  </table></div>
+
+  <h2 id="minimal">最小構成</h2>
+<pre><code>// cloudflare.config.ts
+import { defineConfig } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export default defineConfig({
+  worker: {
+    name: "example-worker",          // 必須
+    entrypoint,                      // コードを動かす Worker は必須
+    compatibilityDate: "2026-11-13", // 必須（yyyy-mm-dd、ランタイムの版）
+  },
+});</code></pre>
+  <p class="note"><code>entrypoint</code> はパス文字列でもよいが、<code>with { type: "cf-worker" }</code> で import したモジュールを渡す形が基本。アセットだけの Worker なら省略できる。</p>
+
+  <h2 id="keys">設定キー一覧</h2>
+  <h3>トップレベル</h3>
+  <div class="tbl-wrap"><table>
+    <tr><th>キー</th><th>説明</th></tr>
+    <tr><td><code>accountId</code></td><td>既定のアカウント。環境変数 <code>CLOUDFLARE_ACCOUNT_ID</code> が優先</td></tr>
+    <tr><td><code>complianceRegion</code></td><td><code>"public"</code> か <code>"fedramp-high"</code>。<code>CLOUDFLARE_COMPLIANCE_REGION</code> が優先</td></tr>
+    <tr><td><code>worker</code><span class="req">dev・build で必須</span></td><td>Worker の定義。アカウント設定だけのファイルでも API コマンドには使えるが、Vite プラグインと Wrangler には <code>worker</code> が要る</td></tr>
+    <tr><td><code>containers</code></td><td>Container アプリケーションの定義（<code>defineContainer</code> の配列）</td></tr>
+  </table></div>
+
+  <h3><code>worker</code> の中</h3>
+  <input class="filter" id="keyFilter" type="search" placeholder="キーを絞り込み（例: env, cache, placement）" aria-label="worker のキーを絞り込み">
+  <div class="tbl-wrap"><table id="keyTable">
+    <tr><th>キー</th><th>説明</th></tr>
+    <tr><td><code>name</code><span class="req">必須</span></td><td>Worker 名</td></tr>
+    <tr><td><code>compatibilityDate</code><span class="req">必須</span></td><td><code>yyyy-mm-dd</code>。ランタイムの版を決める</td></tr>
+    <tr><td><code>entrypoint</code></td><td>パス文字列か <code>cf-worker</code> で import したモジュール。コードを持つ Worker では必須</td></tr>
+    <tr><td><code>compatibilityFlags</code></td><td>文字列の配列（例: <code>["enable_ctx_exports"]</code>）</td></tr>
+    <tr><td><code>env</code></td><td>バインディング。値が <code>false</code> / <code>null</code> / <code>undefined</code> の項目は省かれるので、条件付きバインディングが書ける</td></tr>
+    <tr><td><code>triggers</code></td><td>起動条件の配列（<code>triggers.*</code>）</td></tr>
+    <tr><td><code>exports</code></td><td>名前付きの Worker / Durable Object / Workflow export</td></tr>
+    <tr><td><code>assets</code></td><td>実行時の振る舞いだけ（HTML の扱い、not found の扱い、<code>basePath</code>、<code>runWorkerFirst</code>）。アセットの置き場所は指定しない</td></tr>
+    <tr><td><code>domains</code></td><td>カスタムドメイン。文字列は本番のみ、オブジェクトなら本番・Preview・両方を選べる</td></tr>
+    <tr><td><code>cache</code></td><td><code>enabled</code>、<code>crossVersionCache</code></td></tr>
+    <tr><td><code>limits</code></td><td><code>cpuMs</code>、<code>subrequests</code>（Standard 使用量モデルのみ）</td></tr>
+    <tr><td><code>observability</code></td><td>ログ・トレース・サンプリング、<code>redactQueryString</code>、<code>issues</code></td></tr>
+    <tr><td><code>placement</code></td><td><code>smart</code> / <code>off</code>、またはリージョン・ホスト・ホスト名を指定する配置</td></tr>
+    <tr><td><code>previewUrls</code> / <code>workersDev</code></td><td>真偽値のスイッチ</td></tr>
+    <tr><td><code>logpush</code></td><td>トレースイベントを Workers Logpush に送るか（真偽値）</td></tr>
+    <tr><td><code>tailConsumers</code></td><td>Tail Worker の指定。<code>streaming</code> フラグ付き可</td></tr>
+    <tr><td><code>access</code></td><td>dev での Cloudflare Access のシミュレーション（<code>aud</code> と疑似 <code>identity</code>）</td></tr>
+    <tr><td><code>unsafe</code></td><td><code>metadata</code> と <code>capnp</code> の素通し</td></tr>
+  </table></div>
+
+  <h2 id="bindings">bindings（worker.env に入れるもの）</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="b1">値</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="b2">ストレージ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="b3">AI・メディア</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="b4">連携・その他</button>
+  </div>
+  <div class="panel card" id="b1">
+    <p><code>text</code>・<code>json</code>・<code>secret</code>。<code>secret()</code> は値を書かず、ローカル dev での存在チェックも有効になる。</p>
+  </div>
+  <div class="panel card" id="b2" hidden>
+    <p><code>d1</code>・<code>kv</code>・<code>r2</code>・<code>hyperdrive</code>・<code>analyticsEngineDataset</code>・<code>artifacts</code>・<code>pipeline</code></p>
+  </div>
+  <div class="panel card" id="b3" hidden>
+    <p><code>ai</code>・<code>aiSearch</code>・<code>aiSearchNamespace</code>・<code>agentMemory</code>・<code>browser</code>・<code>images</code>・<code>media</code>・<code>stream</code>・<code>vectorize</code></p>
+  </div>
+  <div class="panel card" id="b4" hidden>
+    <p><strong>メッセージング:</strong> <code>queue</code>（本文の型をジェネリクスで渡せる）・<code>sendEmail</code></p>
+    <p><strong>Worker 間:</strong> <code>assets</code>・<code>dispatchNamespace</code>・<code>durableObject</code>・<code>worker</code>・<code>workerLoader</code>・<code>workflow</code></p>
+    <p><strong>ネットワーク・セキュリティ:</strong> <code>mtlsCertificate</code>・<code>rateLimit</code>・<code>secretsStoreSecret</code>・<code>vpcNetwork</code>・<code>vpcService</code></p>
+    <p><strong>メタデータ:</strong> <code>flagship</code>・<code>logfwdr</code>・<code>versionMetadata</code></p>
+  </div>
+<pre><code>import { bindings, defineConfig } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+type Job = { id: string; operation: "index" | "delete" };
+
+export default defineConfig({
+  worker: {
+    name: "example-worker",
+    entrypoint,
+    compatibilityDate: "2026-11-13",
+    env: {
+      API_ORIGIN: bindings.text("https://api.example.com"), // → 文字列リテラル型
+      FEATURES: bindings.json({ search: true }),           // → { search: true }
+      DATABASE: bindings.d1({ name: "application-db" }),   // → D1Database
+      JOBS: bindings.queue&lt;Job&gt;({ name: "application-jobs" }), // → Queue&lt;Job&gt;
+      API_KEY: bindings.secret(),                          // → string
+    },
+  },
+});</code></pre>
+  <p class="note">右のコメントは生成される <code>Env</code> 型。Vite プラグインが dev・build 中に <code>.cloudflare/types/index.d.ts</code> を書き、Vite を使わないなら <code>cf workers types</code> で同じファイルを作る。</p>
+
+  <h2 id="triggers">triggers（いつ起動するか）</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>ビルダー</th><th>主な引数</th><th>用途</th></tr>
+    <tr><td><code>triggers.fetch</code></td><td><code>{ pattern, zone? }</code></td><td>ルート（例: <code>api.example.com/*</code>）</td></tr>
+    <tr><td><code>triggers.queue</code></td><td><code>{ name, maxBatchSize, maxRetries, ... }</code></td><td>Queue のコンシューマー</td></tr>
+    <tr><td><code>triggers.scheduled</code></td><td><code>{ schedule }</code></td><td>Cron（例: <code>"0 * * * *"</code>）</td></tr>
+    <tr><td><code>triggers.email</code></td><td><code>{ addresses }</code></td><td>メール受信</td></tr>
+    <tr><td><code>triggers.connect</code></td><td><code>{ protocol: "tcp" | "udp", port, ... }</code></td><td>TCP / UDP 接続</td></tr>
+  </table></div>
+  <p class="note">triggers は「起動するきっかけ」だけを決め、<code>env</code> のバインディングは作らない。Queue に送る側にもなるなら <code>bindings.queue</code> も別に書く。</p>
+
+  <h2 id="do">exports と Durable Object のライフサイクル</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>ビルダー</th><th>説明</th></tr>
+    <tr><td><code>exports.worker({ cache })</code></td><td>WorkerEntrypoint の export</td></tr>
+    <tr><td><code>exports.durableObject({ storage, container? })</code></td><td><code>storage</code> は <code>"sqlite"</code>（推奨）か <code>"legacy-kv"</code>。Container を付けられるのは sqlite のクラスだけ</td></tr>
+    <tr><td><code>exports.workflow({ name, ... })</code></td><td><code>name</code> はアカウント内で一意。<code>jurisdiction</code> は作成後に変えられない</td></tr>
+  </table></div>
+  <p>Durable Object は <code>state</code> でクラスの移り変わりを宣言する（移行用の migration ブロックの代わり）。</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>state</th><th>意味</th><th>併せて書くもの</th></tr>
+    <tr><td><code>created</code>（省略時）</td><td>稼働中のクラス</td><td><code>storage</code></td></tr>
+    <tr><td><code>deleted</code></td><td>削除したクラスを退役させる</td><td>—</td></tr>
+    <tr><td><code>renamed</code></td><td>名前を変えた</td><td><code>renamedTo</code></td></tr>
+    <tr><td><code>expecting-transfer</code></td><td>別 Worker から namespace を受け取る側（先にデプロイ）</td><td><code>transferFrom</code></td></tr>
+    <tr><td><code>transferred</code></td><td>渡した側の跡（同じアカウント内のみ）</td><td><code>transferredTo</code></td></tr>
+  </table></div>
+  <p class="note">稼働中の export は <code>ctx.exports</code> に出るが、deleted などの跡（tombstone）は出ない。</p>
+
+  <h2 id="mode">mode と isPreview で切り替える</h2>
+<pre><code>import { bindings, defineConfig, triggers } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export default defineConfig(({ mode, isPreview }) =&gt; {
+  const isStaging = mode === "staging";
+  return {
+    accountId: "&lt;ACCOUNT_ID&gt;",
+    worker: {
+      name: isStaging ? "example-staging" : "example-worker",
+      entrypoint,
+      compatibilityDate: "2026-11-13",
+      env: {
+        MESSAGE: bindings.text(isStaging ? "staging" : "production"),
+      },
+      triggers: [triggers.scheduled({ schedule: "0 * * * *" })],
+    },
+  };
+});</code></pre>
+  <div class="tbl-wrap"><table>
+    <tr><th>状況</th><th><code>mode</code> の値</th></tr>
+    <tr><td><code>--mode</code> / <code>-m</code> を付けた</td><td>指定した値</td></tr>
+    <tr><td>Vite プラグインで <code>cf dev</code></td><td><code>development</code></td></tr>
+    <tr><td>Vite プラグインでビルド（<code>cf build</code> / <code>cf deploy</code>）</td><td><code>production</code></td></tr>
+    <tr><td>Wrangler でのビルド・API コマンド</td><td><code>undefined</code></td></tr>
+  </table></div>
+  <ul class="note" style="margin-left:1.2em">
+    <li><code>isPreview</code> は <code>cf previews deploy</code> のとき <code>true</code></li>
+    <li>mode ごとに完全な設定を返す。wrangler の <code>[env.xxx]</code> のような部分的なマージはない</li>
+    <li>値は <code>process.env</code> や任意の TypeScript から作れる</li>
+  </ul>
+
+  <h2 id="commands">関連コマンド</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>コマンド</th><th>内容</th></tr>
+    <tr><td><code>cf init my-worker</code> / <code>cf init .</code></td><td><code>cloudflare.config.ts</code> 付きのプロジェクトを作る／既存アプリに追加</td></tr>
+    <tr><td><code>cf dev</code> / <code>cf dev --mode staging</code></td><td>ローカル開発</td></tr>
+    <tr><td><code>cf build</code> / <code>cf build -m staging</code></td><td>ビルド</td></tr>
+    <tr><td><code>cf deploy --dry-run</code></td><td>デプロイ内容の確認だけ</td></tr>
+    <tr><td><code>cf deploy --mode staging</code></td><td>mode を指定してデプロイ</td></tr>
+    <tr><td><code>cf deploy --prebuilt --mode production</code></td><td>ビルド済みをデプロイ。ビルド時に記録された mode と一致させる</td></tr>
+    <tr><td><code>cf previews deploy [--preview-name x]</code></td><td>Preview を作る（名前の既定はブランチ名、<code>--dry-run</code> なし）</td></tr>
+    <tr><td><code>cf workers types</code></td><td><code>Env</code> 型を生成</td></tr>
+    <tr><td><code>cf migrate --dry-run</code></td><td>wrangler の設定を <code>cloudflare.config.ts</code> に変換（試行）</td></tr>
+  </table></div>
+
+  <h2 id="examples">設定ファイルの例</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="e1">triggers 全部</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="e2">Durable Object</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="e3">Worker 間</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="e4">Container</button>
+  </div>
+  <div class="panel" id="e1">
+<pre><code>import { defineConfig, triggers } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export default defineConfig({
+  worker: {
+    name: "example-worker",
+    entrypoint,
+    compatibilityDate: "2026-11-13",
+    triggers: [
+      triggers.fetch({ pattern: "api.example.com/*", zone: "example.com" }),
+      triggers.queue({ name: "application-jobs", maxBatchSize: 10, maxRetries: 3 }),
+      triggers.scheduled({ schedule: "0 * * * *" }),
+      triggers.email({ addresses: ["support@example.com"] }),
+      triggers.connect({ protocol: "tcp", port: 5432 }),
+    ],
+  },
+});</code></pre>
+  </div>
+  <div class="panel" id="e2" hidden>
+<pre><code>import { defineConfig, exports } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export default defineConfig({
+  worker: {
+    name: "counter-worker",
+    entrypoint,
+    compatibilityDate: "2026-11-13",
+    compatibilityFlags: ["enable_ctx_exports"],
+    exports: {
+      Counter: exports.durableObject({ storage: "sqlite" }),
+      OldCounter: exports.durableObject({ state: "renamed", renamedTo: "Counter" }),
+      UnusedCounter: exports.durableObject({ state: "deleted" }),
+    },
+  },
+});</code></pre>
+  </div>
+  <div class="panel" id="e3" hidden>
+<pre><code>// api/cloudflare.config.ts
+import { defineConfig, defineWorker, exports } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export const apiWorker = defineWorker({
+  name: "api-worker",
+  entrypoint,
+  compatibilityDate: "2026-11-13",
+  exports: {
+    Admin: exports.worker(),
+    Counter: exports.durableObject({ storage: "sqlite" }),
+  },
+});
+export default defineConfig({ worker: apiWorker });
+
+// web/cloudflare.config.ts
+import { bindings, defineConfig } from "cf/config";
+import { apiWorker } from "../api/cloudflare.config.ts"; // .ts 拡張子が必要
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+export default defineConfig({
+  worker: {
+    name: "web-worker",
+    entrypoint,
+    compatibilityDate: "2026-11-13",
+    env: {
+      API: bindings.worker({ worker: apiWorker, exportName: "Admin" }),
+      COUNTERS: bindings.durableObject({ worker: apiWorker, exportName: "Counter" }),
+    },
+  },
+});</code></pre>
+    <p class="note">Worker 名の文字列でも参照できるが、import した定義を渡したときだけ <code>exportName</code> を型で検査できる。</p>
+  </div>
+  <div class="panel" id="e4" hidden>
+<pre><code>import { bindings, defineConfig, defineContainer, exports } from "cf/config";
+import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+
+const imageProcessor = defineContainer({
+  name: "image-processor",
+  image: { dockerfile: "./Dockerfile" },
+  instanceType: "lite",
+  maxInstances: 1,
+});
+
+export default defineConfig({
+  worker: {
+    name: "image-worker",
+    entrypoint,
+    compatibilityDate: "2026-11-13",
+    exports: {
+      ImageProcessor: exports.durableObject({ storage: "sqlite", container: imageProcessor }),
+    },
+    env: {
+      IMAGE_PROCESSOR: bindings.durableObject({
+        worker: "image-worker",
+        exportName: "ImageProcessor",
+      }),
+    },
+  },
+  containers: [imageProcessor],
+});</code></pre>
+    <p class="note">Container 名は一意で、1 つの Durable Object export にだけ紐づく。Container の変更が反映されるのは <code>cf deploy</code>（<code>cf workers versions create</code> はイメージ準備のみ）。</p>
+  </div>
+
+  <h2 id="pitfalls">よくある誤解・ハマりどころ</h2>
+  <div class="card warn">
+    <ul style="margin-left:1.2em">
+      <li><strong>wrangler.jsonc は読まれない:</strong> <code>cf dev</code> / <code>build</code> / <code>deploy</code> が見るのは <code>cloudflare.config.ts</code> だけ。フレームワークのない Worker プロジェクトでは失敗するので、先に <code>cf migrate</code> で変換する（変換結果は <code>cloudflare.config.ts</code> と、Wrangler でビルドする場合の <code>wrangler.config.ts</code>）</li>
+      <li><strong>アセットの置き場所は書かない:</strong> <code>assets.directory</code> はない。Vite なら client ビルドの出力（<code>publicDir</code> 含む）、Wrangler なら生成された <code>wrangler.config.ts</code> で決まる</li>
+      <li><strong>API コマンドも設定を読む:</strong> <code>cf d1 list</code> のようなコマンドも一番近い <code>cloudflare.config.ts</code> を読み込む（使うのは <code>accountId</code> / <code>complianceRegion</code>）。<code>accountId</code> を mode で変えるなら、すべてのコマンドに <code>--mode</code> を付ける</li>
+      <li><strong>exports の変更はデプロイ時に効く:</strong> アップロードでは反映されない。exports を変えたバージョンを 100% に上げてからトラフィックを分ける（exports が食い違うバージョン同士の分割デプロイは拒否される）</li>
+      <li><strong>ログインは別:</strong> cf は独自の認証情報を持つので、Wrangler でログイン済みでも <code>cf auth login</code> が要る</li>
+      <li><strong>Preview の制約:</strong> Durable Object 管理の Container は Preview 非対応。detached HEAD で CI の変数もないときは <code>--preview-name</code> が必須</li>
+    </ul>
+  </div>
+
+  <h2 id="sources">出典</h2>
+  <ul class="note" style="margin-left:1.2em">
+    <li><a href="https://developers.cloudflare.com/cf/projects/cloudflare-config/">Programmatic configuration (cloudflare.config.ts) — Cloudflare Docs</a></li>
+    <li><a href="https://developers.cloudflare.com/cf/projects/">Projects (how cf runs your project) — Cloudflare Docs</a></li>
+    <li><a href="https://developers.cloudflare.com/changelog/post/2026-09-28-cloudflare-cli-beta/">Cloudflare CLI is now in beta — Cloudflare Changelog</a></li>
+    <li><a href="https://blog.cloudflare.com/cloudflare-cf-cli-launch/">Introducing cf: the agentic CLI for the entire Cloudflare API — Cloudflare Blog</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-13（cf open beta 時点。正式版までに形式が変わる可能性あり）。例の <code>compatibilityDate</code> は確認日を入れた仮の値。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+const kf = document.getElementById('keyFilter');
+kf.addEventListener('input', () => {
+  const q = kf.value.trim().toLowerCase();
+  document.querySelectorAll('#keyTable tr').forEach((tr, i) => {
+    if (i === 0) return;
+    tr.hidden = q !== '' && !tr.textContent.toLowerCase().includes(q);
+  });
+});
+</script>
+
+</body>
+</html>

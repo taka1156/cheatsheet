@@ -4,4 +4,5 @@
 
 ## Memos
 
+- [cf/config チートシート](https://cs.taka1156.site/md/cf-config.md): Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。（Cloudflare, Workers, TypeScript / 2026-11-13）
 - [Vite+ と vp コマンド チートシート](https://cs.taka1156.site/md/vite-plus.md): Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。（Vite, JavaScript, ツール / 2026-11-07）

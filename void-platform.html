@@ -85,15 +85,13 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
   border-radius: 10px;
   padding: 16px 18px;
 }
-.summary { border-left: 3px solid var(--accent); }
 ol.plain { margin: 6px 0 6px 1.4em; }
 ol.plain li { margin: 3px 0; }
-.summary li { margin-left: 1.2em; }
 .note { color: var(--fg-2); font-size: 0.85rem; }
 
 /* 3 つの部品 */
 .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); }
+.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .part .role { display: inline-block; font-size: 0.72rem; background: var(--chip); color: var(--fg-2); border-radius: 999px; padding: 1px 9px; margin-bottom: 6px; }
 .part p { font-size: 0.88rem; margin: 4px 0; }
 
@@ -149,10 +147,6 @@ tr.hide { display: none; }
 .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .panel[hidden] { display: none; }
 
-/* よくある誤解 */
-.qa { display: grid; gap: 10px; }
-.qa .card p:first-child { font-weight: 700; }
-
 ul.plain { margin: 6px 0 6px 1.2em; }
 ul.plain li { margin: 2px 0; }
 
@@ -190,6 +184,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
 <style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
 <!-- /memo:head -->
 </head>
@@ -373,24 +368,10 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
   <p>別のアプリ（例：社内のアプリ生成ツール）を OAuth クライアントとして登録すると、ユーザーは Void アカウントでそのアプリにサインインでき、そのアプリが作ったコードを<strong>ユーザーが Void 上で承認して</strong>自分のプロジェクトにデプロイできる。管理画面の <strong>Admin → Connected apps</strong> で登録。許可すれば本番前のプライベートプレビューも作れる。</p>
 
   <h2 id="faq">よくある誤解</h2>
-  <div class="qa">
-    <div class="card">
-      <p>Void を使うには Platform が必須？</p>
-      <p>いいえ。<code>void deploy --platform cloudflare</code> で自分のアカウントに直接デプロイできる。Platform はチームで共有したいときの任意の部品。</p>
-    </div>
-    <div class="card">
-      <p>Platform のプランで利用者に課金できる？</p>
-      <p>できない。プランはリソースの上限を決めるだけ。Cloudflare と DB の料金は基盤を入れた側にかかる。</p>
-    </div>
-    <div class="card">
-      <p>アンインストールすれば全部消える？</p>
-      <p>既定では Workers・KV・R2・Hyperdrive などは確認用に残り、外部の PostgreSQL とゾーンは常に残る。入れ直すときは新しい空の PostgreSQL を使う。一時的に止めるだけなら <code>disable</code>。</p>
-    </div>
-    <div class="card">
-      <p>公開前に IT 部門が審査する仕組みはある？</p>
-      <p>ドキュメント上、デプロイ前の必須の審査ステップは無い。サインアップの許可リスト、アプリへの Access ポリシー、プランの上限で絞る。必要なら基盤をフォークして足す。</p>
-    </div>
-  </div>
+  <details class="myth"><summary>Void を使うには Platform が必須</summary><p><code>void deploy --platform cloudflare</code> で自分のアカウントに直接デプロイできる。Platform はチームで共有したいときの任意の部品。</p></details>
+  <details class="myth"><summary>Platform のプランで利用者に課金できる</summary><p>できない。プランはリソースの上限を決めるだけ。Cloudflare と DB の料金は基盤を入れた側にかかる。</p></details>
+  <details class="myth"><summary>アンインストールすれば全部消える</summary><p>既定では Workers・KV・R2・Hyperdrive などは確認用に残り、外部の PostgreSQL とゾーンは常に残る。入れ直すときは新しい空の PostgreSQL を使う。一時的に止めるだけなら <code>disable</code>。</p></details>
+  <details class="myth"><summary>公開前に IT 部門が審査する仕組みがある</summary><p>ドキュメント上、デプロイ前の必須の審査ステップは無い。サインアップの許可リスト、アプリへの Access ポリシー、プランの上限で絞る。必要なら基盤をフォークして足す。</p></details>
 
   <h2 id="sources">出典</h2>
   <ul class="plain">

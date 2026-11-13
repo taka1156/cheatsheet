@@ -381,7 +381,7 @@ Container 名は一意で、1 つの Durable Object export にだけ紐づく。
 
 （元のページで操作できます → https://cs.taka1156.site/cf-config.html#examples）
 
-## よくある誤解・ハマりどころ
+## ハマりどころ
 
 - **wrangler.jsonc は読まれない:** `cf dev` / `build` / `deploy` が見るのは `cloudflare.config.ts` だけ。フレームワークのない Worker プロジェクトでは失敗するので、先に `cf migrate` で変換する（変換結果は `cloudflare.config.ts` と、Wrangler でビルドする場合の `wrangler.config.ts` ）
 - **アセットの置き場所は書かない:** `assets.directory` はない。Vite なら client ビルドの出力（ `publicDir` 含む）、Wrangler なら生成された `wrangler.config.ts` で決まる

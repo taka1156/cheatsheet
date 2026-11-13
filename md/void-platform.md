@@ -201,21 +201,21 @@ void deploy --platform void --project "$VOID_PROJECT"
 
 ## よくある誤解
 
-Void を使うには Platform が必須？
+✗ 誤解: Void を使うには Platform が必須
 
-いいえ。 `void deploy --platform cloudflare` で自分のアカウントに直接デプロイできる。Platform はチームで共有したいときの任意の部品。
+✓ 正しくは: `void deploy --platform cloudflare` で自分のアカウントに直接デプロイできる。Platform はチームで共有したいときの任意の部品。
 
-Platform のプランで利用者に課金できる？
+✗ 誤解: Platform のプランで利用者に課金できる
 
-できない。プランはリソースの上限を決めるだけ。Cloudflare と DB の料金は基盤を入れた側にかかる。
+✓ 正しくは: できない。プランはリソースの上限を決めるだけ。Cloudflare と DB の料金は基盤を入れた側にかかる。
 
-アンインストールすれば全部消える？
+✗ 誤解: アンインストールすれば全部消える
 
-既定では Workers・KV・R2・Hyperdrive などは確認用に残り、外部の PostgreSQL とゾーンは常に残る。入れ直すときは新しい空の PostgreSQL を使う。一時的に止めるだけなら `disable` 。
+✓ 正しくは: 既定では Workers・KV・R2・Hyperdrive などは確認用に残り、外部の PostgreSQL とゾーンは常に残る。入れ直すときは新しい空の PostgreSQL を使う。一時的に止めるだけなら `disable` 。
 
-公開前に IT 部門が審査する仕組みはある？
+✗ 誤解: 公開前に IT 部門が審査する仕組みがある
 
-ドキュメント上、デプロイ前の必須の審査ステップは無い。サインアップの許可リスト、アプリへの Access ポリシー、プランの上限で絞る。必要なら基盤をフォークして足す。
+✓ 正しくは: ドキュメント上、デプロイ前の必須の審査ステップは無い。サインアップの許可リスト、アプリへの Access ポリシー、プランの上限で絞る。必要なら基盤をフォークして足す。
 
 ## 出典
 

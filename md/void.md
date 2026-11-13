@@ -419,21 +419,21 @@ export default defineConfig({
 
 ## よくある誤解
 
-デプロイサービス？ フレームワーク？
+✗ 誤解: Void はデプロイサービスである
 
-本体は **Vite の上のフルスタックフレームワーク（SDK）** で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。
+✓ 正しくは: 本体は **Vite の上のフルスタックフレームワーク（SDK）** で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。
 
-Vite+ を入れないと使えない？
+✗ 誤解: Vite+ を入れないと使えない
 
-いいえ。 `void init` で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。
+✓ 正しくは: `void init` で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。
 
-wrangler.jsonc にバインディングを書く必要は？
+✗ 誤解: wrangler.jsonc にバインディングを書く必要がある
 
-基本は不要（コードから推論）。既に Worker と `wrangler.jsonc` があれば `void deploy` がそれを紐付けて既存リソースを引き継げる。
+✓ 正しくは: 基本は不要（コードから推論）。既に Worker と `wrangler.jsonc` があれば `void deploy` がそれを紐付けて既存リソースを引き継げる。
 
-Cloudflare 以外にデプロイできる？
+✗ 誤解: Cloudflare 以外では動かせない
 
-`void deploy` のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし `void.config.ts` で `target: 'node'` （または `'bun'` / `'deno'` ）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（ `void/db` ・ `void/kv` ・ `void/auth` など Cloudflare のリソースを使う import は使えない）。 `output: 'static'` で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。
+✓ 正しくは: `void deploy` のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし `void.config.ts` で `target: 'node'` （または `'bun'` / `'deno'` ）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（ `void/db` ・ `void/kv` ・ `void/auth` など Cloudflare のリソースを使う import は使えない）。 `output: 'static'` で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。
 
 ## 出典
 

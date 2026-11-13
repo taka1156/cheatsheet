@@ -218,15 +218,25 @@ export default defineConfig({
 
 ## よくある誤解
 
-**「vp test はウォッチし続ける」** → Vitest 単体と違い、 `vp test` は 1 回実行して終わる。ウォッチは `vp test watch` 。
+✗ 誤解: vp test はウォッチし続ける
 
-**「vp dev で package.json の dev スクリプトが動く」** → `vp dev` は常に組み込みの Vite 開発サーバー。スクリプトは `vp run dev` 。
+✓ 正しくは: Vitest 単体と違い、 `vp test` は 1 回実行して終わる。ウォッチは `vp test watch` 。
 
-**「package.json の scripts も自動でキャッシュされる」** → 既定でキャッシュされるのは vite.config.ts の `run.tasks` だけ。scripts は `vp run --cache` が必要。同じ名前のタスクを両方に書くことはできない。
+✗ 誤解: vp dev で package.json の dev スクリプトが動く
 
-**「環境変数が変わればキャッシュは無効になる」** → キャッシュのキーになるのは `cache.env` に書いた変数だけ。ただし `vp build` は `VITE_*` と `NODE_ENV` を自動で伝えるので、それらは書かなくてよい。それ以外で結果が変わる変数は `cache.env` に書いておく。
+✓ 正しくは: `vp dev` は常に組み込みの Vite 開発サーバー。スクリプトは `vp run dev` 。
 
-**「vp upgrade でプロジェクトの Vite+ も上がる」** → `vp upgrade` はグローバルの `vp` だけ。プロジェクトの `vite-plus` は別に更新する（ `vp toolchain` で版を確認）。
+✗ 誤解: package.json の scripts も自動でキャッシュされる
+
+✓ 正しくは: 既定でキャッシュされるのは vite.config.ts の `run.tasks` だけ。scripts は `vp run --cache` が必要。同じ名前のタスクを両方に書くことはできない。
+
+✗ 誤解: 環境変数が変わればキャッシュは無効になる
+
+✓ 正しくは: キャッシュのキーになるのは `cache.env` に書いた変数だけ。ただし `vp build` は `VITE_*` と `NODE_ENV` を自動で伝えるので、それらは書かなくてよい。それ以外で結果が変わる変数は `cache.env` に書いておく。
+
+✗ 誤解: vp upgrade でプロジェクトの Vite+ も上がる
+
+✓ 正しくは: `vp upgrade` はグローバルの `vp` だけ。プロジェクトの `vite-plus` は別に更新する（ `vp toolchain` で版を確認）。
 
 ## 出典
 

@@ -17,8 +17,6 @@
   --line: #dde1e8;
   --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
   --chip: #eceff4;
-  --c-warn: #b45309;
-  --c-ok: #15803d;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -29,8 +27,6 @@
     --line: #1e2d3d;
     --accent: #00d4ff;
     --chip: #18222f;
-    --c-warn: #f59e0b;
-    --c-ok: #4ade80;
   }
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,8 +81,6 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
   border-radius: 10px;
   padding: 16px 18px;
 }
-.summary { border-left: 3px solid var(--accent); }
-.summary li { margin-left: 1.2em; }
 .note { color: var(--fg-2); font-size: 0.85rem; }
 .warn { border-left: 3px solid var(--c-warn); }
 .warn strong { color: var(--c-warn); }
@@ -107,8 +101,8 @@ td:first-child { white-space: nowrap; }
 .flow { display: grid; gap: 10px; }
 .flow-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
 .box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; }
-.box b { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); display: block; font-size: 0.85rem; }
-.box.main { border: 2px solid var(--accent); text-align: center; }
+.box b { font-family: 'JetBrains Mono', ui-monospace, monospace; display: block; font-size: 0.85rem; }
+.box.main { border: 2px solid var(--fg-2); text-align: center; }
 .flow-row.three { grid-template-columns: repeat(3, 1fr); }
 .arrow { color: var(--fg-2); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-align: center; white-space: nowrap; }
 .arrow .v { display: none; }
@@ -167,6 +161,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
 <style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
 <!-- /memo:head -->
 </head>
@@ -504,7 +499,7 @@ export default defineConfig({
     <p class="note">Container 名は一意で、1 つの Durable Object export にだけ紐づく。Container の変更が反映されるのは <code>cf deploy</code>（<code>cf workers versions create</code> はイメージ準備のみ）。</p>
   </div>
 
-  <h2 id="pitfalls">よくある誤解・ハマりどころ</h2>
+  <h2 id="pitfalls">ハマりどころ</h2>
   <div class="card warn">
     <ul style="margin-left:1.2em">
       <li><strong>wrangler.jsonc は読まれない:</strong> <code>cf dev</code> / <code>build</code> / <code>deploy</code> が見るのは <code>cloudflare.config.ts</code> だけ。フレームワークのない Worker プロジェクトでは失敗するので、先に <code>cf migrate</code> で変換する（変換結果は <code>cloudflare.config.ts</code> と、Wrangler でビルドする場合の <code>wrangler.config.ts</code>）</li>

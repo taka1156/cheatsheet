@@ -76,8 +76,6 @@ pre {
   border-radius: 10px;
   padding: 16px 18px;
 }
-.summary { border-left: 3px solid var(--accent); }
-.summary li { margin-left: 1.2em; }
 
 /* タブ */
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
@@ -97,9 +95,9 @@ pre {
 .stack { display: grid; gap: 10px; }
 .vp-bar {
   text-align: center; padding: 10px; border-radius: 10px;
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  border: 1px solid var(--accent);
-  font: 700 0.95rem 'JetBrains Mono', ui-monospace, monospace; color: var(--accent);
+  background: var(--chip);
+  border: 1px solid var(--fg-2);
+  font: 700 0.95rem 'JetBrains Mono', ui-monospace, monospace;
 }
 .vp-bar small { display: block; font: 400 0.75rem 'Noto Sans JP', sans-serif; color: var(--fg-2); }
 .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
@@ -107,7 +105,7 @@ pre {
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
   padding: 8px 10px; font-size: 0.8rem; line-height: 1.5;
 }
-.tool b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; color: var(--accent); }
+.tool b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
 .tool span { color: var(--fg-2); }
 .arrow { text-align: center; color: var(--fg-2); font-size: 0.75rem; }
 .base { background: var(--chip); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; text-align: center; }
@@ -123,17 +121,13 @@ pre {
 .cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
 .cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
 .cheat td:first-child { white-space: nowrap; }
-.cheat td:first-child code { background: none; padding: 0; color: var(--accent); }
+.cheat td:first-child code { background: none; padding: 0; }
 .panel.card { padding: 6px 10px; overflow-x: auto; }
 .filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
 .hint { font-size: 0.75rem; color: var(--fg-2); }
 @media (max-width: 520px) { .cheat td:first-child { white-space: normal; word-break: break-all; } }
 
-/* よくある誤解 */
-.myth { display: grid; gap: 8px; }
-.myth .card { font-size: 0.85rem; }
-.myth .card b { color: var(--accent); }
 .src { font-size: 0.8rem; }
 .src a { color: var(--accent); }
 
@@ -333,13 +327,11 @@ export default defineConfig({
   <p class="hint"><code>vitest.config.ts</code>・<code>.oxlintrc.json</code>・<code>.oxfmtrc.json</code>・<code>tsdown.config.ts</code> を別に置くのは推奨されていない。<code>defaultPackage: './frontend'</code> で、引数なしの <code>vp dev</code> などの対象ディレクトリを決められる。</p>
 
   <h2 id="myths">よくある誤解</h2>
-  <div class="myth">
-    <div class="card"><b>「vp test はウォッチし続ける」</b> → Vitest 単体と違い、<code>vp test</code> は 1 回実行して終わる。ウォッチは <code>vp test watch</code>。</div>
-    <div class="card"><b>「vp dev で package.json の dev スクリプトが動く」</b> → <code>vp dev</code> は常に組み込みの Vite 開発サーバー。スクリプトは <code>vp run dev</code>。</div>
-    <div class="card"><b>「package.json の scripts も自動でキャッシュされる」</b> → 既定でキャッシュされるのは vite.config.ts の <code>run.tasks</code> だけ。scripts は <code>vp run --cache</code> が必要。同じ名前のタスクを両方に書くことはできない。</div>
-    <div class="card"><b>「環境変数が変わればキャッシュは無効になる」</b> → キャッシュのキーになるのは <code>cache.env</code> に書いた変数だけ。ただし <code>vp build</code> は <code>VITE_*</code> と <code>NODE_ENV</code> を自動で伝えるので、それらは書かなくてよい。それ以外で結果が変わる変数は <code>cache.env</code> に書いておく。</div>
-    <div class="card"><b>「vp upgrade でプロジェクトの Vite+ も上がる」</b> → <code>vp upgrade</code> はグローバルの <code>vp</code> だけ。プロジェクトの <code>vite-plus</code> は別に更新する（<code>vp toolchain</code> で版を確認）。</div>
-  </div>
+  <details class="myth"><summary>vp test はウォッチし続ける</summary><p>Vitest 単体と違い、<code>vp test</code> は 1 回実行して終わる。ウォッチは <code>vp test watch</code>。</p></details>
+  <details class="myth"><summary>vp dev で package.json の dev スクリプトが動く</summary><p><code>vp dev</code> は常に組み込みの Vite 開発サーバー。スクリプトは <code>vp run dev</code>。</p></details>
+  <details class="myth"><summary>package.json の scripts も自動でキャッシュされる</summary><p>既定でキャッシュされるのは vite.config.ts の <code>run.tasks</code> だけ。scripts は <code>vp run --cache</code> が必要。同じ名前のタスクを両方に書くことはできない。</p></details>
+  <details class="myth"><summary>環境変数が変わればキャッシュは無効になる</summary><p>キャッシュのキーになるのは <code>cache.env</code> に書いた変数だけ。ただし <code>vp build</code> は <code>VITE_*</code> と <code>NODE_ENV</code> を自動で伝えるので、それらは書かなくてよい。それ以外で結果が変わる変数は <code>cache.env</code> に書いておく。</p></details>
+  <details class="myth"><summary>vp upgrade でプロジェクトの Vite+ も上がる</summary><p><code>vp upgrade</code> はグローバルの <code>vp</code> だけ。プロジェクトの <code>vite-plus</code> は別に更新する（<code>vp toolchain</code> で版を確認）。</p></details>
 
   <h2 id="sources">出典</h2>
   <p class="src"><a href="https://viteplus.dev/">viteplus.dev</a> ・ <a href="https://viteplus.dev/guide/">Getting Started</a> ・ <a href="https://viteplus.dev/config/">Config</a> ・ <a href="https://viteplus.dev/guide/run">Run</a> ・ <a href="https://viteplus.dev/guide/cache">Cache</a> ・ <a href="https://viteplus.dev/guide/env">Env</a> ・ <a href="https://viteplus.dev/guide/vpx">vpx</a>（2026-11-07 時点）</p>

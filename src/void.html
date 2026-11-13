@@ -19,6 +19,7 @@
   --chip: #eceff4;
   --c-local: #2a9d5c;
   --c-prod: #d97706;
+  --c-void: #b4237a;   /* Void の部品（SDK・CLI） */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -31,6 +32,7 @@
     --chip: #18222f;
     --c-local: #4ade80;
     --c-prod: #fbbf24;
+    --c-void: #f472b6;
   }
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,13 +87,11 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
   border-radius: 10px;
   padding: 16px 18px;
 }
-.summary { border-left: 3px solid var(--accent); }
-.summary li { margin-left: 1.2em; }
 .note { color: var(--fg-2); font-size: 0.85rem; }
 
 /* 3 つの部品 */
 .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); }
+.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .part .role { display: inline-block; font-size: 0.72rem; background: var(--chip); color: var(--fg-2); border-radius: 999px; padding: 1px 9px; margin-bottom: 6px; }
 .part p { font-size: 0.88rem; margin: 4px 0; }
 
@@ -113,7 +113,7 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
 .stack svg { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; }
 .stack text { fill: var(--fg); font-family: 'Noto Sans JP', system-ui, sans-serif; text-anchor: middle; }
 .stack .band { stroke-width: 2.5; }
-.stack .b-sdk, .stack .b-cli { fill: color-mix(in srgb, var(--accent) 8%, var(--surface)); stroke: var(--accent); }
+.stack .b-sdk, .stack .b-cli { fill: color-mix(in srgb, var(--c-void) 8%, var(--surface)); stroke: var(--c-void); }
 .stack .b-cf { fill: color-mix(in srgb, var(--c-prod) 8%, var(--surface)); stroke: var(--c-prod); }
 .stack .chips rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
 .stack .box { stroke-width: 2.5; }
@@ -124,7 +124,7 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
 .stack .arw line, .stack .arw-plain line { stroke: var(--fg-2); stroke-width: 2; }
 .stack .arw line { marker-end: url(#arw); }
 .stack .arw-head { fill: var(--fg-2); }
-.stack .t-band { text-anchor: start; font: 700 24px 'JetBrains Mono', ui-monospace, monospace; fill: var(--accent); }
+.stack .t-band { text-anchor: start; font: 700 24px 'JetBrains Mono', ui-monospace, monospace; fill: var(--c-void); }
 .stack .b-cf + .t-band { fill: var(--c-prod); }
 .stack .t-note { font-size: 16px; fill: var(--fg-2); }
 .stack .t-right { text-anchor: end; }
@@ -136,7 +136,7 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
 .stack .t-sub { font-size: 16px; fill: var(--fg-2); }
 .stack .t-res { text-anchor: start; font-size: 18px; }
 .stack .t-mono { font: 700 18px 'JetBrains Mono', ui-monospace, monospace; }
-.stack .t-mono-s { font: 500 17px 'JetBrains Mono', ui-monospace, monospace; fill: var(--accent); }
+.stack .t-mono-s { font: 500 17px 'JetBrains Mono', ui-monospace, monospace; }
 
 /* ファイルツリー */
 .tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; line-height: 1.9; }
@@ -176,10 +176,6 @@ tr.hide { display: none; }
 }
 .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .panel[hidden] { display: none; }
-
-/* よくある誤解 */
-.qa { display: grid; gap: 10px; }
-.qa .card p:first-child { font-weight: 700; }
 
 ul.plain { margin: 6px 0 6px 1.2em; }
 ul.plain li { margin: 2px 0; }
@@ -650,24 +646,10 @@ export default defineConfig({
   </div>
 
   <h2 id="faq">よくある誤解</h2>
-  <div class="qa">
-    <div class="card">
-      <p>デプロイサービス？ フレームワーク？</p>
-      <p>本体は <strong>Vite の上のフルスタックフレームワーク（SDK）</strong>で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。</p>
-    </div>
-    <div class="card">
-      <p>Vite+ を入れないと使えない？</p>
-      <p>いいえ。<code>void init</code> で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。</p>
-    </div>
-    <div class="card">
-      <p>wrangler.jsonc にバインディングを書く必要は？</p>
-      <p>基本は不要（コードから推論）。既に Worker と <code>wrangler.jsonc</code> があれば <code>void deploy</code> がそれを紐付けて既存リソースを引き継げる。</p>
-    </div>
-    <div class="card">
-      <p>Cloudflare 以外にデプロイできる？</p>
-      <p><code>void deploy</code> のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし <code>void.config.ts</code> で <code>target: 'node'</code>（または <code>'bun'</code> / <code>'deno'</code>）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（<code>void/db</code>・<code>void/kv</code>・<code>void/auth</code> など Cloudflare のリソースを使う import は使えない）。<code>output: 'static'</code> で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。</p>
-    </div>
-  </div>
+  <details class="myth"><summary>Void はデプロイサービスである</summary><p>本体は <strong>Vite の上のフルスタックフレームワーク（SDK）</strong>で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。</p></details>
+  <details class="myth"><summary>Vite+ を入れないと使えない</summary><p><code>void init</code> で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。</p></details>
+  <details class="myth"><summary>wrangler.jsonc にバインディングを書く必要がある</summary><p>基本は不要（コードから推論）。既に Worker と <code>wrangler.jsonc</code> があれば <code>void deploy</code> がそれを紐付けて既存リソースを引き継げる。</p></details>
+  <details class="myth"><summary>Cloudflare 以外では動かせない</summary><p><code>void deploy</code> のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし <code>void.config.ts</code> で <code>target: 'node'</code>（または <code>'bun'</code> / <code>'deno'</code>）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（<code>void/db</code>・<code>void/kv</code>・<code>void/auth</code> など Cloudflare のリソースを使う import は使えない）。<code>output: 'static'</code> で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。</p></details>
 
   <h2 id="sources">出典</h2>
   <ul class="plain">

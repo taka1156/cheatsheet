@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Void チートシート</title>
+<meta name="description" content="VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。">
+<meta name="memo:tags" content="Void, Cloudflare, Vite">
+<meta name="memo:date" content="2026-11-13">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+  --c-local: #2a9d5c;
+  --c-prod: #d97706;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+    --c-local: #4ade80;
+    --c-prod: #fbbf24;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 4px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.summary { border-left: 3px solid var(--accent); }
+.summary li { margin-left: 1.2em; }
+.note { color: var(--fg-2); font-size: 0.85rem; }
+
+/* 3 つの部品 */
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); }
+.part .role { display: inline-block; font-size: 0.72rem; background: var(--chip); color: var(--fg-2); border-radius: 999px; padding: 1px 9px; margin-bottom: 6px; }
+.part p { font-size: 0.88rem; margin: 4px 0; }
+
+/* 流れ図 */
+.flow { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.flow .box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.88rem; }
+.flow .box b { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.flow .arrow { text-align: center; color: var(--fg-2); font-size: 0.8rem; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.split > * { min-width: 0; }
+@media (max-width: 520px) { .split { grid-template-columns: 1fr; } }
+.box.local { border-left: 4px solid var(--c-local); }
+.box.prod { border-left: 4px solid var(--c-prod); }
+.tag-l { color: var(--c-local); font-weight: 700; font-size: 0.75rem; }
+.tag-p { color: var(--c-prod); font-weight: 700; font-size: 0.75rem; }
+
+/* 構成図 */
+.stack { padding: 10px; }
+.stack svg { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; }
+.stack text { fill: var(--fg); font-family: 'Noto Sans JP', system-ui, sans-serif; text-anchor: middle; }
+.stack .band { stroke-width: 2.5; }
+.stack .b-sdk, .stack .b-cli { fill: color-mix(in srgb, var(--accent) 8%, var(--surface)); stroke: var(--accent); }
+.stack .b-cf { fill: color-mix(in srgb, var(--c-prod) 8%, var(--surface)); stroke: var(--c-prod); }
+.stack .chips rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+.stack .box { stroke-width: 2.5; }
+.stack .b-tech { fill: var(--surface); stroke: var(--c-local); }
+.stack .b-dest { fill: var(--surface); stroke: var(--fg-2); }
+.stack .b-pf { fill: var(--surface); stroke: var(--fg-2); stroke-dasharray: 8 6; }
+.stack .dash { fill: none; stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 7 6; }
+.stack .arw line, .stack .arw-plain line { stroke: var(--fg-2); stroke-width: 2; }
+.stack .arw line { marker-end: url(#arw); }
+.stack .arw-head { fill: var(--fg-2); }
+.stack .t-band { text-anchor: start; font: 700 24px 'JetBrains Mono', ui-monospace, monospace; fill: var(--accent); }
+.stack .b-cf + .t-band { fill: var(--c-prod); }
+.stack .t-note { font-size: 16px; fill: var(--fg-2); }
+.stack .t-right { text-anchor: end; }
+.stack .t-chip { font: 500 19px 'JetBrains Mono', ui-monospace, monospace; }
+.stack .t-chip-s { font: 500 16px 'JetBrains Mono', ui-monospace, monospace; fill: var(--fg-2); }
+.stack .t-chip-d { font-size: 15px; fill: var(--fg-2); }
+.stack .t-box { font: 700 20px 'JetBrains Mono', ui-monospace, monospace; }
+.stack .b-tech + .t-box { fill: var(--c-local); }
+.stack .t-sub { font-size: 16px; fill: var(--fg-2); }
+.stack .t-res { text-anchor: start; font-size: 18px; }
+.stack .t-mono { font: 700 18px 'JetBrains Mono', ui-monospace, monospace; }
+.stack .t-mono-s { font: 500 17px 'JetBrains Mono', ui-monospace, monospace; fill: var(--accent); }
+
+/* ファイルツリー */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; line-height: 1.9; }
+.tree div { display: grid; grid-template-columns: minmax(150px, 38%) 1fr; gap: 8px; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree span:last-child { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); font-size: 0.8rem; }
+@media (max-width: 480px) { .tree div { grid-template-columns: 1fr; gap: 0; padding: 4px 0; } }
+
+/* 表 */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
+td:first-child { width: 42%; }
+tr.hide { display: none; }
+.filter {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: 0.85rem 'Noto Sans JP', system-ui, sans-serif;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* よくある誤解 */
+.qa { display: grid; gap: 10px; }
+.qa .card p:first-child { font-weight: 700; }
+
+ul.plain { margin: 6px 0 6px 1.2em; }
+ul.plain li { margin: 2px 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Void チートシート</h1>
+  <p class="subtitle">VoidZero 製、Vite の上で動くフルスタックフレームワーク ＋ Cloudflare へのデプロイ CLI</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Vite のプラグイン <code>voidPlugin()</code> を足すだけで、API ルート・SSR ページ・DB・認証・KV・ストレージ・AI・キュー・cron が使えるフルスタックフレームワーク（npm パッケージ名は <code>void</code>、MIT）</li>
+      <li><code>import { db } from 'void/db'</code> のように<strong>使ったリソースをコードから推論</strong>し、開発中はローカルで動かし、<code>void deploy</code> で Cloudflare（D1・KV・R2 など）に自動で作ってデプロイする</li>
+      <li>UI は React / Vue / Svelte / Solid。TanStack Start・Nuxt・SvelteKit・Astro などのメタフレームワークに「デプロイと DB だけ」足す使い方もできる</li>
+    </ul>
+  </div>
+
+  <h2 id="stack">図でわかる：Void の各機能はどこにつながっているか</h2>
+  <p>コードで import するもの・置くファイル（Void SDK）が、中でどの技術を使い、Cloudflare のどのリソースになるか。それを <code>void</code> コマンドで、自分の Cloudflare か Void Platform にデプロイする。</p>
+  <div class="card stack">
+    <svg viewBox="0 0 900 925" role="img" aria-labelledby="stack-title stack-desc">
+      <title id="stack-title">Void の機能のつながり</title>
+      <desc id="stack-desc">上段は Void SDK。routes と pages は Hono と Vite、void/db は Drizzle、void/auth は Better Auth を通り、void/kv・storage・ai と queues・crons は推論で直接つながる。すべて Cloudflare Workers と D1・KV・R2・Workers AI・Queues などのリソースの上で動く。下段は void CLI で、init・deploy・db・secret・project の各コマンドがあり、デプロイ先は自分の Cloudflare アカウントか、任意の Void Platform。</desc>
+      <defs>
+        <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" class="arw-head"/>
+        </marker>
+      </defs>
+
+      <!-- Void SDK -->
+      <rect class="band b-sdk" x="20" y="10" width="860" height="142" rx="14"/>
+      <text class="t-band" x="40" y="44">Void SDK</text>
+      <text class="t-note t-right" x="860" y="44">import する・ファイルを置くだけ</text>
+      <g class="chips">
+        <rect x="30" y="62" width="160" height="74" rx="10"/><rect x="200" y="62" width="160" height="74" rx="10"/><rect x="370" y="62" width="160" height="74" rx="10"/><rect x="540" y="62" width="160" height="74" rx="10"/><rect x="710" y="62" width="160" height="74" rx="10"/>
+      </g>
+      <text class="t-chip" x="110" y="94">routes/</text><text class="t-chip" x="110" y="120">pages/</text>
+      <text class="t-chip" x="280" y="94">void/db</text><text class="t-chip-s" x="280" y="120">db/schema.ts</text>
+      <text class="t-chip" x="450" y="94">void/auth</text><text class="t-chip-s" x="450" y="120">void/client</text>
+      <text class="t-chip" x="620" y="94">void/kv</text><text class="t-chip-s" x="620" y="120">storage・ai</text>
+      <text class="t-chip" x="790" y="94">queues/</text><text class="t-chip" x="790" y="120">crons/</text>
+
+      <g class="arw">
+        <line x1="110" y1="136" x2="110" y2="172"/><line x1="280" y1="136" x2="280" y2="172"/><line x1="450" y1="136" x2="450" y2="172"/>
+        <line x1="620" y1="136" x2="620" y2="300"/><line x1="790" y1="136" x2="790" y2="300"/>
+        <line x1="110" y1="268" x2="110" y2="300"/><line x1="280" y1="268" x2="280" y2="300"/><line x1="450" y1="268" x2="450" y2="300"/>
+      </g>
+
+      <!-- 中で使う技術 -->
+      <rect class="box b-tech" x="30" y="178" width="160" height="90" rx="10"/>
+      <text class="t-box" x="110" y="208">Hono + Vite</text><text class="t-sub" x="110" y="234">API・SSR</text><text class="t-sub" x="110" y="256">React/Vue 等</text>
+      <rect class="box b-tech" x="200" y="178" width="160" height="90" rx="10"/>
+      <text class="t-box" x="280" y="208">Drizzle</text><text class="t-sub" x="280" y="234">型付きクエリ</text><text class="t-sub" x="280" y="256">マイグレーション</text>
+      <rect class="box b-tech" x="370" y="178" width="160" height="90" rx="10"/>
+      <text class="t-box" x="450" y="208">Better Auth</text><text class="t-sub" x="450" y="234">ログイン</text><text class="t-sub" x="450" y="256">GitHub・Google</text>
+      <text class="t-sub" x="705" y="204">import から</text><text class="t-sub" x="705" y="228">推論して</text><text class="t-sub" x="705" y="252">直接つなぐ</text>
+
+      <!-- Cloudflare -->
+      <rect class="band b-cf" x="20" y="306" width="860" height="104" rx="14"/>
+      <text class="t-band" x="40" y="340">Cloudflare Workers</text>
+      <text class="t-note t-right" x="860" y="340">アプリは 1 つの Worker で動く</text>
+      <text class="t-res" x="40" y="370">D1 / PostgreSQL・MySQL（Hyperdrive）· KV · R2</text>
+      <text class="t-res" x="40" y="396">Workers AI + AI Gateway · Queues · Cron Triggers · Durable Objects</text>
+
+      <rect class="dash" x="20" y="426" width="860" height="70" rx="12"/>
+      <text class="t-mono" x="450" y="455">Resource Inference</text>
+      <text class="t-sub" x="450" y="482">import を見て必要なリソースを判断 → ローカルは自動で用意 / 本番は void deploy が作成</text>
+
+      <!-- void CLI -->
+      <rect class="band b-cli" x="20" y="530" width="860" height="136" rx="14"/>
+      <text class="t-band" x="40" y="564">void CLI</text>
+      <text class="t-note t-right" x="860" y="564">npx void ・ pnpm void ・ vpx void</text>
+      <g class="chips">
+        <rect x="30" y="580" width="160" height="72" rx="10"/><rect x="200" y="580" width="160" height="72" rx="10"/><rect x="370" y="580" width="160" height="72" rx="10"/><rect x="540" y="580" width="160" height="72" rx="10"/><rect x="710" y="580" width="160" height="72" rx="10"/>
+      </g>
+      <text class="t-chip" x="110" y="610">void init</text><text class="t-chip-d" x="110" y="636">セットアップ</text>
+      <text class="t-chip" x="280" y="610">void deploy</text><text class="t-chip-d" x="280" y="636">ビルド→作成→公開</text>
+      <text class="t-chip" x="450" y="610">void db …</text><text class="t-chip-d" x="450" y="636">マイグレーション</text>
+      <text class="t-chip" x="620" y="610">void secret</text><text class="t-chip-d" x="620" y="636">本番の秘密値</text>
+      <text class="t-chip" x="790" y="610">void project</text><text class="t-chip-d" x="790" y="636">ログ・戻す</text>
+
+      <g class="arw-plain">
+        <line x1="280" y1="666" x2="280" y2="690"/><line x1="450" y1="666" x2="450" y2="690"/><line x1="620" y1="666" x2="620" y2="690"/><line x1="790" y1="666" x2="790" y2="690"/>
+        <line x1="230" y1="690" x2="790" y2="690"/>
+      </g>
+      <g class="arw">
+        <line x1="230" y1="690" x2="230" y2="722"/><line x1="670" y1="690" x2="670" y2="722"/>
+      </g>
+      <text class="t-note" x="450" y="716">デプロイ先をどちらか選ぶ</text>
+
+      <!-- デプロイ先 -->
+      <rect class="box b-dest" x="20" y="728" width="420" height="104" rx="12"/>
+      <text class="t-box" x="230" y="762">自分の Cloudflare アカウント</text>
+      <text class="t-mono-s" x="230" y="790">--platform cloudflare</text>
+      <text class="t-sub" x="230" y="816">個人のアプリ向け</text>
+      <rect class="box b-pf" x="460" y="728" width="420" height="104" rx="12"/>
+      <text class="t-box" x="670" y="762">Void Platform（任意）</text>
+      <text class="t-mono-s" x="670" y="790">--platform void</text>
+      <text class="t-sub" x="670" y="816">チームの共有基盤・利用者やプランを管理</text>
+
+      <rect class="dash" x="20" y="850" width="860" height="66" rx="12"/>
+      <text class="t-mono" x="450" y="878">vite.config.ts に voidPlugin() を足すだけ</text>
+      <text class="t-sub" x="450" y="904">UI アダプター（@void/react など）・任意の void.config.ts ・ ビルドは Vite / Vite+</text>
+    </svg>
+  </div>
+  <div class="tbl-wrap card" style="margin-top:10px">
+    <table>
+      <tr><th>図の段</th><th>中身</th></tr>
+      <tr><td><strong>Void SDK</strong></td><td><code>routes/</code>・<code>pages/</code> は Hono ＋ Vite でルーティングと SSR、<code>void/db</code> は Drizzle、<code>void/auth</code> は Better Auth を通る。<code>void/kv</code>・<code>void/storage</code>・<code>void/ai</code>・<code>queues/</code>・<code>crons/</code> は推論で Cloudflare のリソースに直接つながる</td></tr>
+      <tr><td><strong>Cloudflare Workers</strong></td><td>アプリは 1 つの Worker で動き、D1（または Hyperdrive 経由の PostgreSQL・MySQL）・KV・R2・Workers AI・Queues・Cron Triggers・Durable Objects を使う</td></tr>
+      <tr><td><strong>void CLI</strong></td><td><code>init</code>（セットアップ）・<code>deploy</code>（ビルド → リソース作成 → マイグレーション → 公開）・<code>db</code>・<code>secret</code>・<code>project</code>（ログ・ロールバック）</td></tr>
+      <tr><td><strong>デプロイ先</strong></td><td>自分の Cloudflare アカウントか、チームの Void Platform（任意）のどちらか → <a href="#platform">下で説明</a></td></tr>
+    </table>
+  </div>
+  <p class="note">Nuxt・Astro などのメタフレームワークで使うときは、<code>routes/</code>・<code>pages/</code> の列をそのフレームワークが受け持ち、Void はそれ以外（リソース・DB・デプロイ）を担当する → <a href="#apptypes">3 種類のアプリ</a></p>
+
+  <h2 id="parts">3 つの部品</h2>
+  <p>1 つのパッケージ <code>void</code> に入っている。Cloudflare のブログ（2026-10-15）で 3 つまとめてオープンソース化された。VoidZero は 2026 年 6 月から Cloudflare の一部。</p>
+  <div class="parts">
+    <div class="card part">
+      <span class="role">フレームワーク</span>
+      <h3>Void SDK</h3>
+      <p>ファイルベースの API ルート（<code>routes/</code>）とページ（<code>pages/</code>）、DB からUIまで通る型、<code>void/db</code>・<code>void/kv</code> などの API。中身のルーターは Hono。</p>
+    </div>
+    <div class="card part">
+      <span class="role">デプロイ</span>
+      <h3>Void CLI</h3>
+      <p><code>void deploy</code> 1 つでビルド → リソース作成 → マイグレーション → デプロイ。ログ・ロールバック・シークレット・ドメインも扱う。</p>
+    </div>
+    <div class="card part">
+      <span class="role">チーム用基盤（任意）</span>
+      <h3>Void Platform</h3>
+      <p>会社の Cloudflare アカウント（Workers for Platforms）に入れる共有デプロイ環境。社員に Cloudflare の権限を配らずに、アクセス制御・上限・利用状況の管理つきでアプリを公開させられる。→ <a href="#platform">下で説明</a></p>
+    </div>
+  </div>
+  <p class="note">ツールチェーン（vp コマンド）の Vite+ は別物。Void は Vite+ を既定のビルドツールとして使う → <a href="vite-plus.html">Vite+ と vp コマンド</a></p>
+
+  <h2 id="flow">ローカルと本番：同じコードで何が変わるか</h2>
+  <div class="flow">
+    <div class="box"><b>import { db } from 'void/db'</b> ・ <b>void/kv</b> ・ <b>void/storage</b> ・ <b>void/ai</b> ・ <b>void/queues</b> …<br><span class="note">コードで使うだけ。バインディングの設定は書かない</span></div>
+    <div class="arrow">↓ 起動時にソースを走査して必要なリソースを推論（Resource Inference）</div>
+    <div class="split">
+      <div class="box local"><span class="tag-l">ローカル（vite dev）</span><br>ローカルの D1・KV・R2 などをその場で用意。DB サーバーを別に立てなくてよい。<code>.env</code> の値を使う</div>
+      <div class="box prod"><span class="tag-p">本番（void deploy）</span><br>Cloudflare に D1・KV・R2・Queue などを作成してバインド。マイグレーションを適用し、URL を表示。<code>.env</code> はアップロードしない</div>
+    </div>
+  </div>
+
+  <h2 id="apptypes">3 種類のアプリ</h2>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>種類</th><th>中身・判定</th></tr>
+      <tr><td><strong>Void アプリ</strong></td><td>Void がルーティングとデプロイを担当。API だけ（<code>routes/</code>）／SPA ＋ API（<code>src/</code> ＋ <code>routes/</code>）／ページモード（<code>pages/</code> で SSR）のどれでもよい</td></tr>
+      <tr><td><strong>メタフレームワーク</strong></td><td>TanStack Start・React Router v7・SvelteKit・Nuxt・Analog・Astro。ルーティングと SSR はフレームワーク側、Void はリソース推論・型付き DB・マイグレーション・デプロイを担当（Void 管理の認証は使えない）</td></tr>
+      <tr><td><strong>静的サイト</strong></td><td>SPA や VitePress などのビルド結果。<code>void deploy --dir &lt;path&gt;</code> でそのまま配信</td></tr>
+    </table>
+  </div>
+  <p class="note">種類はプロジェクト構成から自動判定。固定したいときは <code>void.config.ts</code> の <code>inference.appType</code>（<code>"void"</code> / <code>"framework"</code> / <code>"spa"</code> / <code>"static"</code>）。</p>
+
+  <h2 id="setup">はじめ方</h2>
+  <pre><code># 新規（空のディレクトリで）または既存の Vite アプリに追加
+npm install -D void
+npx void init        # UI フレームワーク・スターター・デプロイ先を選ぶ
+npm run dev          # http://localhost:5173
+
+npx void deploy      # 初回はブラウザでサインイン → ビルド・作成・マイグレーション・デプロイ</code></pre>
+  <p class="note">CLI は Node.js 24.22 以上 または 26.12 以上。<code>void</code> はプロジェクトに入れて使う（CLI とランタイムの版を揃えるため）。pnpm なら <code>pnpm create void my-app</code> でディレクトリごと作れる。</p>
+
+  <h2 id="platform">デプロイ先：自分の Cloudflare か Void Platform か</h2>
+  <p>フレームワーク（アプリのコード）はどちらでも同じ。Void Platform はフレームワークとは<strong>別に存在する任意の基盤</strong>で、デプロイ先の選び方だけが変わる。</p>
+  <div class="split">
+    <div class="card">
+      <h3>直接 Cloudflare</h3>
+      <p>自分の Cloudflare アカウントへ。個人のアプリ向け。共同作業（メンバー招待）はなし。</p>
+      <pre><code>void deploy --platform cloudflare</code></pre>
+    </div>
+    <div class="card">
+      <h3>Void Platform</h3>
+      <p>管理者が会社の Cloudflare に入れた共有基盤へ。社員は Cloudflare の権限なしで、会社のログインでデプロイできる。利用者・プランの上限・ログ・ロールバックを管理者がまとめて管理。</p>
+      <pre><code>void connect platform.example.com
+void deploy --platform void --project my-app</code></pre>
+    </div>
+  </div>
+  <p class="note">違いとメリット・デメリットの比較は → <a href="void-deploy-targets.html">直接 Cloudflare vs Void Platform</a>、基盤のインストールや管理者コマンドは → <a href="void-platform.html">Void Platform チートシート</a></p>
+
+  <h2 id="structure">ファイル規約</h2>
+  <p>どのディレクトリも任意。使う分だけ作る。</p>
+  <div class="card tree">
+    <div><span>routes/</span><span>API。ファイルのパスが URL。<code>export const GET = defineHandler(...)</code></span></div>
+    <div><span>pages/</span><span>SSR ページ。<code>about.tsx</code> と対になる <code>about.server.ts</code> に <code>loader</code>・<code>action</code></span></div>
+    <div><span>middleware/</span><span>全リクエスト共通。<code>01.logger.ts</code> のように数字で順番を決める</span></div>
+    <div><span>db/schema.ts</span><span>Drizzle のテーブル定義（DB の型の元）</span></div>
+    <div><span>db/migrations/</span><span><code>void db generate</code> で作る SQL。デプロイ時に順に適用</span></div>
+    <div><span>crons/</span><span>定期実行。<code>export const cron</code> ＋ <code>defineScheduled()</code></span></div>
+    <div><span>queues/</span><span>キューの受け手。ファイル名がキュー名。<code>defineQueue()</code></span></div>
+    <div><span>email/</span><span>メール受信。ファイル名が宛先、<code>_default.ts</code> はその他</span></div>
+    <div><span>durable-objects/</span><span>状態を持つ処理。<code>defineDurableState()</code></span></div>
+    <div><span>src/ ・ public/</span><span>共有コード ・ そのまま配信する静的ファイル</span></div>
+    <div><span>vite.config.ts</span><span><code>voidPlugin()</code> が必須</span></div>
+    <div><span>void.config.ts</span><span>任意。ルーティング・推論・Worker の設定</span></div>
+    <div><span>env.ts ・ .env</span><span>環境変数の型（コミットする）・ローカルの値（コミットしない）</span></div>
+    <div><span>.void/</span><span>自動生成の型とローカル状態（gitignore）。<code>void prepare</code> で作る</span></div>
+  </div>
+  <h3 style="margin-top:14px">ルーティングの書き方（routes/ と pages/ 共通）</h3>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>ファイル名</th><th>意味</th></tr>
+      <tr><td><code>users/[id].ts</code></td><td>動的セグメント → <code>/users/:id</code>。値は <code>c.req.param('id')</code></td></tr>
+      <tr><td><code>[...slug].ts</code></td><td>キャッチオール（ほかに合うものが無いとき最後に）</td></tr>
+      <tr><td><code>(admin)/</code></td><td>ルートグループ。URL には出ない</td></tr>
+      <tr><td><code>_helper.ts</code></td><td><code>_</code> か <code>.</code> で始まるものはルートにならない</td></tr>
+      <tr><td><code>debug.dev.ts</code> ・ <code>metrics.prod.ts</code></td><td>開発中だけ ・ 本番だけ（dev 専用で使うリソースは本番に作られない）</td></tr>
+    </table>
+  </div>
+
+  <h2 id="api">API チートシート</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="a-route">ルート</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-page">ページ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-db">DB</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-res">KV・R2・AI</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-bg">キュー・cron</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-auth">認証・環境変数</button>
+  </div>
+
+  <div class="panel card" id="a-route">
+    <pre><code>// routes/api/users/index.ts → GET / POST /api/users
+import { users, insertUserSchema } from '@schema';
+import { defineHandler } from 'void';
+import { db } from 'void/db';
+
+export const GET = defineHandler(async () =&gt; {
+  return await db.select().from(users);   // 配列 → JSON
+});
+
+export const POST = defineHandler.withValidator({
+  body: insertUserSchema,                 // Drizzle スキーマから作った検証
+})(async (c, { body }) =&gt; {
+  await db.insert(users).values(body);
+  return { created: true };
+});</code></pre>
+    <p><code>c</code> は Hono の Context（<code>c.json()</code>・<code>c.req</code>・<code>c.env</code> など全部使える）。戻り値は自動変換:</p>
+    <ul class="plain">
+      <li>オブジェクト・配列・数値・真偽値 → JSON</li>
+      <li>文字列 → <code>text/html</code></li>
+      <li><code>null</code> / <code>undefined</code> → 204 No Content</li>
+      <li><code>Response</code> → そのまま</li>
+    </ul>
+    <p>クライアントからは型付きの fetch で呼ぶ。ハンドラの戻り値を変えると呼び出し側も型チェックされる。</p>
+    <pre><code>import { fetch } from 'void/client';
+const { message } = await fetch('/api/hello');</code></pre>
+    <p>ミドルウェア: <code>middleware/</code> に <code>export default defineMiddleware(async (c, next) =&gt; { …; await next(); })</code>。Hono のミドルウェアもそのまま使える。</p>
+  </div>
+
+  <div class="panel card" id="a-page" hidden>
+    <p>Inertia.js 風。<code>.server.ts</code> の <code>loader</code> が返した値が、同名ページのコンポーネントの props になる。</p>
+    <pre><code>// pages/blog.server.ts
+import { defineHandler, type InferProps } from 'void';
+import { db } from 'void/db';
+import { posts } from '@schema';
+
+export const loader = defineHandler(async () =&gt; ({
+  posts: await db.select().from(posts),
+}));
+export type Props = InferProps&lt;typeof loader&gt;;
+
+// pages/blog.tsx
+import type { Props } from './blog.server';
+export default function Blog({ posts }: Props) {
+  return &lt;ul&gt;{posts.map((p) =&gt; &lt;li key={p.id}&gt;{p.title}&lt;/li&gt;)}&lt;/ul&gt;;
+}</code></pre>
+    <ul class="plain">
+      <li><code>action</code>（POST / PUT / PATCH / DELETE）: 何も返さなければ loader を再実行して再描画、<code>c.redirect(url)</code> なら遷移。1 ページに複数なら名前付き action</li>
+      <li>フォーム: アダプターの <code>Form</code> と <code>useForm('/users', { name: '' })</code>。値・エラーが action から型付けされる</li>
+      <li><code>export const ssr = false</code> でそのページだけ SSR しない（loader は動く）</li>
+      <li>ほか: レイアウト（自動でネスト）、Markdown ページ、アイランド、View Transitions、プリレンダー</li>
+    </ul>
+    <p>アダプターの入れ方（<code>void init</code> なら自動）:</p>
+    <pre><code>npm install @void/react      # @void/vue ・ @void/svelte ・ @void/solid
+
+// vite.config.ts
+import { voidReact } from '@void/react/plugin';
+import { defineConfig } from 'vite';
+import { voidPlugin } from 'void';
+
+export default defineConfig({ plugins: [voidPlugin(), voidReact()] });</code></pre>
+  </div>
+
+  <div class="panel card" id="a-db" hidden>
+    <p>Drizzle ORM 同梱。同じスキーマで D1・PostgreSQL・MySQL を使える（D1 はローカルで DB サーバー不要なので最初の 1 つに向く）。</p>
+    <pre><code>// db/schema.ts（@schema で import できる）にテーブルを定義
+import { db } from 'void/db';
+import { users } from '@schema';
+const rows = await db.select().from(users);</code></pre>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>やること</th><th>コマンド</th></tr>
+        <tr><td>スキーマとルートのひな形を作る</td><td><code>void gen model &lt;name&gt; [cols...]</code></td></tr>
+        <tr><td>スキーマの変更から SQL マイグレーションを作る</td><td><code>void db generate</code>（作った SQL は確認してコミット）</td></tr>
+        <tr><td>マイグレーションなしで直接反映（試作用）</td><td><code>void db push</code></td></tr>
+        <tr><td>ローカル / リモートの適用状況</td><td><code>void db status</code></td></tr>
+        <tr><td>ローカルを作り直してシード</td><td><code>void db reset</code> ・ <code>void db seed</code></td></tr>
+        <tr><td>SQL を実行</td><td><code>void db execute "&lt;sql&gt;"</code>（本番は <code>--remote</code>）</td></tr>
+        <tr><td>Drizzle Studio を開く</td><td><code>void db studio</code></td></tr>
+        <tr><td>本番 D1 を復元ポイントに戻す</td><td><code>void db restore --bookmark &lt;b&gt;</code>（自分の Cloudflare アカウントのとき）</td></tr>
+      </table>
+    </div>
+    <p class="note">スキーマを変えたのにマイグレーションが無いと <code>void deploy</code> は止まる。ロールバックしてもマイグレーションは戻らない。</p>
+  </div>
+
+  <div class="panel card" id="a-res" hidden>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>import</th><th>推論されるバインディング・使い方</th></tr>
+        <tr><td><code>import { kv } from 'void/kv'</code></td><td><code>KV</code>（KVNamespace）。<code>kv.get&lt;User&gt;('user:1')</code>・<code>kv.put(key, value, { ttl: 3600 })</code>・<code>kv.delete(key)</code>。値は自動で JSON に</td></tr>
+        <tr><td><code>import { storage } from 'void/storage'</code></td><td><code>STORAGE</code>（R2）。<code>storage.put(key, file, { httpMetadata })</code>・<code>storage.get(key)</code>・<code>storage.list()</code></td></tr>
+        <tr><td><code>import { ai } from 'void/ai'</code></td><td><code>AI</code>（Workers AI、AI Gateway も自動設定）。<code>ai.run(model, { messages })</code>・<code>ai.stream(...)</code>・<code>ai.models()</code></td></tr>
+        <tr><td><code>import { getSandbox } from 'void/sandbox'</code></td><td>Sandbox（Workers Paid と Containers が必要）</td></tr>
+        <tr><td><code>import { defineLiveStream } from 'void/live'</code></td><td><code>VOID_LIVE</code>（Durable Object）でリアルタイム配信</td></tr>
+      </table>
+    </div>
+    <p class="note"><code>c.env.KV</code> のように env から触っても推論される。実行時にキーが決まる書き方は推論できないので <code>void.config.ts</code> の <code>inference.bindings</code> で明示する。Vue・Svelte のコンポーネントファイルは走査されないので、リソースの import は <code>.server.ts</code> などに書く。</p>
+  </div>
+
+  <div class="panel card" id="a-bg" hidden>
+    <pre><code>// queues/emails.ts → キュー「emails」の受け手
+import { defineQueue } from 'void';
+interface Message { to: string; subject: string }
+
+export default defineQueue&lt;Message&gt;(async (batch, env) =&gt; {
+  for (const msg of batch.messages) {
+    try { await send(msg.body); msg.ack(); }
+    catch { msg.retry({ delaySeconds: 30 }); }
+  }
+});
+
+// 送る側（body は Message 型でチェックされる）
+import { queues } from 'void/queues';
+await queues.emails.send({ to: 'a@example.com', subject: 'Hi' });</code></pre>
+    <pre><code>// crons/hourly.ts
+import { defineScheduled } from 'void';
+export const cron = '0 * * * *';          // 配列で複数指定も可
+export default defineScheduled(async (controller, env) =&gt; {
+  await env.KV.put('last-run', controller.scheduledTime.toString());
+});</code></pre>
+  </div>
+
+  <div class="panel card" id="a-auth" hidden>
+    <p>認証は Better Auth ベース。<code>void/auth</code> か クライアントの <code>auth</code> を import すると有効になる。プロバイダーは <code>void.config.ts</code> の <code>auth.providers</code>（例 <code>['email', 'github', 'google']</code>）。</p>
+    <pre><code>// クライアント
+import { auth } from 'void/client';
+await auth.signIn.email({ email, password });
+
+// サーバー（未ログインなら 401。ページなら throwRedirect でログイン画面へ）
+import { requireAuth } from 'void/auth';
+export const loader = defineHandler((c) =&gt; {
+  const user = requireAuth(c, { throwRedirect: '/login' });
+  return { email: user.email };
+});</code></pre>
+    <p>環境変数は <code>env.ts</code> で型を宣言し、<code>void/env</code> から読む。</p>
+    <pre><code>// env.ts
+import { defineEnv, number, string, url } from 'void/env';
+export default defineEnv({
+  STRIPE_KEY: string(),
+  PORT: number().default(3000),
+  VITE_API_ORIGIN: url(),
+});
+
+// アプリ側
+import { env } from 'void/env';</code></pre>
+    <p class="note">ローカルは <code>.env</code>、本番のサーバー用の値は <code>void secret put NAME=value</code>。公開してよい <code>VITE_*</code> はビルド時の環境から渡す。</p>
+  </div>
+
+  <h2 id="cli">void CLI チートシート</h2>
+  <p class="note">パッケージスクリプト以外では <code>npx void</code>・<code>pnpm void</code>・<code>vpx void</code> などで実行。<code>void &lt;command&gt; --help</code> はサインインなしで見られる。</p>
+  <input class="filter" type="search" placeholder="絞り込み（例: db、ログ、secret）" aria-label="コマンドを絞り込み" data-target="cli-table">
+  <div class="tbl-wrap card">
+    <table id="cli-table">
+      <tr><th>コマンド</th><th>やること</th></tr>
+      <tr><td><code>void init</code></td><td>新規・既存プロジェクトのセットアップ（コーディングエージェント用の <code>AGENTS.md</code> とスキルも）</td></tr>
+      <tr><td><code>void init --github</code></td><td>保存したデプロイ先用の GitHub Actions ワークフローを作る</td></tr>
+      <tr><td><code>void prepare</code></td><td>Vite を起動せずに <code>.void/</code> の型を作る（CI の型チェック前に）</td></tr>
+      <tr><td><code>void migrate</code></td><td>古い設定を今の形式に更新</td></tr>
+      <tr><td><code>void info [--json]</code></td><td>リソースの永続名を確認（コードを移動する前に）</td></tr>
+      <tr><td><code>void deploy</code></td><td>ビルド → リソース作成 → マイグレーション → デプロイ。2 回目以降は保存した先へ</td></tr>
+      <tr><td><code>void deploy --platform cloudflare</code></td><td>自分の Cloudflare アカウントへ（初回にアカウントを選ぶ）</td></tr>
+      <tr><td><code>void deploy --platform void --project my-app</code></td><td>チームの Void Platform へ</td></tr>
+      <tr><td><code>void deploy --skip-migrations</code></td><td>SQL マイグレーションを適用せずにコードだけデプロイ</td></tr>
+      <tr><td><code>void deploy --dir &lt;path&gt;</code></td><td>静的ファイルのディレクトリをそのままデプロイ</td></tr>
+      <tr><td><code>void connect &lt;url&gt;</code></td><td>CLI を Void Platform につなぐ（ホスト名だけなら HTTPS）</td></tr>
+      <tr><td><code>void auth login</code></td><td>保存したデプロイ先にログイン（無ければ選ぶ）</td></tr>
+      <tr><td><code>void cloudflare login</code> ・ <code>void account login</code></td><td>Cloudflare に ・ Void Platform にログイン</td></tr>
+      <tr><td><code>void project link</code></td><td>ディレクトリをプロジェクトに紐付け</td></tr>
+      <tr><td><code>void project logs</code></td><td>デプロイしたアプリの実行ログ</td></tr>
+      <tr><td><code>void project requests</code></td><td>リクエスト単位のトラフィック（ステータス・メソッド・時間）。Void Platform のみ</td></tr>
+      <tr><td><code>void project rollback</code></td><td>前のデプロイに戻す（DB マイグレーションは戻らない）</td></tr>
+      <tr><td><code>void project cancel</code></td><td>進行中のデプロイを取り消す</td></tr>
+      <tr><td><code>void project purge-cache</code></td><td>キャッシュしたページを全部消す（Void Platform）</td></tr>
+      <tr><td><code>void build logs</code></td><td>ビルドログを流す・追う・ダウンロード</td></tr>
+      <tr><td><code>void gen model &lt;name&gt; [cols...]</code></td><td>Drizzle のテーブルと API ルートのひな形</td></tr>
+      <tr><td><code>void gen route &lt;path&gt;</code></td><td>API ルートを作る</td></tr>
+      <tr><td><code>void db generate</code> ・ <code>push</code> ・ <code>status</code></td><td>マイグレーション作成 ・ 直接反映 ・ 適用状況（詳しくは上の DB タブ）</td></tr>
+      <tr><td><code>void db execute &lt;sql&gt; --remote</code></td><td>デプロイ先の DB に SQL を実行</td></tr>
+      <tr><td><code>void secret put &lt;name=value&gt;</code></td><td>本番のシークレットを設定。<code>void secret list</code> で一覧</td></tr>
+      <tr><td><code>void secret sync &lt;file&gt;</code></td><td>dotenv ファイルからまとめて登録</td></tr>
+      <tr><td><code>void env check [--remote]</code></td><td><code>env.ts</code> のスキーマどおりか確かめる</td></tr>
+      <tr><td><code>void env types</code></td><td><code>.void/env.d.ts</code> を作り直す</td></tr>
+      <tr><td><code>void domain …</code></td><td>カスタムドメイン</td></tr>
+      <tr><td><code>void email setup</code> ・ <code>status</code> ・ <code>logs</code></td><td>メール送受信の準備 ・ 状態 ・ 配信ログ</td></tr>
+      <tr><td><code>void platform install</code></td><td>会社用の Void Platform を Cloudflare に入れる（認証・DB・ストレージを対話で設定）</td></tr>
+    </table>
+  </div>
+  <p class="note">環境変数: <code>VOID_TOKEN</code>（保存した認証の代わりのトークン）、<code>VOID_PROJECT</code>（deploy などの既定のプロジェクト）。</p>
+
+  <h2 id="config">設定ファイルの例</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="c-vite">vite.config.ts</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-void">void.config.ts</button>
+  </div>
+  <div class="panel card" id="c-vite">
+    <pre><code>import { defineConfig } from 'vite';   // Vite+ なら 'vite-plus'
+import { voidPlugin } from 'void';
+import { voidVue } from '@void/vue/plugin';
+
+export default defineConfig({
+  plugins: [voidPlugin(), voidVue()],
+});</code></pre>
+    <p class="note">メタフレームワークでも、そのフレームワークの Vite 設定に <code>voidPlugin()</code> を足す。</p>
+  </div>
+  <div class="panel card" id="c-void" hidden>
+    <pre><code>// すべて任意。TypeScript のパスエイリアス（@/…）は使えない
+import { defineConfig } from 'void/config';
+
+export default defineConfig({
+  target: 'cloudflare',
+  auth: { providers: ['email', 'github'] },
+  routing: {
+    revalidate: { '/': 60, '*': 30 },        // ISR の秒数
+    headers: { '/assets/*': ['Cache-Control: public, max-age=31536000, immutable'] },
+  },
+  inference: {
+    bindings: { db: true, kv: false },      // 推論の上書き
+    appType: 'void',
+  },
+  worker: { compatibility_flags: ['nodejs_compat'] },
+  cloudflare: { name: 'my-app' },
+});</code></pre>
+    <p class="note"><code>void.config.ts</code> と、生成された <code>void.lock.json</code>（リソース ID とマイグレーション履歴）はコミットする。</p>
+  </div>
+
+  <h2 id="faq">よくある誤解</h2>
+  <div class="qa">
+    <div class="card">
+      <p>デプロイサービス？ フレームワーク？</p>
+      <p>本体は <strong>Vite の上のフルスタックフレームワーク（SDK）</strong>で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。</p>
+    </div>
+    <div class="card">
+      <p>Vite+ を入れないと使えない？</p>
+      <p>いいえ。<code>void init</code> で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。</p>
+    </div>
+    <div class="card">
+      <p>wrangler.jsonc にバインディングを書く必要は？</p>
+      <p>基本は不要（コードから推論）。既に Worker と <code>wrangler.jsonc</code> があれば <code>void deploy</code> がそれを紐付けて既存リソースを引き継げる。</p>
+    </div>
+    <div class="card">
+      <p>Cloudflare 以外にデプロイできる？</p>
+      <p><code>void deploy</code> のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし <code>void.config.ts</code> で <code>target: 'node'</code>（または <code>'bun'</code> / <code>'deno'</code>）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（<code>void/db</code>・<code>void/kv</code>・<code>void/auth</code> など Cloudflare のリソースを使う import は使えない）。<code>output: 'static'</code> で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。</p>
+    </div>
+  </div>
+
+  <h2 id="sources">出典</h2>
+  <ul class="plain">
+    <li><a href="https://void.cloud">Void ドキュメント</a>（Quickstart・Supported App Types・Project Structure・Server Routing・Pages Routing・Resource Inference・Deployment・CLI / Config Reference）</li>
+    <li><a href="https://github.com/voidzero-dev/void">voidzero-dev/void</a>（README と <code>docs/</code>。パッケージ <code>void</code> 1.8.0 時点）</li>
+    <li><a href="https://blog.cloudflare.com/deploy-with-void/">Deploy with Void</a>（Cloudflare Blog, 2026-10-15）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-13</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+document.querySelectorAll('.filter').forEach(input => {
+  const table = document.getElementById(input.dataset.target);
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    table.querySelectorAll('tr').forEach((tr, i) => {
+      if (i === 0) return;
+      tr.classList.toggle('hide', q !== '' && !tr.textContent.toLowerCase().includes(q));
+    });
+  });
+});
+</script>
+
+</body>
+</html>

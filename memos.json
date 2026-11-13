@@ -1,5 +1,39 @@
 [
  {
+  "file": "void.html",
+  "title": "Void チートシート",
+  "desc": "VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。",
+  "tags": [
+   "Void",
+   "Cloudflare",
+   "Vite"
+  ],
+  "date": "2026-11-13",
+  "quizzes": 0
+ },
+ {
+  "file": "void-platform.html",
+  "title": "Void Platform チートシート",
+  "desc": "会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。",
+  "tags": [
+   "Void",
+   "Cloudflare"
+  ],
+  "date": "2026-11-13",
+  "quizzes": 0
+ },
+ {
+  "file": "void-deploy-targets.html",
+  "title": "Void のデプロイ先：直接 Cloudflare vs Void Platform",
+  "desc": "Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。",
+  "tags": [
+   "Void",
+   "Cloudflare"
+  ],
+  "date": "2026-11-13",
+  "quizzes": 0
+ },
+ {
   "file": "cf-config.html",
   "title": "cf/config チートシート",
   "desc": "Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。",

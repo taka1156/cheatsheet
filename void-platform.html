@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Void Platform チートシート</title>
+<meta name="description" content="会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。">
+<meta name="memo:tags" content="Void, Cloudflare">
+<meta name="memo:date" content="2026-11-13">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+  --c-local: #2a9d5c;
+  --c-prod: #d97706;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+    --c-local: #4ade80;
+    --c-prod: #fbbf24;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 4px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.summary { border-left: 3px solid var(--accent); }
+ol.plain { margin: 6px 0 6px 1.4em; }
+ol.plain li { margin: 3px 0; }
+.summary li { margin-left: 1.2em; }
+.note { color: var(--fg-2); font-size: 0.85rem; }
+
+/* 3 つの部品 */
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.part h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--accent); }
+.part .role { display: inline-block; font-size: 0.72rem; background: var(--chip); color: var(--fg-2); border-radius: 999px; padding: 1px 9px; margin-bottom: 6px; }
+.part p { font-size: 0.88rem; margin: 4px 0; }
+
+/* 流れ図 */
+.flow { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.flow .box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.88rem; }
+.flow .box b { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.flow .arrow { text-align: center; color: var(--fg-2); font-size: 0.8rem; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.split > * { min-width: 0; }
+@media (max-width: 520px) { .split { grid-template-columns: 1fr; } }
+.box.local { border-left: 4px solid var(--c-local); }
+.box.prod { border-left: 4px solid var(--c-prod); }
+.tag-l { color: var(--c-local); font-weight: 700; font-size: 0.75rem; }
+.tag-p { color: var(--c-prod); font-weight: 700; font-size: 0.75rem; }
+
+/* ファイルツリー */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; line-height: 1.9; }
+.tree div { display: grid; grid-template-columns: minmax(150px, 38%) 1fr; gap: 8px; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree span:last-child { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); font-size: 0.8rem; }
+@media (max-width: 480px) { .tree div { grid-template-columns: 1fr; gap: 0; padding: 4px 0; } }
+
+/* 表 */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
+td:first-child { width: 42%; }
+tr.hide { display: none; }
+.filter {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: 0.85rem 'Noto Sans JP', system-ui, sans-serif;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* よくある誤解 */
+.qa { display: grid; gap: 10px; }
+.qa .card p:first-child { font-weight: 700; }
+
+ul.plain { margin: 6px 0 6px 1.2em; }
+ul.plain li { margin: 2px 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Void Platform チートシート">
+<meta property="og:description" content="会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。">
+<meta property="og:url" content="https://cs.taka1156.site/void-platform.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Void Platform チートシート</h1>
+  <p class="subtitle">会社の Cloudflare アカウントに入れる、Void アプリ用の共有デプロイ基盤</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>管理者が自分たちの Cloudflare アカウントに 1 度インストールすると、社員は Cloudflare の権限なしで <code>void connect</code> → <code>void deploy</code> だけでアプリを公開できる</li>
+      <li>ログイン方法（GitHub・Google・OIDC・Cloudflare Access）、誰が使えるか、プランごとの上限、ログ・ロールバック・利用状況を管理者がまとめて管理する</li>
+      <li>フレームワーク（Void SDK）とは別の、<strong>任意の</strong>部品。1 人で使うなら不要で、自分の Cloudflare に直接デプロイすればよい</li>
+    </ul>
+  </div>
+  <p class="note">フレームワーク側（ルート・ページ・DB・<code>void</code> CLI の基本）は <a href="void.html">Void チートシート</a>。</p>
+
+  <h2 id="what">何のためのものか</h2>
+  <p>AI でサッと作った社内アプリ（バイブコーディング）を社員に公開させたいが、全員に Cloudflare アカウントの鍵は渡したくない、というときのための基盤。当初は全ユーザーが使う 1 つの共有プラットフォームとして作る予定だったが、Cloudflare 合流後に方針を変え、誰でも自分の Cloudflare に入れられるオープンソース（MIT）にした。</p>
+  <div class="flow">
+    <div class="box"><b>管理者</b>：<code>void platform install</code> で会社の Cloudflare アカウントに基盤を入れる。ログイン方法・利用できる人・プランを決める</div>
+    <div class="arrow">↓ API の URL を共有</div>
+    <div class="box"><b>開発者（社員）</b>：<code>void connect &lt;API URL&gt;</code> → 会社のログインでサインイン → <code>void deploy --platform void</code></div>
+    <div class="arrow">↓</div>
+    <div class="split">
+      <div class="box local"><span class="tag-l">各アプリ</span><br>Workers for Platforms の dispatch namespace の中で、各アプリが Worker として動く。<code>my-app.example.app</code> のような URL</div>
+      <div class="box prod"><span class="tag-p">基盤</span><br>API・プロキシ・ログ収集などの Worker、ユーザー・プロジェクト・デプロイ履歴を持つ PostgreSQL、利用量の記録</div>
+    </div>
+  </div>
+
+  <h2 id="compare">直接 Cloudflare と Platform の違い</h2>
+  <p>アプリのコード（API）はどちらでも同じ。違うのはデプロイ先の管理のしかた。メリット・デメリットと選び方は → <a href="void-deploy-targets.html">直接 Cloudflare vs Void Platform</a></p>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>項目</th><th>直接 Cloudflare ／ Void Platform</th></tr>
+      <tr><td>向いている人</td><td>個人のアプリ ／ チーム・会社・顧客に使わせる</td></tr>
+      <tr><td>デプロイする人に必要なもの</td><td>Cloudflare アカウント ／ Platform のログインだけ</td></tr>
+      <tr><td>D1・KV・R2・Queues・cron・ISR・WebSocket</td><td>どちらも使える</td></tr>
+      <tr><td>Workers AI</td><td>自分のアカウントと Gateway ／ 基盤の Gateway 経由（使用量を計測）</td></tr>
+      <tr><td>実行ログ</td><td>Cloudflare のライブ tail ／ 基盤に保存されたログ</td></tr>
+      <tr><td>ロールバック</td><td>Worker のバージョン ／ 基盤に残したデプロイ履歴</td></tr>
+      <tr><td>プロジェクトの共同作業（メンバー招待）</td><td>なし（1 人） ／ あり</td></tr>
+      <tr><td>カスタムドメイン</td><td>使える ／ <code>--custom-domains</code> で有効化（インストール時か、後から <code>void platform upgrade</code> で。アプリ専用ゾーンと Cloudflare for SaaS の設定が必要）</td></tr>
+      <tr><td>GitHub からのデプロイ</td><td><code>void init --github</code> のワークフロー ／ 自分の CI ＋ プロジェクト用トークン</td></tr>
+    </table>
+  </div>
+  <p class="note">ユーザー用ダッシュボードと GitHub の自動ビルドは標準のインストールに含まれず、基盤を改造してビルドする（カスタムビルド）必要がある。管理者用の画面は標準で付く。</p>
+
+  <h2 id="prereq">インストールに必要なもの</h2>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>もの</th><th>メモ</th></tr>
+      <tr><td>Cloudflare アカウント</td><td>Workers for Platforms（有料プラン）・R2・Analytics Engine を有効にしておく</td></tr>
+      <tr><td>空の PostgreSQL</td><td>基盤専用（ユーザー・プロジェクト・デプロイを保存）。Neon・PlanetScale Postgres など。<strong>直接接続かセッションモード</strong>（トランザクションプーリングは不可）。各アプリは D1 を使ってよい</td></tr>
+      <tr><td>ログインの提供元</td><td>GitHub・Google・汎用 OIDC・Cloudflare Access から選ぶ（複数可）</td></tr>
+      <tr><td>アプリ用のドメイン</td><td>例 <code>example.app</code> → アプリは <code>my-app.example.app</code>。試すだけなら <code>workers.dev</code> で可</td></tr>
+      <tr><td>Node.js</td><td>24.22 以上 または 26.12 以上</td></tr>
+    </table>
+  </div>
+  <p class="note">Cloudflare と DB の利用料はそれぞれ別にかかる。Platform の「プラン」は上限を決めるだけで、課金はしない。</p>
+
+  <h2 id="install">インストール（管理者）</h2>
+  <pre><code>pnpm add --global void
+
+void platform install --plan            # 作るものを確認するだけ（何も変えない）
+void platform install                   # 保存したプランを選んで実行
+#   --application-domain example.app    # 独自ドメインで
+#   --workers-dev                       # 試すだけ
+#   --runtime-logs minimal              # URL やメッセージをログに残さない</code></pre>
+  <ol class="plain">
+    <li>インストール名（例 <code>team</code> → <code>void-team-api</code> などの名前になる）、ドメイン、表示名を答える</li>
+    <li>ログイン方法と「デプロイしたアプリを誰が見られるか」（公開／基盤と同じ Access ポリシー／別のポリシー）を選ぶ</li>
+    <li>Cloudflare のトークン・PostgreSQL の URL・ログインの認証情報を入力（秘密の値はキーチェーンに暗号化して保存）</li>
+    <li>表示された <code>/setup</code> の URL とワンタイムコードで最初の管理者を確定</li>
+    <li>DNS 待ちなどで止まったら <code>void platform install --resume --name &lt;id&gt;</code></li>
+  </ol>
+  <h3 style="margin-top:14px">作られる主なリソース</h3>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>リソース</th><th>数・用途</th></tr>
+      <tr><td>Workers</td><td>5（API・プロキシ・ログ取り込み・ディスパッチ・メール）＋ workers.dev のアプリごとに 1</td></tr>
+      <tr><td>Workers for Platforms 名前空間</td><td>1（ユーザーのアプリが入る）</td></tr>
+      <tr><td>KV ・ R2 ・ Queues</td><td>3（ルーティング・ISR・静的ファイル） ・ 1（アセット） ・ 3（使用量・cron・デプロイ）</td></tr>
+      <tr><td>Hyperdrive ・ AI Gateway</td><td>PostgreSQL への接続 ・ AI の振り分けと計測</td></tr>
+      <tr><td>DNS ・ ゾーン</td><td>独自ドメインのときだけワイルドカードレコード（ゾーンが無ければ作る）</td></tr>
+    </table>
+  </div>
+
+  <h2 id="dev">使う（開発者）</h2>
+  <pre><code># 管理者から聞いた API の URL につなぐ（初回はブラウザでサインイン）
+void connect platform.example.com
+void deploy --platform void --project my-app    # 初回はプロジェクト作成を確認
+void project link                               # 既存のプロジェクトに紐付けるとき
+
+void project status ・ logs ・ rollback ・ cancel</code></pre>
+  <p class="note">デプロイは基盤が受け付けたあとは CLI を閉じても続く。認証情報はプラットフォームの URL ごとにキーチェーンへ保存。<code>void platform list</code> ・ <code>void platform use [id]</code> で接続先を切り替え。</p>
+
+  <h3 style="margin-top:14px">チームで使う（プロジェクトのメンバー）</h3>
+  <div class="tbl-wrap card">
+    <table>
+      <tr><th>役割</th><th>できること</th></tr>
+      <tr><td>Reader</td><td>プロジェクト・使用量・デプロイ・ログ・メンバーを見る（デプロイ不可）</td></tr>
+      <tr><td>Collaborator</td><td>＋ デプロイ・ロールバック・マイグレーション・シークレット・DB 設定</td></tr>
+      <tr><td>Project administrator</td><td>＋ ドメイン・メール宛先・GitHub 設定・招待・役割の変更</td></tr>
+      <tr><td>Owner</td><td>＋ プロジェクト削除・CI 用トークンの発行。上限はオーナーのプランで決まる</td></tr>
+    </table>
+  </div>
+  <pre><code>void project team invite teammate@example.com --role collaborator   # 登録済みのユーザーだけ
+void project team pending  ・  accept &lt;id&gt;  ・  decline &lt;id&gt;          # 招待された側
+void project team list  ・  role &lt;user-id&gt; reader  ・  remove &lt;user-id&gt;</code></pre>
+
+  <h3 style="margin-top:14px">CI からデプロイ</h3>
+  <pre><code># オーナーがプロジェクト専用・期限付きのトークンを作る
+void project token create --name ci --expires-in 30
+# → VOID_TOKEN と VOID_API_URL を CI のシークレットに
+
+# CI の中
+void connect "$VOID_API_URL" --no-login
+void deploy --platform void --project "$VOID_PROJECT"</code></pre>
+  <p class="note">人のログイントークンは CI に使わない。更新は <code>void project token renew &lt;id&gt;</code>、失効は <code>revoke</code>。Access で守っている基盤では <code>VOID_ACCESS_CREDENTIALS</code> も要る。</p>
+
+  <h2 id="admin">管理者コマンド</h2>
+  <p class="note">管理者のログインはデプロイ用とは別（<code>void platform auth login</code>、1 時間）。変更系は <code>--plan</code> で確認、<code>--yes</code> で確認なしに適用。全コマンドに <code>--json</code>。ブラウザなら <code>&lt;API URL&gt;/admin/login</code>。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="m-access">利用者</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="m-plan">プラン</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="m-ops">運用・ログ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="m-maint">保守・停止</button>
+  </div>
+  <div class="panel card" id="m-access">
+    <div class="tbl-wrap"><table>
+      <tr><th>コマンド</th><th>やること</th></tr>
+      <tr><td><code>void platform signup allow github teammate</code></td><td>GitHub ユーザーのサインアップを許可</td></tr>
+      <tr><td><code>void platform signup allow email '*@example.com'</code></td><td>メールアドレス・ドメインで許可</td></tr>
+      <tr><td><code>void platform signup show</code></td><td>許可リストを見る（<code>open</code> ・ <code>restrict</code> で開放／制限）</td></tr>
+      <tr><td><code>void platform invitation send alex@example.org</code></td><td>招待を送る</td></tr>
+      <tr><td><code>void platform user list</code> ・ <code>show &lt;id&gt;</code></td><td>ユーザー一覧・詳細</td></tr>
+      <tr><td><code>void platform user suspend &lt;id&gt; --reason "…"</code></td><td>ユーザーを停止（<code>restore</code> で戻す、<code>delete</code> で削除）</td></tr>
+      <tr><td><code>void platform project list</code> ・ <code>owner</code></td><td>プロジェクト一覧・オーナーの移譲</td></tr>
+      <tr><td><code>void platform zero-trust configure</code></td><td>プロジェクトのホスト名を Cloudflare Access で守る設定（<code>--protect-new-projects</code> で新しいアプリに既定でかける。各プロジェクトで公開に戻せる）</td></tr>
+    </table></div>
+  </div>
+  <div class="panel card" id="m-plan" hidden>
+    <p>プラン ＝ アカウントごとのリソース上限（課金ではない）。変更に再デプロイは不要。</p>
+    <div class="tbl-wrap"><table>
+      <tr><th>コマンド</th><th>やること</th></tr>
+      <tr><td><code>void platform config plans</code></td><td>プランを見る</td></tr>
+      <tr><td><code>void platform config plans add team --copy pro --name "Team"</code></td><td>既存プランをコピーして追加</td></tr>
+      <tr><td><code>void platform config plans set team --file team-plan.json</code></td><td>上限を編集</td></tr>
+      <tr><td><code>void platform config plans default team</code></td><td>新規アカウントの既定にする</td></tr>
+      <tr><td><code>void platform user plan &lt;user-id&gt; team</code></td><td>ユーザーにプランを割り当て</td></tr>
+      <tr><td><code>void platform config plans archive</code> ・ <code>remove --replacement pro</code></td><td>アーカイブ ・ 代わりを決めて削除</td></tr>
+    </table></div>
+  </div>
+  <div class="panel card" id="m-ops" hidden>
+    <div class="tbl-wrap"><table>
+      <tr><th>コマンド</th><th>やること</th></tr>
+      <tr><td><code>void platform system health</code> ・ <code>overview</code></td><td>基盤の状態（異常なら終了コードが 0 以外）</td></tr>
+      <tr><td><code>void platform system events</code></td><td>操作の記録（変更が途中で切れたら、繰り返す前にここを見る）</td></tr>
+      <tr><td><code>void platform deployment list --project &lt;id&gt;</code></td><td>デプロイ一覧</td></tr>
+      <tr><td><code>void platform deployment logs &lt;id&gt; --since 10m --follow</code></td><td>アプリのログを追う</td></tr>
+      <tr><td><code>void platform deployment cancel &lt;id&gt;</code></td><td>デプロイを取り消す</td></tr>
+      <tr><td><code>void platform project ai-logging</code></td><td>プロジェクトごとの AI Gateway のログ記録</td></tr>
+    </table></div>
+  </div>
+  <div class="panel card" id="m-maint" hidden>
+    <div class="tbl-wrap"><table>
+      <tr><th>コマンド</th><th>やること</th></tr>
+      <tr><td><code>void platform status [id]</code></td><td>インストールの状態</td></tr>
+      <tr><td><code>void platform upgrade [id]</code></td><td>新しい版に上げる（<code>--runtime-logs minimal|full</code> でログ設定も変更）</td></tr>
+      <tr><td><code>void platform repair [id]</code></td><td>消えたリソースを作り直す</td></tr>
+      <tr><td><code>void platform rollback [id] --runtime &lt;path&gt;</code></td><td>基盤自体を前の版に戻す</td></tr>
+      <tr><td><code>void platform discover --account &lt;id&gt; --installation &lt;name&gt;</code></td><td>別のマシンから管理する</td></tr>
+      <tr><td><code>void platform disable [id]</code> ・ <code>enable [id]</code></td><td>データを残したまま止める ・ 再開</td></tr>
+      <tr><td><code>void platform uninstall [id]</code></td><td>トラフィックを止めて削除（既定では多くのリソースと PostgreSQL・ゾーンは残る。<code>--purge-resources</code> で DNS・Access なども消す）</td></tr>
+    </table></div>
+  </div>
+
+  <h2 id="connected">発展：Connected apps</h2>
+  <p>別のアプリ（例：社内のアプリ生成ツール）を OAuth クライアントとして登録すると、ユーザーは Void アカウントでそのアプリにサインインでき、そのアプリが作ったコードを<strong>ユーザーが Void 上で承認して</strong>自分のプロジェクトにデプロイできる。管理画面の <strong>Admin → Connected apps</strong> で登録。許可すれば本番前のプライベートプレビューも作れる。</p>
+
+  <h2 id="faq">よくある誤解</h2>
+  <div class="qa">
+    <div class="card">
+      <p>Void を使うには Platform が必須？</p>
+      <p>いいえ。<code>void deploy --platform cloudflare</code> で自分のアカウントに直接デプロイできる。Platform はチームで共有したいときの任意の部品。</p>
+    </div>
+    <div class="card">
+      <p>Platform のプランで利用者に課金できる？</p>
+      <p>できない。プランはリソースの上限を決めるだけ。Cloudflare と DB の料金は基盤を入れた側にかかる。</p>
+    </div>
+    <div class="card">
+      <p>アンインストールすれば全部消える？</p>
+      <p>既定では Workers・KV・R2・Hyperdrive などは確認用に残り、外部の PostgreSQL とゾーンは常に残る。入れ直すときは新しい空の PostgreSQL を使う。一時的に止めるだけなら <code>disable</code>。</p>
+    </div>
+    <div class="card">
+      <p>公開前に IT 部門が審査する仕組みはある？</p>
+      <p>ドキュメント上、デプロイ前の必須の審査ステップは無い。サインアップの許可リスト、アプリへの Access ポリシー、プランの上限で絞る。必要なら基盤をフォークして足す。</p>
+    </div>
+  </div>
+
+  <h2 id="sources">出典</h2>
+  <ul class="plain">
+    <li><a href="https://void.cloud/guide/self-hosted-platform">Install a Void Platform</a>（Prerequisites・Install and Configure Login・First Deployment・Domains and Resources・Maintenance・Disable and Uninstall）</li>
+    <li><a href="https://void.cloud/guide/platform-administration">Platform Administration</a>（Access・Plans and Limits・Operations・Connected apps）と <a href="https://void.cloud/guide/project-collaboration">Project Collaboration</a></li>
+    <li><a href="https://void.cloud/reference/cli">CLI Reference</a>（<code>void platform</code>）、<a href="https://github.com/voidzero-dev/void">voidzero-dev/void</a>（<code>void</code> 1.8.0 時点）</li>
+    <li><a href="https://blog.cloudflare.com/deploy-with-void/">Deploy with Void</a>（Cloudflare Blog, 2026-10-15）</li>
+    <li><a href="https://thenewstack.io/?p=22840734">The New Stack</a>（2026-10-16。セルフホスト化の経緯と、デプロイ前の審査について）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-13</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

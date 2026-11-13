@@ -4,5 +4,8 @@
 
 ## Memos
 
+- [Void チートシート](https://cs.taka1156.site/md/void.md): VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。（Void, Cloudflare, Vite / 2026-11-13）
+- [Void Platform チートシート](https://cs.taka1156.site/md/void-platform.md): 会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。（Void, Cloudflare / 2026-11-13）
+- [Void のデプロイ先：直接 Cloudflare vs Void Platform](https://cs.taka1156.site/md/void-deploy-targets.md): Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。（Void, Cloudflare / 2026-11-13）
 - [cf/config チートシート](https://cs.taka1156.site/md/cf-config.md): Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。（Cloudflare, Workers, TypeScript / 2026-11-13）
 - [Vite+ と vp コマンド チートシート](https://cs.taka1156.site/md/vite-plus.md): Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。（Vite, JavaScript, ツール / 2026-11-07）

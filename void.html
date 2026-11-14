@@ -232,7 +232,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
 
   <h2 id="stack">図でわかる：Void の各機能はどこにつながっているか</h2>
-  <p>コードで import するもの・置くファイル（Void SDK）が、中でどの技術を使い、Cloudflare のどのリソースになるか。それを <code>void</code> コマンドで、自分の Cloudflare か Void Platform にデプロイする。</p>
+  <p>Void SDK で import するものやファイルが、内部でどの技術を使い、Cloudflare のどのリソースになるかを示します。それらは <code>void</code> コマンドで、自分の Cloudflare か Void Platform にデプロイします。</p>
   <div class="card stack">
     <svg viewBox="0 0 900 925" role="img" aria-labelledby="stack-title stack-desc">
       <title id="stack-title">Void の機能のつながり</title>
@@ -328,15 +328,15 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td><strong>デプロイ先</strong></td><td>自分の Cloudflare アカウントか、チームの Void Platform（任意）のどちらか → <a href="#platform">下で説明</a></td></tr>
     </table>
   </div>
-  <p class="note">Nuxt・Astro などのメタフレームワークで使うときは、<code>routes/</code>・<code>pages/</code> の列をそのフレームワークが受け持ち、Void はそれ以外（リソース・DB・デプロイ）を担当する → <a href="#apptypes">3 種類のアプリ</a></p>
+  <p class="note">Nuxt・Astro などのメタフレームワークで使うときは、<code>routes/</code>・<code>pages/</code> の役割をそのフレームワークが担い、Void はそれ以外（リソース・DB・デプロイ）を担当する → <a href="#apptypes">3 種類のアプリ</a></p>
 
   <h2 id="parts">3 つの部品</h2>
-  <p>1 つのパッケージ <code>void</code> に入っている。Cloudflare のブログ（2026-10-15）で 3 つまとめてオープンソース化された。VoidZero は 2026 年 6 月から Cloudflare の一部。</p>
+  <p>3 つの部品はすべて 1 つのパッケージ <code>void</code> に入っている。Cloudflare のブログ（2026-10-15）で 3 つまとめてオープンソース化された。VoidZero は 2026 年 6 月から Cloudflare の一部になっている。</p>
   <div class="parts">
     <div class="card part">
       <span class="role">フレームワーク</span>
       <h3>Void SDK</h3>
-      <p>ファイルベースの API ルート（<code>routes/</code>）とページ（<code>pages/</code>）、DB からUIまで通る型、<code>void/db</code>・<code>void/kv</code> などの API。中身のルーターは Hono。</p>
+      <p>ファイルベースの API ルート（<code>routes/</code>）とページ（<code>pages/</code>）、DB から UI まで通る型、<code>void/db</code>・<code>void/kv</code> などの API。中身のルーターは Hono。</p>
     </div>
     <div class="card part">
       <span class="role">デプロイ</span>
@@ -346,7 +346,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <div class="card part">
       <span class="role">チーム用基盤（任意）</span>
       <h3>Void Platform</h3>
-      <p>会社の Cloudflare アカウント（Workers for Platforms）に入れる共有デプロイ環境。社員に Cloudflare の権限を配らずに、アクセス制御・上限・利用状況の管理つきでアプリを公開させられる。→ <a href="#platform">下で説明</a></p>
+      <p>会社の Cloudflare アカウント（Workers for Platforms）に入れる共有デプロイ環境。社員に Cloudflare の権限を配らずに、アクセス制御・上限・利用状況の管理付きでアプリを公開させられる。→ <a href="#platform">下で説明</a></p>
     </div>
   </div>
   <p class="note">ツールチェーン（vp コマンド）の Vite+ は別物。Void は Vite+ を既定のビルドツールとして使う → <a href="vite-plus.html">Vite+ と vp コマンド</a></p>
@@ -366,11 +366,11 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <table>
       <tr><th>種類</th><th>中身・判定</th></tr>
       <tr><td><strong>Void アプリ</strong></td><td>Void がルーティングとデプロイを担当。API だけ（<code>routes/</code>）／SPA ＋ API（<code>src/</code> ＋ <code>routes/</code>）／ページモード（<code>pages/</code> で SSR）のどれでもよい</td></tr>
-      <tr><td><strong>メタフレームワーク</strong></td><td>TanStack Start・React Router v7・SvelteKit・Nuxt・Analog・Astro。ルーティングと SSR はフレームワーク側、Void はリソース推論・型付き DB・マイグレーション・デプロイを担当（Void 管理の認証は使えない）</td></tr>
+      <tr><td><strong>メタフレームワーク</strong></td><td>TanStack Start・React Router v7・SvelteKit・Nuxt・Analog・Astro。ルーティングと SSR はフレームワーク側、Void はリソース推論・型付き DB・マイグレーション・デプロイを担当（Void が提供する認証は使えない）</td></tr>
       <tr><td><strong>静的サイト</strong></td><td>SPA や VitePress などのビルド結果。<code>void deploy --dir &lt;path&gt;</code> でそのまま配信</td></tr>
     </table>
   </div>
-  <p class="note">種類はプロジェクト構成から自動判定。固定したいときは <code>void.config.ts</code> の <code>inference.appType</code>（<code>"void"</code> / <code>"framework"</code> / <code>"spa"</code> / <code>"static"</code>）。</p>
+  <p class="note">種類はプロジェクト構成から自動判定される。固定したいときは <code>void.config.ts</code> の <code>inference.appType</code>（<code>"void"</code> / <code>"framework"</code> / <code>"spa"</code> / <code>"static"</code>）で指定する。</p>
 
   <h2 id="setup">はじめ方</h2>
   <pre><code># 新規（空のディレクトリで）または既存の Vite アプリに追加
@@ -379,7 +379,7 @@ npx void init        # UI フレームワーク・スターター・デプロイ
 npm run dev          # http://localhost:5173
 
 npx void deploy      # 初回はブラウザでサインイン → ビルド・作成・マイグレーション・デプロイ</code></pre>
-  <p class="note">CLI は Node.js 24.22 以上 または 26.12 以上。<code>void</code> はプロジェクトに入れて使う（CLI とランタイムの版を揃えるため）。pnpm なら <code>pnpm create void my-app</code> でディレクトリごと作れる。</p>
+  <p class="note">CLI は Node.js 24.22 以上 または 26.12 以上。<code>void</code> はプロジェクトに入れて使う（CLI とランタイムのバージョンを揃えるため）。pnpm なら <code>pnpm create void my-app</code> でディレクトリごと作れる。</p>
 
   <h2 id="platform">デプロイ先：自分の Cloudflare か Void Platform か</h2>
   <p>フレームワーク（アプリのコード）はどちらでも同じ。Void Platform はフレームワークとは<strong>別に存在する任意の基盤</strong>で、デプロイ先の選び方だけが変わる。</p>
@@ -391,7 +391,7 @@ npx void deploy      # 初回はブラウザでサインイン → ビルド・�
     </div>
     <div class="card">
       <h3>Void Platform</h3>
-      <p>管理者が会社の Cloudflare に入れた共有基盤へ。社員は Cloudflare の権限なしで、会社のログインでデプロイできる。利用者・プランの上限・ログ・ロールバックを管理者がまとめて管理。</p>
+      <p>管理者が会社の Cloudflare に入れた共有基盤へ。社員は Cloudflare の権限なしで、会社のログインでデプロイできる。管理者が利用者・プランの上限・ログ・ロールバックをまとめて管理する。</p>
       <pre><code>void connect platform.example.com
 void deploy --platform void --project my-app</code></pre>
     </div>
@@ -527,7 +527,7 @@ const rows = await db.select().from(users);</code></pre>
     <div class="tbl-wrap">
       <table>
         <tr><th>import</th><th>推論されるバインディング・使い方</th></tr>
-        <tr><td><code>import { kv } from 'void/kv'</code></td><td><code>KV</code>（KVNamespace）。<code>kv.get&lt;User&gt;('user:1')</code>・<code>kv.put(key, value, { ttl: 3600 })</code>・<code>kv.delete(key)</code>。値は自動で JSON に</td></tr>
+        <tr><td><code>import { kv } from 'void/kv'</code></td><td><code>KV</code>（KVNamespace）。<code>kv.get&lt;User&gt;('user:1')</code>・<code>kv.put(key, value, { ttl: 3600 })</code>・<code>kv.delete(key)</code>。値は自動で JSON に変換される</td></tr>
         <tr><td><code>import { storage } from 'void/storage'</code></td><td><code>STORAGE</code>（R2）。<code>storage.put(key, file, { httpMetadata })</code>・<code>storage.get(key)</code>・<code>storage.list()</code></td></tr>
         <tr><td><code>import { ai } from 'void/ai'</code></td><td><code>AI</code>（Workers AI、AI Gateway も自動設定）。<code>ai.run(model, { messages })</code>・<code>ai.stream(...)</code>・<code>ai.models()</code></td></tr>
         <tr><td><code>import { getSandbox } from 'void/sandbox'</code></td><td>Sandbox（Workers Paid と Containers が必要）</td></tr>
@@ -561,7 +561,7 @@ export default defineScheduled(async (controller, env) =&gt; {
   </div>
 
   <div class="panel card" id="a-auth" hidden>
-    <p>認証は Better Auth ベース。<code>void/auth</code> か クライアントの <code>auth</code> を import すると有効になる。プロバイダーは <code>void.config.ts</code> の <code>auth.providers</code>（例 <code>['email', 'github', 'google']</code>）。</p>
+    <p>認証は Better Auth ベース。<code>void/auth</code>、またはクライアントの <code>auth</code> を import すると有効になる。プロバイダーは <code>void.config.ts</code> の <code>auth.providers</code>（例 <code>['email', 'github', 'google']</code>）。</p>
     <pre><code>// クライアント
 import { auth } from 'void/client';
 await auth.signIn.email({ email, password });
@@ -597,7 +597,7 @@ import { env } from 'void/env';</code></pre>
       <tr><td><code>void prepare</code></td><td>Vite を起動せずに <code>.void/</code> の型を作る（CI の型チェック前に）</td></tr>
       <tr><td><code>void migrate</code></td><td>古い設定を今の形式に更新</td></tr>
       <tr><td><code>void info [--json]</code></td><td>リソースの永続名を確認（コードを移動する前に）</td></tr>
-      <tr><td><code>void deploy</code></td><td>ビルド → リソース作成 → マイグレーション → デプロイ。2 回目以降は保存した先へ</td></tr>
+      <tr><td><code>void deploy</code></td><td>ビルド → リソース作成 → マイグレーション → デプロイ。2 回目以降は保存済みの先へ</td></tr>
       <tr><td><code>void deploy --platform cloudflare</code></td><td>自分の Cloudflare アカウントへ（初回にアカウントを選ぶ）</td></tr>
       <tr><td><code>void deploy --platform void --project my-app</code></td><td>チームの Void Platform へ</td></tr>
       <tr><td><code>void deploy --skip-migrations</code></td><td>SQL マイグレーションを適用せずにコードだけデプロイ</td></tr>
@@ -664,7 +664,7 @@ export default defineConfig({
   </div>
 
   <h2 id="faq">よくある誤解</h2>
-  <details class="myth"><summary>Void はデプロイサービスである</summary><p>本体は <strong>Vite の上のフルスタックフレームワーク（SDK）</strong>で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。</p></details>
+  <details class="myth"><summary>Void はデプロイサービスである</summary><p>本体は <strong>Vite の上のフルスタックフレームワーク（SDK）</strong>で、デプロイ CLI と任意のチーム基盤がセットになっている。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後にすべてオープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。</p></details>
   <details class="myth"><summary>Vite+ を入れないと使えない</summary><p><code>void init</code> で Vite+ か素の Vite を選べる。Vite+ を入れる場合もグローバルインストールは不要。</p></details>
   <details class="myth"><summary>wrangler.jsonc にバインディングを書く必要がある</summary><p>基本は不要（コードから推論）。既に Worker と <code>wrangler.jsonc</code> があれば <code>void deploy</code> がそれを紐付けて既存リソースを引き継げる。</p></details>
   <details class="myth"><summary>Cloudflare 以外では動かせない</summary><p><code>void deploy</code> のデプロイ先は Cloudflare か Void Platform（これも Cloudflare 上）だけ。ただし <code>void.config.ts</code> で <code>target: 'node'</code>（または <code>'bun'</code> / <code>'deno'</code>）にすると、サーバーごと Node.js・Bun・Deno 向けにビルドでき、自前のサーバーやコンテナで動かせる（<code>void/db</code>・<code>void/kv</code>・<code>void/auth</code> など Cloudflare のリソースを使う import は使えない）。<code>output: 'static'</code> で全ページを事前生成すれば、Worker なしの静的サイトとしてどこにでも置ける。</p></details>

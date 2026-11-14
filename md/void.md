@@ -20,7 +20,7 @@ VoidZero 製、Vite の上で動くフルスタックフレームワーク ＋ C
 
 ## 図でわかる：Void の各機能はどこにつながっているか
 
-コードで import するもの・置くファイル（Void SDK）が、中でどの技術を使い、Cloudflare のどのリソースになるか。それを `void` コマンドで、自分の Cloudflare か Void Platform にデプロイする。
+Void SDK で import するものやファイルが、内部でどの技術を使い、Cloudflare のどのリソースになるかを示します。それらは `void` コマンドで、自分の Cloudflare か Void Platform にデプロイします。
 
 （図: Void の機能のつながり / Void SDK / import する・ファイルを置くだけ / routes/ / pages/ / void/db / db/schema.ts / void/auth / void/client / void/kv / storage・ai / queues/ / crons/ / Hono + Vite / API・SSR / React/Vue 等 / Drizzle / 型付きクエリ / マイグレーション / Better Auth / ログイン / GitHub・Google / import から / 推論して / 直接つなぐ / Cloudflare Workers / アプリは 1 つの Worker で動く / D1 / PostgreSQL・MySQL（Hyperdrive）· KV · R2 / Workers AI + AI Gateway · Queues · Cron Triggers · Durable Objects / Resource Inference / import を見て必要なリソースを判断 → ローカルは自動で用意 / 本番は void deploy が作成 / void CLI / npx void ・ pnpm void ・ vpx void / void init / セットアップ / void deploy / ビルド→作成→公開 / void db … / void secret / 本番の秘密値 / void project / ログ・戻す / デプロイ先をどちらか選ぶ / 自分の Cloudflare アカウント / --platform cloudflare / 個人のアプリ向け / Void Platform（任意） / --platform void / チームの共有基盤・利用者やプランを管理 / vite.config.ts に voidPlugin() を足すだけ / UI アダプター（@void/react など）・任意の void.config.ts ・ ビルドは Vite / Vite+ → https://cs.taka1156.site/void.html#stack）
 
@@ -31,15 +31,15 @@ VoidZero 製、Vite の上で動くフルスタックフレームワーク ＋ C
 | void CLI | `init` （セットアップ）・ `deploy` （ビルド → リソース作成 → マイグレーション → 公開）・ `db` ・ `secret` ・ `project` （ログ・ロールバック） |
 | デプロイ先 | 自分の Cloudflare アカウントか、チームの Void Platform（任意）のどちらか → 下で説明 |
 
-Nuxt・Astro などのメタフレームワークで使うときは、 `routes/` ・ `pages/` の列をそのフレームワークが受け持ち、Void はそれ以外（リソース・DB・デプロイ）を担当する → 3 種類のアプリ
+Nuxt・Astro などのメタフレームワークで使うときは、 `routes/` ・ `pages/` の役割をそのフレームワークが担い、Void はそれ以外（リソース・DB・デプロイ）を担当する → 3 種類のアプリ
 
 ## 3 つの部品
 
-1 つのパッケージ `void` に入っている。Cloudflare のブログ（2026-10-15）で 3 つまとめてオープンソース化された。VoidZero は 2026 年 6 月から Cloudflare の一部。
+3 つの部品はすべて 1 つのパッケージ `void` に入っている。Cloudflare のブログ（2026-10-15）で 3 つまとめてオープンソース化された。VoidZero は 2026 年 6 月から Cloudflare の一部になっている。
 
 ### フレームワーク Void SDK
 
-ファイルベースの API ルート（ `routes/` ）とページ（ `pages/` ）、DB からUIまで通る型、 `void/db` ・ `void/kv` などの API。中身のルーターは Hono。
+ファイルベースの API ルート（ `routes/` ）とページ（ `pages/` ）、DB から UI まで通る型、 `void/db` ・ `void/kv` などの API。中身のルーターは Hono。
 
 ### デプロイ Void CLI
 
@@ -47,7 +47,7 @@ Nuxt・Astro などのメタフレームワークで使うときは、 `routes/`
 
 ### チーム用基盤（任意） Void Platform
 
-会社の Cloudflare アカウント（Workers for Platforms）に入れる共有デプロイ環境。社員に Cloudflare の権限を配らずに、アクセス制御・上限・利用状況の管理つきでアプリを公開させられる。→ 下で説明
+会社の Cloudflare アカウント（Workers for Platforms）に入れる共有デプロイ環境。社員に Cloudflare の権限を配らずに、アクセス制御・上限・利用状況の管理付きでアプリを公開させられる。→ 下で説明
 
 ツールチェーン（vp コマンド）の Vite+ は別物。Void は Vite+ を既定のビルドツールとして使う → [Vite+ と vp コマンド](https://cs.taka1156.site/md/vite-plus.md)
 
@@ -72,10 +72,10 @@ Cloudflare に D1・KV・R2・Queue などを作成してバインド。マイ�
 | 種類 | 中身・判定 |
 | --- | --- |
 | Void アプリ | Void がルーティングとデプロイを担当。API だけ（ `routes/` ）／SPA ＋ API（ `src/` ＋ `routes/` ）／ページモード（ `pages/` で SSR）のどれでもよい |
-| メタフレームワーク | TanStack Start・React Router v7・SvelteKit・Nuxt・Analog・Astro。ルーティングと SSR はフレームワーク側、Void はリソース推論・型付き DB・マイグレーション・デプロイを担当（Void 管理の認証は使えない） |
+| メタフレームワーク | TanStack Start・React Router v7・SvelteKit・Nuxt・Analog・Astro。ルーティングと SSR はフレームワーク側、Void はリソース推論・型付き DB・マイグレーション・デプロイを担当（Void が提供する認証は使えない） |
 | 静的サイト | SPA や VitePress などのビルド結果。 `void deploy --dir <path>` でそのまま配信 |
 
-種類はプロジェクト構成から自動判定。固定したいときは `void.config.ts` の `inference.appType` （ `"void"` / `"framework"` / `"spa"` / `"static"` ）。
+種類はプロジェクト構成から自動判定される。固定したいときは `void.config.ts` の `inference.appType` （ `"void"` / `"framework"` / `"spa"` / `"static"` ）で指定する。
 
 ## はじめ方
 
@@ -88,7 +88,7 @@ npm run dev          # http://localhost:5173
 npx void deploy      # 初回はブラウザでサインイン → ビルド・作成・マイグレーション・デプロイ
 ```
 
-CLI は Node.js 24.22 以上 または 26.12 以上。 `void` はプロジェクトに入れて使う（CLI とランタイムの版を揃えるため）。pnpm なら `pnpm create void my-app` でディレクトリごと作れる。
+CLI は Node.js 24.22 以上 または 26.12 以上。 `void` はプロジェクトに入れて使う（CLI とランタイムのバージョンを揃えるため）。pnpm なら `pnpm create void my-app` でディレクトリごと作れる。
 
 ## デプロイ先：自分の Cloudflare か Void Platform か
 
@@ -104,7 +104,7 @@ void deploy --platform cloudflare
 
 ### Void Platform
 
-管理者が会社の Cloudflare に入れた共有基盤へ。社員は Cloudflare の権限なしで、会社のログインでデプロイできる。利用者・プランの上限・ログ・ロールバックを管理者がまとめて管理。
+管理者が会社の Cloudflare に入れた共有基盤へ。社員は Cloudflare の権限なしで、会社のログインでデプロイできる。管理者が利用者・プランの上限・ログ・ロールバックをまとめて管理する。
 
 ```
 void connect platform.example.com
@@ -265,7 +265,7 @@ const rows = await db.select().from(users);
 
 | import | 推論されるバインディング・使い方 |
 | --- | --- |
-| `import { kv } from 'void/kv'` | `KV` （KVNamespace）。 `kv.get<User>('user:1')` ・ `kv.put(key, value, { ttl: 3600 })` ・ `kv.delete(key)` 。値は自動で JSON に |
+| `import { kv } from 'void/kv'` | `KV` （KVNamespace）。 `kv.get<User>('user:1')` ・ `kv.put(key, value, { ttl: 3600 })` ・ `kv.delete(key)` 。値は自動で JSON に変換される |
 | `import { storage } from 'void/storage'` | `STORAGE` （R2）。 `storage.put(key, file, { httpMetadata })` ・ `storage.get(key)` ・ `storage.list()` |
 | `import { ai } from 'void/ai'` | `AI` （Workers AI、AI Gateway も自動設定）。 `ai.run(model, { messages })` ・ `ai.stream(...)` ・ `ai.models()` |
 | `import { getSandbox } from 'void/sandbox'` | Sandbox（Workers Paid と Containers が必要） |
@@ -299,7 +299,7 @@ export default defineScheduled(async (controller, env) => {
 });
 ```
 
-認証は Better Auth ベース。 `void/auth` か クライアントの `auth` を import すると有効になる。プロバイダーは `void.config.ts` の `auth.providers` （例 `['email', 'github', 'google']` ）。
+認証は Better Auth ベース。 `void/auth` 、またはクライアントの `auth` を import すると有効になる。プロバイダーは `void.config.ts` の `auth.providers` （例 `['email', 'github', 'google']` ）。
 
 ```
 // クライアント
@@ -344,7 +344,7 @@ import { env } from 'void/env';
 | `void prepare` | Vite を起動せずに `.void/` の型を作る（CI の型チェック前に） |
 | `void migrate` | 古い設定を今の形式に更新 |
 | `void info [--json]` | リソースの永続名を確認（コードを移動する前に） |
-| `void deploy` | ビルド → リソース作成 → マイグレーション → デプロイ。2 回目以降は保存した先へ |
+| `void deploy` | ビルド → リソース作成 → マイグレーション → デプロイ。2 回目以降は保存済みの先へ |
 | `void deploy --platform cloudflare` | 自分の Cloudflare アカウントへ（初回にアカウントを選ぶ） |
 | `void deploy --platform void --project my-app` | チームの Void Platform へ |
 | `void deploy --skip-migrations` | SQL マイグレーションを適用せずにコードだけデプロイ |
@@ -421,7 +421,7 @@ export default defineConfig({
 
 ✗ 誤解: Void はデプロイサービスである
 
-✓ 正しくは: 本体は **Vite の上のフルスタックフレームワーク（SDK）** で、デプロイ CLI と任意のチーム基盤がセット。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後に全部オープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。
+✓ 正しくは: 本体は **Vite の上のフルスタックフレームワーク（SDK）** で、デプロイ CLI と任意のチーム基盤がセットになっている。3 月の発表時は「Vite ネイティブのデプロイ基盤」として紹介されたが、Cloudflare 合流後にすべてオープンソースになり、デプロイ先は自分の Cloudflare アカウントか自前の Void Platform になった。
 
 ✗ 誤解: Vite+ を入れないと使えない
 

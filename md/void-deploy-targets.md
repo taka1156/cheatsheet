@@ -16,7 +16,7 @@
 
 - アプリのコードと API はどちらでも **同じ** 。変わるのは「誰の Cloudflare に、誰の権限で出すか」と、出したあとの管理のしかた
 - **直接 Cloudflare** ：準備ゼロですぐ出せる。1 人で使う前提で、ログは流しっぱなし（保存しない）、利用者や上限の管理はない
-- **Void Platform** ：管理者が基盤を入れる手間と費用がかかる代わりに、社員は Cloudflare の権限なしで出せて、ログ履歴・役割・上限・SSO を管理できる
+- **Void Platform** ：管理者が基盤を入れる手間と費用がかかる代わりに、社員は Cloudflare の権限なしで出せ、管理者はログ履歴・役割・上限・SSO を管理できる
 
 Void 自体は → [Void チートシート](https://cs.taka1156.site/md/void.md) 、Platform の入れ方と管理コマンドは → [Void Platform チートシート](https://cs.taka1156.site/md/void-platform.md)
 
@@ -93,7 +93,7 @@ D1・KV・R2・Queues・cron・ISR・WebSocket・Durable Objects・静的サイ�
 | --- | --- | --- |
 | 実行ログ | ライブ tail（その場で流れるだけ） | 基盤に保存されたログ履歴を後から見られる |
 | ロールバック | Worker のバージョンに戻す | 基盤に残したデプロイ履歴に戻す |
-| カスタムドメイン | 使える | `--custom-domains` で有効にしたとき（インストール時か後から `void platform upgrade` 。アプリ専用ゾーンが必要） |
+| カスタムドメイン | 使える | `--custom-domains` で有効にしたとき（インストール時に指定するか、後から `void platform upgrade` で有効にする。アプリ専用ゾーンが必要） |
 | Sandbox | Workers Paid と Docker が必要 | 基盤のアカウントが Workers Paid なら使える |
 | アプリへのアクセス制限 | 自分で Cloudflare Access を設定 | インストール時に「公開／基盤と同じポリシー／別ポリシー」を選び、新しいアプリに自動で適用 |
 | 使いすぎたとき | 自分のアカウントの上限・課金どおり | プランの上限を超えると 429 と制限ページ（ `public/usage-limit.html` で変更可） |

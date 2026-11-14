@@ -196,7 +196,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <ul>
       <li>アプリのコードと API はどちらでも<strong>同じ</strong>。変わるのは「誰の Cloudflare に、誰の権限で出すか」と、出したあとの管理のしかた</li>
       <li><strong>直接 Cloudflare</strong>：準備ゼロですぐ出せる。1 人で使う前提で、ログは流しっぱなし（保存しない）、利用者や上限の管理はない</li>
-      <li><strong>Void Platform</strong>：管理者が基盤を入れる手間と費用がかかる代わりに、社員は Cloudflare の権限なしで出せて、ログ履歴・役割・上限・SSO を管理できる</li>
+      <li><strong>Void Platform</strong>：管理者が基盤を入れる手間と費用がかかる代わりに、社員は Cloudflare の権限なしで出せ、管理者はログ履歴・役割・上限・SSO を管理できる</li>
     </ul>
   </div>
   <p class="note">Void 自体は → <a href="void.html">Void チートシート</a>、Platform の入れ方と管理コマンドは → <a href="void-platform.html">Void Platform チートシート</a></p>
@@ -268,7 +268,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><th>項目</th><th>直接 Cloudflare</th><th>Void Platform</th></tr>
       <tr><td>実行ログ</td><td>ライブ tail（その場で流れるだけ）</td><td>基盤に保存されたログ履歴を後から見られる</td></tr>
       <tr><td>ロールバック</td><td>Worker のバージョンに戻す</td><td>基盤に残したデプロイ履歴に戻す</td></tr>
-      <tr><td>カスタムドメイン</td><td>使える</td><td><code>--custom-domains</code> で有効にしたとき（インストール時か後から <code>void platform upgrade</code>。アプリ専用ゾーンが必要）</td></tr>
+      <tr><td>カスタムドメイン</td><td>使える</td><td><code>--custom-domains</code> で有効にしたとき（インストール時に指定するか、後から <code>void platform upgrade</code> で有効にする。アプリ専用ゾーンが必要）</td></tr>
       <tr><td>Sandbox</td><td>Workers Paid と Docker が必要</td><td>基盤のアカウントが Workers Paid なら使える</td></tr>
       <tr><td>アプリへのアクセス制限</td><td>自分で Cloudflare Access を設定</td><td>インストール時に「公開／基盤と同じポリシー／別ポリシー」を選び、新しいアプリに自動で適用</td></tr>
       <tr><td>使いすぎたとき</td><td>自分のアカウントの上限・課金どおり</td><td>プランの上限を超えると 429 と制限ページ（<code>public/usage-limit.html</code> で変更可）</td></tr>

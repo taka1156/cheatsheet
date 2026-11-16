@@ -1,5 +1,63 @@
 [
  {
+  "file": "vitest.html",
+  "title": "Vitest 使い方",
+  "desc": "Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法",
+  "tags": [
+   "Vitest",
+   "テスト",
+   "Vite"
+  ],
+  "date": "2026-11-16",
+  "quizzes": 0
+ },
+ {
+  "file": "vite-plus-integration.html",
+  "title": "Vite+ 統合設定",
+  "desc": "Vite・Vitest・oxlint・oxfmt・Rolldown を vite.config.ts 1 つにまとめる設定",
+  "tags": [
+   "Vite+",
+   "Vite",
+   "設定"
+  ],
+  "date": "2026-11-16",
+  "quizzes": 0
+ },
+ {
+  "file": "tsconfig.html",
+  "title": "tsconfig 設定例",
+  "desc": "TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で",
+  "tags": [
+   "TypeScript",
+   "tsconfig"
+  ],
+  "date": "2026-11-16",
+  "quizzes": 0
+ },
+ {
+  "file": "rolldown.html",
+  "title": "Rolldown 使い方",
+  "desc": "Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解",
+  "tags": [
+   "Rolldown",
+   "Vite"
+  ],
+  "date": "2026-11-16",
+  "quizzes": 0
+ },
+ {
+  "file": "oxlint-oxfmt.html",
+  "title": "oxlint・oxfmt 使い方",
+  "desc": "ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧",
+  "tags": [
+   "oxlint",
+   "oxfmt",
+   "JavaScript"
+  ],
+  "date": "2026-11-16",
+  "quizzes": 0
+ },
+ {
   "file": "void.html",
   "title": "Void チートシート",
   "desc": "VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。",

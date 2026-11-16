@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitest 使い方</title>
+<meta name="description" content="Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法">
+<meta name="memo:tags" content="Vitest, テスト, Vite">
+<meta name="memo:date" content="2026-11-16">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; }
+td code, th code { word-break: break-all; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Vitest 使い方">
+<meta property="og:description" content="Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法">
+<meta property="og:url" content="https://cs.taka1156.site/vitest.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Vitest 使い方</h1>
+  <p class="subtitle">Vite と設定を共有するテストランナー。Jest に近い書き方で、Vite+ には組み込み済み</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul><li>テストは <code>describe</code>・<code>it</code>・<code>expect</code> で書き、Jest とほぼ同じ書き方</li><li>Vite+ では <code>vp test</code> で実行でき、別途インストールしなくてよい</li><li>対象ファイルは <code>vite.config.ts</code> の <code>test.include</code> で決める</li></ul>
+  </div>
+
+  <h2 id="example">テストの書き方</h2>
+
+<pre>// src/sum.ts
+export function sum(a: number, b: number): number {
+  return a + b;
+}
+
+// src/sum.test.ts
+import { describe, it, expect } from &#x27;vitest&#x27;;
+import { sum } from &#x27;./sum&#x27;;
+
+describe(&#x27;sum&#x27;, () =&gt; {
+  it(&#x27;2 つの数を足す&#x27;, () =&gt; {
+    expect(sum(1, 2)).toBe(3);
+  });
+
+  it.each([
+    [0, 0, 0],
+    [-1, 1, 0],
+  ])(&#x27;sum(%i, %i) は %i&#x27;, (a, b, expected) =&gt; {
+    expect(sum(a, b)).toBe(expected);
+  });
+});</pre>
+
+  <h2 id="cmd">実行コマンドと設定</h2>
+
+<table>
+<tr><th>やりたいこと</th><th>コマンド・設定</th></tr>
+<tr><td>テストを実行</td><td><code>vp test</code></td></tr>
+<tr><td>対象ファイル</td><td><code>vite.config.ts</code> の <code>test.include</code></td></tr>
+<tr><td>実行環境</td><td><code>test.environment</code>（例: <code>'node'</code>、DOM は <code>'jsdom'</code> など）</td></tr>
+</table>
+<pre>test: {
+  include: [&#x27;src/**/*.test.ts&#x27;],
+  environment: &#x27;node&#x27;,
+},</pre>
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card"><ul><li><a href="https://vitest.dev/">Vitest 公式</a></li><li><a href="https://vitest.dev/config/">Vitest: 設定</a></li><li><a href="https://viteplus.dev/config/">Vite+ 設定（test）</a></li></ul><p>確認日: 2026-11-16。Vite+ は 2026年9月に 1.0 の安定版となった。機能は発展途上のため、Vitest を含め版ごとに公式で確かめる。</p></div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

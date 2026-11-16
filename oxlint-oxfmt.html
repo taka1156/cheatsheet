@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>oxlint・oxfmt 使い方</title>
+<meta name="description" content="ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧">
+<meta name="memo:tags" content="oxlint, oxfmt, JavaScript">
+<meta name="memo:date" content="2026-11-16">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; }
+td code, th code { word-break: break-all; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.filters .tab { font: 600 0.78rem 'Noto Sans JP', system-ui, sans-serif; }
+table.plugin-table tr[hidden] { display: none; }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="oxlint・oxfmt 使い方">
+<meta property="og:description" content="ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧">
+<meta property="og:url" content="https://cs.taka1156.site/oxlint-oxfmt.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>oxlint・oxfmt 使い方</h1>
+  <p class="subtitle">ESLint と Prettier の代わりになる、高速な Rust 製のリンターとフォーマッター</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul><li>oxlint は ESLint 互換の linter、oxfmt は Prettier 互換の formatter</li><li>Vite+ では <code>vp check</code> と <code>vp fmt</code> で、設定は <code>vite.config.ts</code> の <code>lint</code> と <code>fmt</code> に書く</li><li>単体で使う場合の細かいオプションは、各公式ドキュメントで版ごとに確かめる</li></ul>
+  </div>
+
+  <h2 id="lint">oxlint（リンター）</h2>
+
+<table>
+<tr><th>やりたいこと</th><th>Vite+ でのコマンド</th></tr>
+<tr><td>リント</td><td><code>vp check</code></td></tr>
+<tr><td>自動修正を付ける</td><td><code>vp check --fix</code></td></tr>
+</table>
+<h3>設定（vite.config.ts の lint）</h3>
+<pre>lint: {
+  ignorePatterns: [&#x27;dist/**&#x27;],
+},</pre>
+<p>型情報を使うルール（type-aware）は、oxlint の設定で <code>typeAware</code> を有効にすると使える。</p>
+
+
+  <h2 id="fmt">oxfmt（フォーマッター）</h2>
+
+<table>
+<tr><th>やりたいこと</th><th>Vite+ でのコマンド</th></tr>
+<tr><td>整形する</td><td><code>vp fmt</code></td></tr>
+<tr><td>整形と lint と型チェックを一度に</td><td><code>vp check</code></td></tr>
+</table>
+<h3>設定（vite.config.ts の fmt）</h3>
+<pre>fmt: {
+  semi: true,
+  singleQuote: true,
+},</pre>
+<p>Prettier の設定（<code>.prettierrc</code>）の項目は、おおむね同じ名前で書ける。ただし細かい違いがあるため、移行後に差分を確かめる。</p>
+
+
+  <h2 id="migrate">ESLint・Prettier からの置き換え</h2>
+
+<table>
+<tr><th>今まで</th><th>置き換え先</th></tr>
+<tr><td><code>.eslintrc</code> / <code>eslint.config.js</code></td><td>oxlint（設定は <code>lint</code> に統合）</td></tr>
+<tr><td><code>.prettierrc</code></td><td>oxfmt（設定は <code>fmt</code> に統合）</td></tr>
+</table>
+<p>ESLint のカスタムプラグインを使っている場合は、移行前に <code>lint.jsPlugins</code> で同じルールが動くかを確かめる。</p>
+
+
+  <h2 id="plugins">Oxlint のプラグイン一覧</h2>
+  <p>Oxlint の組み込みプラグインは <code>plugins</code> に名前を書いて有効にする。既定で有効なのは <code>eslint</code>・<code>typescript</code>・<code>unicorn</code>・<code>oxc</code>。分野で絞り込める。</p>
+  <div class="filters" role="group" aria-label="分野で絞り込む"><button class="tab" type="button" aria-selected="true" data-cat="all">すべて</button><button class="tab" type="button" aria-selected="false" data-cat="fw">フレームワーク</button><button class="tab" type="button" aria-selected="false" data-cat="test">テスト</button><button class="tab" type="button" aria-selected="false" data-cat="style">スタイル・書き方</button><button class="tab" type="button" aria-selected="false" data-cat="quality">品質・バグ検出</button><button class="tab" type="button" aria-selected="false" data-cat="lang">言語</button><button class="tab" type="button" aria-selected="false" data-cat="import">インポート・Node.js</button><button class="tab" type="button" aria-selected="false" data-cat="a11y">アクセシビリティ</button><button class="tab" type="button" aria-selected="false" data-cat="doc">ドキュメント</button></div>
+  <table class="plugin-table">
+    <tr><th>分野</th><th>プラグイン</th><th>対象</th><th>内容</th><th>備考</th></tr>
+    <tr data-cat="fw"><td>フレームワーク</td><td><code>react</code></td><td>React</td><td>React と hooks のルール</td><td>—</td></tr><tr data-cat="fw"><td>フレームワーク</td><td><code>react-perf</code></td><td>React</td><td>React の性能に関するルール</td><td>—</td></tr><tr data-cat="fw"><td>フレームワーク</td><td><code>nextjs</code></td><td>Next.js</td><td>Next.js 向けのルール</td><td>—</td></tr><tr data-cat="fw"><td>フレームワーク</td><td><code>vue</code></td><td>Vue</td><td>Vue の script ブロック向けのルール</td><td>—</td></tr><tr data-cat="test"><td>テスト</td><td><code>jest</code></td><td>Jest</td><td>テストファイル向けのルール</td><td>—</td></tr><tr data-cat="test"><td>テスト</td><td><code>vitest</code></td><td>Vitest</td><td>テストファイル向けのルール</td><td>—</td></tr><tr data-cat="style"><td>スタイル・書き方</td><td><code>unicorn</code></td><td>汎用</td><td>コード品質のルール（eslint-plugin-unicorn）</td><td>既定で有効</td></tr><tr data-cat="quality"><td>品質・バグ検出</td><td><code>eslint</code></td><td>JavaScript</td><td>ESLint 本体のルール</td><td>既定で有効</td></tr><tr data-cat="quality"><td>品質・バグ検出</td><td><code>oxc</code></td><td>汎用</td><td>Oxc 独自のルール</td><td>既定で有効</td></tr><tr data-cat="quality"><td>品質・バグ検出</td><td><code>promise</code></td><td>Promise</td><td>Promise の使い方のルール</td><td>—</td></tr><tr data-cat="lang"><td>言語</td><td><code>typescript</code></td><td>TypeScript</td><td>@typescript-eslint のルール</td><td>既定で有効</td></tr><tr data-cat="import"><td>インポート・Node.js</td><td><code>import</code></td><td>import / export</td><td>import / export に関するルール</td><td>—</td></tr><tr data-cat="import"><td>インポート・Node.js</td><td><code>node</code></td><td>Node.js</td><td>Node.js 固有のルール</td><td>—</td></tr><tr data-cat="a11y"><td>アクセシビリティ</td><td><code>jsx-a11y</code></td><td>JSX</td><td>アクセシビリティのルール</td><td>—</td></tr><tr data-cat="doc"><td>ドキュメント</td><td><code>jsdoc</code></td><td>JSDoc コメント</td><td>JSDoc のルール</td><td>—</td></tr>
+  </table>
+  <p class="empty" hidden>この分野のプラグインはない。</p>
+  <h3>Oxfmt のプラグイン</h3>
+  <p>Oxfmt には現時点で Prettier プラグインの仕組みがない。ロードマップ（beta）には入っている。</p>
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card"><ul><li><a href="https://oxc.rs/docs/guide/usage/linter/plugins">oxc: linter</a></li><li><a href="https://oxc.rs/docs/guide/usage/formatter/config">oxc: formatter</a></li><li><a href="https://viteplus.dev/config/">Vite+ 設定（fmt・lint）</a></li></ul><p>確認日: 2026-11-16。Vite+ は 2026年9月に 1.0 の安定版となった。機能は発展途上のため、Oxlint・Oxfmt を含め版ごとに公式で確かめる。</p></div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+document.querySelectorAll('.filters').forEach(group => {
+  const rows = document.querySelectorAll('table.plugin-table tr[data-cat]');
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.tab');
+    if (!btn) return;
+    const cat = btn.dataset.cat;
+    group.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t === btn)));
+    rows.forEach(r => { r.hidden = cat !== 'all' && r.dataset.cat !== cat; });
+  });
+});
+</script>
+
+</body>
+</html>

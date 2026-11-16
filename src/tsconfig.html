@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tsconfig 設定例</title>
+<meta name="description" content="TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で">
+<meta name="memo:tags" content="TypeScript, tsconfig">
+<meta name="memo:date" content="2026-11-16">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; }
+td code, th code { word-break: break-all; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>tsconfig 設定例</h1>
+  <p class="subtitle">TypeScript プロジェクトの tsconfig.json の書き方と、主要オプションの意味</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul><li><code>strict: true</code> を基本にし、型の抜けを早めに見つける</li><li><code>include</code> で対象のソース、<code>outDir</code> で出力先を決める</li><li>実行環境（Node.js かバンドラーか）で <code>module</code> と <code>moduleResolution</code> を選ぶ</li></ul>
+  </div>
+
+  <h2 id="basic">基本形（Node.js で ESM を動かす場合）</h2>
+
+<pre>{
+  &quot;compilerOptions&quot;: {
+    &quot;target&quot;: &quot;ES2022&quot;,
+    &quot;lib&quot;: [&quot;ES2022&quot;],
+    &quot;module&quot;: &quot;NodeNext&quot;,
+    &quot;moduleResolution&quot;: &quot;NodeNext&quot;,
+    &quot;strict&quot;: true,
+    &quot;esModuleInterop&quot;: true,
+    &quot;skipLibCheck&quot;: true,
+    &quot;forceConsistentCasingInFileNames&quot;: true,
+    &quot;outDir&quot;: &quot;dist&quot;,
+    &quot;rootDir&quot;: &quot;src&quot;
+  },
+  &quot;include&quot;: [&quot;src&quot;]
+}</pre>
+<p><code>NodeNext</code> で ESM として出力する場合（<code>package.json</code> に <code>"type": "module"</code> がある、または <code>.mts</code> を使う）、相対 import には拡張子（<code>./util.js</code>）が必要。CommonJS では不要。</p>
+
+
+  <h2 id="opts">主要オプション</h2>
+
+<table>
+<tr><th>オプション</th><th>意味</th></tr>
+<tr><td><code>target</code></td><td>出力する JS の版（例: <code>ES2022</code>）</td></tr>
+<tr><td><code>lib</code></td><td>使える標準ライブラリの型（例: <code>ES2022</code>、ブラウザ向けなら <code>DOM</code> を追加）</td></tr>
+<tr><td><code>module</code> / <code>moduleResolution</code></td><td>import の解決方法。実行環境で選ぶ（下の表）</td></tr>
+<tr><td><code>strict</code></td><td>null チェックや暗黙の any などを厳しくチェックする</td></tr>
+<tr><td><code>esModuleInterop</code></td><td>CommonJS パッケージを default import で読めるようにする（<code>module</code> を <code>NodeNext</code> にすると暗黙に有効）</td></tr>
+<tr><td><code>skipLibCheck</code></td><td>型定義ファイル（.d.ts）の検査を省き、速くする</td></tr>
+<tr><td><code>outDir</code> / <code>rootDir</code></td><td>出力先と、元になるソースのフォルダ</td></tr>
+<tr><td><code>noEmit</code></td><td>JS を出力せず型チェックだけ行う</td></tr>
+<tr><td><code>verbatimModuleSyntax</code></td><td>型だけの import を <code>import type</code> と明示させる（公式の推奨設定に含まれる）</td></tr>
+<tr><td><code>include</code> / <code>exclude</code></td><td>対象に含める・除くファイル</td></tr>
+</table>
+
+
+  <h2 id="env">実行環境ごとの選び方</h2>
+
+<table>
+<tr><th>実行環境</th><th>module</th><th>moduleResolution</th></tr>
+<tr><td>Node.js（ESM）</td><td><code>NodeNext</code></td><td><code>NodeNext</code></td></tr>
+<tr><td>バンドラー経由（Vite・webpack・esbuild など）</td><td><code>ESNext</code></td><td><code>bundler</code></td></tr>
+</table>
+
+
+  <h2 id="plus">+α: バンドラー固有の設定例</h2>
+
+<p>バンドラーの型定義を読み込む場合は <code>types</code> に追加する。Vite では <code>import.meta.env</code> の型が <code>vite/client</code> の型定義で提供される。独自の環境変数の型は <code>src/vite-env.d.ts</code> で <code>ImportMetaEnv</code> を拡張して定義する。これは Vite を使う場合だけの追加で、汎用の設定には含めない。</p>
+
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card"><ul><li><a href="https://www.typescriptlang.org/tsconfig">TypeScript 公式: tsconfig</a></li><li><a href="https://www.typescriptlang.org/tsconfig/moduleResolution.html">TypeScript 公式: moduleResolution</a></li></ul><p>確認日: 2026-11-16。TypeScript 6.0 で既定値が変わった（<code>strict</code> は既定で true など）。既定値は版ごとに公式で確かめる。</p></div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

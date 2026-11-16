@@ -12,18 +12,6 @@
   "quizzes": 0
  },
  {
-  "file": "vite-plus-integration.html",
-  "title": "Vite+ 統合設定",
-  "desc": "Vite・Vitest・oxlint・oxfmt・Rolldown を vite.config.ts 1 つにまとめる設定",
-  "tags": [
-   "Vite+",
-   "Vite",
-   "設定"
-  ],
-  "date": "2026-11-16",
-  "quizzes": 0
- },
- {
   "file": "tsconfig.html",
   "title": "tsconfig 設定例",
   "desc": "TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で",

@@ -5,7 +5,6 @@
 ## Memos
 
 - [Vitest 使い方](https://cs.taka1156.site/md/vitest.md): Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法（Vitest, テスト, Vite / 2026-11-16）
-- [Vite+ 統合設定](https://cs.taka1156.site/md/vite-plus-integration.md): Vite・Vitest・oxlint・oxfmt・Rolldown を vite.config.ts 1 つにまとめる設定（Vite+, Vite, 設定 / 2026-11-16）
 - [tsconfig 設定例](https://cs.taka1156.site/md/tsconfig.md): TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で（TypeScript, tsconfig / 2026-11-16）
 - [Rolldown 使い方](https://cs.taka1156.site/md/rolldown.md): Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解（Rolldown, Vite / 2026-11-16）
 - [oxlint・oxfmt 使い方](https://cs.taka1156.site/md/oxlint-oxfmt.md): ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧（oxlint, oxfmt, JavaScript / 2026-11-16）

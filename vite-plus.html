@@ -344,6 +344,16 @@ export default defineConfig({
 });</pre>
   <p class="hint"><code>vitest.config.ts</code>・<code>.oxlintrc.json</code>・<code>.oxfmtrc.json</code>・<code>tsdown.config.ts</code> を別に置くのは推奨されていない。<code>defaultPackage: './frontend'</code> で、引数なしの <code>vp dev</code> などの対象ディレクトリを決められる。</p>
 
+  <h2 id="migrate">従来のツールからの置き換え</h2>
+  <p>既存のプロジェクトは <code>vp migrate</code> で、依存・import・設定・スクリプトをまとめて書き換えられる。</p>
+  <table class="cheat"><thead><tr><th>従来のツール（設定ファイル）</th><th>Vite+ での置き換え</th></tr></thead><tbody>
+<tr><td>Vite の npm スクリプト（<code>vite dev</code> / <code>vite build</code>）</td><td><code>vp dev</code> / <code>vp build</code></td></tr>
+<tr><td>Vitest（<code>vitest.config.ts</code>）</td><td><code>vp test</code>。設定は <code>vite.config.ts</code> の <code>test</code></td></tr>
+<tr><td>ESLint（<code>.eslintrc</code> / <code>eslint.config.js</code>）</td><td><code>vp lint</code>（Oxlint）。設定は <code>lint</code></td></tr>
+<tr><td>Prettier（<code>.prettierrc</code>）</td><td><code>vp fmt</code>（Oxfmt）。設定は <code>fmt</code></td></tr>
+<tr><td>型チェック</td><td><code>vp check</code> に含まれる（tsgo）</td></tr>
+  </tbody></table>
+
   <h2 id="myths">よくある誤解</h2>
   <details class="myth"><summary>vp test はウォッチし続ける</summary><p>Vitest 単体と違い、<code>vp test</code> は 1 回実行して終わる。ウォッチは <code>vp test watch</code>。</p></details>
   <details class="myth"><summary>vp dev で package.json の dev スクリプトが動く</summary><p><code>vp dev</code> は常に組み込みの Vite 開発サーバー。スクリプトは <code>vp run dev</code>。</p></details>

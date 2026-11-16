@@ -216,6 +216,18 @@ export default defineConfig({
 
 `vitest.config.ts` ・ `.oxlintrc.json` ・ `.oxfmtrc.json` ・ `tsdown.config.ts` を別に置くのは推奨されていない。 `defaultPackage: './frontend'` で、引数なしの `vp dev` などの対象ディレクトリを決められる。
 
+## 従来のツールからの置き換え
+
+既存のプロジェクトは `vp migrate` で、依存・import・設定・スクリプトをまとめて書き換えられる。
+
+| 従来のツール（設定ファイル） | Vite+ での置き換え |
+| --- | --- |
+| Vite の npm スクリプト（ `vite dev` / `vite build` ） | `vp dev` / `vp build` |
+| Vitest（ `vitest.config.ts` ） | `vp test` 。設定は `vite.config.ts` の `test` |
+| ESLint（ `.eslintrc` / `eslint.config.js` ） | `vp lint` （Oxlint）。設定は `lint` |
+| Prettier（ `.prettierrc` ） | `vp fmt` （Oxfmt）。設定は `fmt` |
+| 型チェック | `vp check` に含まれる（tsgo） |
+
 ## よくある誤解
 
 ✗ 誤解: vp test はウォッチし続ける

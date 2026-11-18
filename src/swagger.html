@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swagger 使い方</title>
+<meta name="description" content="OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート">
+<meta name="memo:tags" content="Swagger, OpenAPI, API">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* ツールの関係図 */
+.map { display: grid; grid-template-columns: 1fr 22px auto 22px 1fr; gap: 10px 4px; align-items: center; }
+.map .center {
+  grid-column: 3; grid-row: 1 / span 2;
+  border: 2px solid var(--fg-2); border-radius: 10px; padding: 12px 14px; text-align: center;
+  background: var(--chip);
+}
+.map .center b { font-family: 'JetBrains Mono', ui-monospace, monospace; display: block; }
+.map .node {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--surface);
+  font-size: 0.85rem; height: 100%;
+}
+.map .node b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; }
+.map .node span { color: var(--fg-2); font-size: 0.8rem; }
+.map .l1 { grid-column: 1; grid-row: 1; }
+.map .l2 { grid-column: 1; grid-row: 2; }
+.map .r1 { grid-column: 5; grid-row: 1; }
+.map .r2 { grid-column: 5; grid-row: 2; }
+.map .ar { color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: center; }
+.map .ar::before { content: '→'; }
+.map .a1 { grid-column: 2; grid-row: 1; }
+.map .a2 { grid-column: 2; grid-row: 2; }
+.map .a3 { grid-column: 4; grid-row: 1; }
+.map .a4 { grid-column: 4; grid-row: 2; }
+@media (max-width: 600px) {
+  .map { grid-template-columns: 1fr; }
+  .map > * { grid-column: 1 !important; grid-row: auto !important; }
+  .map .l1 { order: 1; } .map .l2 { order: 2; } .map .a1 { order: 3; } .map .center { order: 4; }
+  .map .a3 { order: 5; } .map .r1 { order: 6; } .map .r2 { order: 7; }
+  .map .a2, .map .a4 { display: none; }
+  .map .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Swagger 使い方</h1>
+  <p class="subtitle">OpenAPI 定義を書いて、Swagger UI でドキュメント化し、ブラウザから試すまで</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Swagger は OpenAPI 定義（YAML / JSON）を書く・見る・試すためのツール群で、仕様そのものの名前は OpenAPI。</li>
+      <li>Swagger UI は定義ファイルを読み込んで、API の一覧と「Try it out」で実際にリクエストを送れる画面を作る。</li>
+      <li>正は定義ファイルの側なので、まず <code>openapi.yaml</code> を整え、UI やコード生成はそこから作る。</li>
+    </ul>
+  </div>
+
+  <h2 id="tools">ツールの関係</h2>
+  <div class="card">
+    <div class="map" role="img" aria-label="OpenAPI 定義を中心に、Swagger Editor とサーバー実装が定義を作り、Swagger UI とコード生成ツールが定義を使う関係図">
+      <div class="node l1"><b>Swagger Editor</b><span>ブラウザで定義を書く・検証する</span></div>
+      <div class="node l2"><b>サーバー実装</b><span>FastAPI・springdoc などがコードから定義を出力</span></div>
+      <div class="ar a1" aria-hidden="true"></div>
+      <div class="ar a2" aria-hidden="true"></div>
+      <div class="center"><b>openapi.yaml</b>OpenAPI 定義<br><span class="note">2.0 / 3.0 / 3.1 / 3.2</span></div>
+      <div class="ar a3" aria-hidden="true"></div>
+      <div class="ar a4" aria-hidden="true"></div>
+      <div class="node r1"><b>Swagger UI</b><span>定義を読んで API ドキュメントと Try it out を表示</span></div>
+      <div class="node r2"><b>コード生成</b><span>Swagger Codegen・<a href="hey-api-openapi-ts.html">Hey API</a> などで型やクライアントを生成</span></div>
+    </div>
+  </div>
+  <p class="note">矢印の手前（PC では左、スマホでは上）が定義を「作る」側、先が定義を「使う」側。どちらも真ん中の定義ファイルだけを介してつながる。</p>
+
+  <h2 id="spec">OpenAPI 定義の書き方</h2>
+  <p>トップレベルの主なキー。<code>openapi</code>・<code>info</code> は必須で、3.1 以降は <code>paths</code>・<code>components</code>・<code>webhooks</code> のどれか 1 つがあればよい。</p>
+  <div class="card tree">
+    <div><span class="k">openapi: 3.1.0</span><span class="d">仕様のバージョン（2.0 の定義は <code>swagger: "2.0"</code> と書く）</span></div>
+    <div><span class="k">info</span><span class="d">title・version（API 自体の版）・description</span></div>
+    <div><span class="k">servers</span><span class="d">ベース URL の一覧。Try it out の送信先になる</span></div>
+    <div><span class="k">tags</span><span class="d">エンドポイントのグループ。UI の見出しになる</span></div>
+    <div><span class="k">paths</span><span class="d"><code>/users/{id}</code> → <code>get</code>・<code>post</code> … → parameters・requestBody・responses</span></div>
+    <div><span class="k">components</span><span class="d">schemas・parameters・responses・securitySchemes など、<code>$ref</code> で使い回す部品</span></div>
+    <div><span class="k">security</span><span class="d">全体に掛ける認証（各 operation で上書きできる）</span></div>
+  </div>
+
+  <div class="tabs" role="tablist" style="margin-top:14px">
+    <button class="tab" role="tab" aria-selected="true" data-panel="spec-min">最小例</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="spec-param">パラメータ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="spec-body">リクエストボディ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="spec-auth">認証</button>
+  </div>
+  <div class="panel" id="spec-min">
+<pre><code>openapi: 3.1.0
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /pets:
+    get:
+      operationId: listPets      # 生成されるクライアントの関数名になる
+      tags: [pets]
+      summary: ペット一覧
+      responses:
+        '200':                   # ステータスコードは文字列で書く
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:   { type: integer, format: int64 }
+        name: { type: string }
+        tag:  { type: [string, 'null'] }   # 3.1 の nullable の書き方</code></pre>
+  </div>
+  <div class="panel" id="spec-param" hidden>
+<pre><code>paths:
+  /pets/{petId}:
+    get:
+      operationId: getPetById
+      parameters:
+        - name: petId
+          in: path            # path / query / header / cookie
+          required: true      # path は必ず true
+          schema: { type: integer }
+        - name: fields
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form         # ?fields=a&amp;fields=b（explode: true が既定）
+      responses:
+        '200': { $ref: '#/components/responses/PetOk' }
+        '404': { description: Not Found }</code></pre>
+  </div>
+  <div class="panel" id="spec-body" hidden>
+<pre><code>paths:
+  /pets:
+    post:
+      operationId: addPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewPet' }
+          multipart/form-data:          # ファイルアップロード
+            schema:
+              type: object
+              properties:
+                photo: { type: string, contentMediaType: image/png }
+      responses:
+        '201': { description: Created }</code></pre>
+  </div>
+  <div class="panel" id="spec-auth" hidden>
+<pre><code>components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - bearerAuth: []        # 全エンドポイントに適用
+
+paths:
+  /health:
+    get:
+      security: []        # 空配列でこの operation だけ認証なし</code></pre>
+    <p class="note">Swagger UI の右上「Authorize」ボタンは、ここで定義した securitySchemes から作られる。</p>
+  </div>
+
+  <h2 id="ui">Swagger UI を表示する</h2>
+  <p>npm パッケージは 3 種類。バンドラーを使うなら <code>swagger-ui</code>、React なら <code>swagger-ui-react</code>、静的ファイルをサーバーから配るなら <code>swagger-ui-dist</code>。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="ui-html">HTML（CDN）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ui-npm">npm</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ui-react">React</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ui-express">Express</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ui-docker">Docker</button>
+  </div>
+  <div class="panel" id="ui-html">
+<pre><code>&lt;link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"&gt;
+&lt;div id="swagger-ui"&gt;&lt;/div&gt;
+&lt;script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.onload = () =&gt; {
+    window.ui = SwaggerUIBundle({
+      url: '/openapi.yaml',     // 定義ファイルの URL
+      dom_id: '#swagger-ui',
+    });
+  };
+&lt;/script&gt;</code></pre>
+    <p class="note">本番では版を固定する（例 <code>swagger-ui-dist@5.35.0</code>）。上部バーを出すなら <code>swagger-ui-standalone-preset.js</code> も読み込み、<code>presets</code> と <code>layout: 'StandaloneLayout'</code> を指定する。</p>
+  </div>
+  <div class="panel" id="ui-npm" hidden>
+<pre><code>npm install swagger-ui
+
+// main.js
+import SwaggerUI from 'swagger-ui';
+import 'swagger-ui/dist/swagger-ui.css';
+
+SwaggerUI({
+  dom_id: '#swagger-ui',
+  url: '/openapi.yaml',
+});</code></pre>
+  </div>
+  <div class="panel" id="ui-react" hidden>
+<pre><code>npm install swagger-ui-react
+
+import SwaggerUI from 'swagger-ui-react';
+import 'swagger-ui-react/swagger-ui.css';
+
+export default function ApiDocs() {
+  return &lt;SwaggerUI url="/openapi.yaml" docExpansion="none" /&gt;;
+}</code></pre>
+  </div>
+  <div class="panel" id="ui-express" hidden>
+<pre><code>npm install swagger-ui-express yaml
+
+import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { parse } from 'yaml';
+import { readFileSync } from 'node:fs';
+
+const spec = parse(readFileSync('./openapi.yaml', 'utf8'));
+const app = express();
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
+app.listen(3000);   // http://localhost:3000/docs</code></pre>
+    <p class="note"><code>swagger-ui-express</code> は Swagger 公式ではなくコミュニティのパッケージ。中身は <code>swagger-ui-dist</code> を配っている。</p>
+  </div>
+  <div class="panel" id="ui-docker" hidden>
+<pre><code># 手元の定義ファイルを表示（/bar/openapi.yaml をマウント）
+docker run -p 80:8080 \
+  -e SWAGGER_JSON=/foo/openapi.yaml \
+  -v /bar:/foo \
+  docker.swagger.io/swaggerapi/swagger-ui
+
+# 外部 URL の定義を表示
+docker run -p 80:8080 \
+  -e SWAGGER_JSON_URL=https://petstore3.swagger.io/api/v3/openapi.json \
+  docker.swagger.io/swaggerapi/swagger-ui
+
+# /swagger 配下で配る
+docker run -p 80:8080 -e BASE_URL=/swagger ... docker.swagger.io/swaggerapi/swagger-ui</code></pre>
+    <p class="note">設定は下の表の「Docker 変数」列の環境変数で渡せる。コンテナ内のポートは 8080（<code>PORT</code> で変更）。</p>
+  </div>
+
+  <h2 id="config">Swagger UI の主な設定</h2>
+  <p><code>SwaggerUIBundle({ ... })</code>・<code>&lt;SwaggerUI ... /&gt;</code> の props・Docker の環境変数で同じ設定を渡せる。</p>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>キー</th><th>Docker 変数</th><th>既定値</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>url</code></td><td data-l="Docker 変数"><code>URL</code></td><td data-l="既定値">—</td><td>定義ファイルの URL</td></tr>
+        <tr><td><code>urls</code></td><td data-l="Docker 変数"><code>URLS</code></td><td data-l="既定値">—</td><td><code>[{ url, name }]</code> で複数の定義を上部バーで切り替える（<code>url</code> より優先）</td></tr>
+        <tr><td><code>spec</code></td><td data-l="Docker 変数"><code>SPEC</code></td><td data-l="既定値"><code>{}</code></td><td>定義をオブジェクトで直接渡す（<code>url</code> は無視される）</td></tr>
+        <tr><td><code>dom_id</code></td><td data-l="Docker 変数"><code>DOM_ID</code></td><td data-l="既定値">—</td><td>描画先の要素（<code>domNode</code> で要素を直接渡してもよい）</td></tr>
+        <tr><td><code>docExpansion</code></td><td data-l="Docker 変数"><code>DOC_EXPANSION</code></td><td data-l="既定値"><code>"list"</code></td><td>初期の開き方。<code>list</code>（タグだけ）・<code>full</code>（全部）・<code>none</code>（全部閉じる）</td></tr>
+        <tr><td><code>deepLinking</code></td><td data-l="Docker 変数"><code>DEEP_LINKING</code></td><td data-l="既定値"><code>false</code></td><td>タグ・operation を URL の <code>#</code> で直接開けるようにする</td></tr>
+        <tr><td><code>filter</code></td><td data-l="Docker 変数"><code>FILTER</code></td><td data-l="既定値"><code>false</code></td><td>タグ名・パスで絞り込む入力欄を出す（大文字小文字を区別しない部分一致。文字列なら初期値）</td></tr>
+        <tr><td><code>tryItOutEnabled</code></td><td data-l="Docker 変数"><code>TRY_IT_OUT_ENABLED</code></td><td data-l="既定値"><code>false</code></td><td>最初から Try it out の入力欄を開いておく</td></tr>
+        <tr><td><code>displayRequestDuration</code></td><td data-l="Docker 変数"><code>DISPLAY_REQUEST_DURATION</code></td><td data-l="既定値"><code>false</code></td><td>Try it out の所要時間（ms）を表示</td></tr>
+        <tr><td><code>persistAuthorization</code></td><td data-l="Docker 変数"><code>PERSIST_AUTHORIZATION</code></td><td data-l="既定値"><code>false</code></td><td>Authorize で入れたトークンをリロード後も保持</td></tr>
+        <tr><td><code>defaultModelsExpandDepth</code></td><td data-l="Docker 変数"><code>DEFAULT_MODELS_EXPAND_DEPTH</code></td><td data-l="既定値"><code>1</code></td><td>下部の Schemas 欄の展開の深さ。<code>-1</code> で欄ごと隠す</td></tr>
+        <tr><td><code>supportedSubmitMethods</code></td><td data-l="Docker 変数"><code>SUPPORTED_SUBMIT_METHODS</code></td><td data-l="既定値">全メソッド</td><td>Try it out を許すメソッド。<code>[]</code> で送信を全部無効（閲覧専用）</td></tr>
+        <tr><td><code>validatorUrl</code></td><td data-l="Docker 変数"><code>VALIDATOR_URL</code></td><td data-l="既定値">swagger.io の検証サーバー</td><td>定義の検証バッジ。<code>null</code> で外部への送信を止める</td></tr>
+        <tr><td><code>requestInterceptor</code></td><td data-l="Docker 変数">—</td><td data-l="既定値"><code>a =&gt; a</code></td><td>Try it out のリクエストを書き換える（ヘッダー追加など）</td></tr>
+        <tr><td><code>withCredentials</code></td><td data-l="Docker 変数"><code>WITH_CREDENTIALS</code></td><td data-l="既定値"><code>false</code></td><td>Try it out で Cookie などの認証情報を送る</td></tr>
+        <tr><td><code>configUrl</code></td><td data-l="Docker 変数"><code>CONFIG_URL</code></td><td data-l="既定値">—</td><td>設定を外部の JSON / YAML から読む</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="editor">Swagger Editor で定義を書く</h2>
+  <ul>
+    <li>ブラウザ版: <a href="https://editor.swagger.io/">editor.swagger.io</a>。左で YAML を書くと、右に Swagger UI のプレビューとエラーが出る</li>
+    <li>ローカル: <code>docker run -d -p 8080:80 docker.swagger.io/swaggerapi/swagger-editor:latest</code> → <code>http://localhost:8080</code>（SwaggerEditor v5。旧版 v4 は OpenAPI 3.1 に対応していない）</li>
+    <li>VS Code で書くなら、OpenAPI 用の拡張機能（スキーマ補完・プレビュー）を使う方法もある</li>
+  </ul>
+
+  <h2 id="flow">典型的な流れ</h2>
+  <ol class="steps">
+    <li><b>定義を書く</b><code>openapi.yaml</code> を Swagger Editor などで書き、エラーが無い状態にする。サーバーのフレームワークが定義を出力するならそれを使う</li>
+    <li><b>リポジトリで管理する</b>定義ファイルを API のコードと同じリポジトリに置き、変更をレビューする</li>
+    <li><b>Swagger UI で公開する</b>上の導入方法のどれかで <code>/docs</code> などに置く。定義ファイル自体も同じオリジンから配ると CORS で困らない</li>
+    <li><b>型・クライアントを生成する</b>フロントエンドは定義から型付きのクライアントを生成する（例: <a href="hey-api-openapi-ts.html">Hey API openapi-ts</a>）</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Swagger と OpenAPI は同じものの別名だ</summary><p>仕様はもともと「Swagger 仕様」と呼ばれていたが、2015 年末に Swagger 2.0 が OpenAPI Initiative に寄贈され、「OpenAPI 仕様」と呼ばれるようになった（2.0 は OpenAPI 2.0 とも呼ぶ）。いまの Swagger は SmartBear 社のツール群（UI・Editor・Codegen）の名前。定義ファイルの先頭も 2.0 は <code>swagger: "2.0"</code>、3.x は <code>openapi: 3.x.x</code> と違う。</p></details>
+  <details class="myth"><summary>Try it out はサーバー側から送るので CORS は関係ない</summary><p>Try it out はブラウザから直接 API に送る。Swagger UI と API のオリジンが違えば、API 側で CORS を許可しないと失敗する。Swagger UI を API と同じオリジンで配るのがいちばん簡単。</p></details>
+  <details class="myth"><summary>Swagger UI を置けば API のドキュメントは常に正しい</summary><p>Swagger UI は渡された定義を表示するだけで、実装と一致しているかは確かめない。定義を手で書く場合は、契約テストやコードからの自動出力で実装とのずれを防ぐ。</p></details>
+  <details class="myth"><summary>本番環境に Swagger UI をそのまま出しても問題ない</summary><p>内部向けのエンドポイントまで一覧され、Try it out で誰でもリクエストを送れる。公開するなら認証の内側に置くか、<code>supportedSubmitMethods: []</code> で送信を止め、<code>validatorUrl: null</code> で定義の外部送信も止める。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/installation.md">Swagger UI – Installation</a>（swagger-ui-dist 5.35.0 時点）</li>
+    <li><a href="https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/configuration.md">Swagger UI – Configuration</a></li>
+    <li><a href="https://github.com/swagger-api/swagger-editor">Swagger Editor（GitHub）</a></li>
+    <li><a href="https://spec.openapis.org/oas/latest.html">OpenAPI Specification</a></li>
+    <li><a href="https://www.npmjs.com/package/swagger-ui-express">swagger-ui-express（npm）</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-19</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

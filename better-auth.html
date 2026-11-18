@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better Auth 使い方</title>
+<meta name="description" content="Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート">
+<meta name="memo:tags" content="Better Auth, 認証, TypeScript">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Better Auth 使い方">
+<meta property="og:description" content="Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/better-auth.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Better Auth 使い方</h1>
+  <p class="subtitle">TypeScript 用の認証ライブラリ。自分のデータベースにユーザーとセッションを持ち、メール・パスワードやソーシャルログインをプラグインで足していく（v1.7 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Better Auth は自分のアプリと DB の中で動く認証ライブラリで、外部の認証サービスを使わずにログインを実装できる。</li>
+      <li>サーバーの <code>auth</code> を <code>/api/auth/*</code> にマウントし、ブラウザは <code>authClient</code> から呼ぶとセッションの Cookie が付く。</li>
+      <li>2 要素認証や組織などはプラグインで足し、足したらスキーマの生成・マイグレーションをやり直す。</li>
+    </ul>
+  </div>
+
+  <h2 id="arch">全体の構成</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="ブラウザの authClient が /api/auth/* に送り、サーバーの auth.handler が DB の user・session・account・verification テーブルを読み書きし、セッション Cookie を返す。サーバーの他の処理は auth.api.getSession で同じセッションを読む">
+      <div class="st"><b>authClient</b><span>ブラウザ。<code>signIn</code>・<code>signUp</code>・<code>useSession</code></span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>/api/auth/*</b><span><code>auth.handler(request)</code>。Cookie <code>better-auth.session_token</code> を発行</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>データベース</b><span><code>user</code>・<code>session</code>・<code>account</code>・<code>verification</code> の 4 テーブル</span></div>
+    </div>
+    <p class="note" style="margin-top:10px">サーバー側の他の処理（API・SSR）は <code>auth.api.getSession({ headers })</code> で、同じ Cookie からセッションを読む。</p>
+  </div>
+
+  <h2 id="setup">セットアップ</h2>
+  <ol class="steps">
+    <li><b>インストール</b><code>npm i better-auth</code>（クライアントとサーバーが別プロジェクトなら両方に）</li>
+    <li><b>環境変数</b><code>BETTER_AUTH_SECRET</code>（32 文字以上。<code>openssl rand -base64 32</code>）と <code>BETTER_AUTH_URL</code>（例 <code>http://localhost:3000</code>）</li>
+    <li><b>auth.ts を作る</b>ルート・<code>lib/</code>・<code>utils/</code>（<code>src/</code> 配下も可）に置き、<code>auth</code> という名前か default で export する。CLI がここを探す</li>
+    <li><b>テーブルを作る</b><code>npx auth@latest generate</code>（ORM のスキーマや SQL を生成）か <code>npx auth@latest migrate</code>（組み込みの Kysely のときだけ、DB に直接適用）</li>
+    <li><b>ハンドラーをマウント</b><code>/api/auth/*</code> を <code>auth.handler</code> に渡す（下のタブ）</li>
+    <li><b>クライアントを作る</b><code>createAuthClient()</code> をフレームワーク用のパスから import する</li>
+  </ol>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="s-auth">auth.ts</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-db">DB の種類</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-mount">マウント</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-client">クライアント</button>
+  </div>
+  <div class="panel" id="s-auth">
+<pre><code>// lib/auth.ts
+import { betterAuth } from 'better-auth';
+import { Pool } from 'pg';
+
+export const auth = betterAuth({
+  database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  emailAndPassword: { enabled: true },
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+    },
+  },
+  trustedOrigins: ['http://localhost:5173'],   // 別オリジンのフロントエンドから呼ぶとき
+});</code></pre>
+  </div>
+  <div class="panel" id="s-db" hidden>
+<pre><code>// SQLite / PostgreSQL / MySQL はドライバーを直接渡す
+database: new Database('./sqlite.db'),             // better-sqlite3
+database: createPool({ ... }),                     // mysql2/promise
+
+// ORM はアダプター経由
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+database: drizzleAdapter(db, { provider: 'pg' }),  // 'mysql' | 'sqlite'
+
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+database: prismaAdapter(prisma, { provider: 'postgresql' }),</code></pre>
+    <p class="note">アダプターを使うなら <code>better-auth/minimal</code> から <code>betterAuth</code> を import するとバンドルが小さくなる。DB を設定しない「ステートレス」も可能だが、多くのプラグインは DB が要る。</p>
+  </div>
+  <div class="panel" id="s-mount" hidden>
+<pre><code>// Next.js App Router: app/api/auth/[...all]/route.ts
+import { toNextJsHandler } from 'better-auth/next-js';
+export const { GET, POST } = toNextJsHandler(auth);
+
+// Hono
+app.all('/api/auth/*', (c) =&gt; auth.handler(c.req.raw));
+
+// Express（v5 は '/api/auth/*splat'）。express.json() はこの後に置く
+import { toNodeHandler } from 'better-auth/node';
+app.all('/api/auth/*', toNodeHandler(auth));
+app.use(express.json());</code></pre>
+    <p class="note">Hono での詳しい使い方は <a href="hono.html">Hono 使い方</a>。CORS を使うなら Hono の <code>cors()</code> を auth のルートより前に置き、同じオリジンを <code>trustedOrigins</code> にも入れる。</p>
+  </div>
+  <div class="panel" id="s-client" hidden>
+<pre><code>// lib/auth-client.ts
+import { createAuthClient } from 'better-auth/react';   // vue・svelte・solid・client（素の JS）
+export const authClient = createAuthClient({
+  baseURL: 'http://localhost:3000',   // 同じオリジンなら省略可
+});</code></pre>
+  </div>
+
+  <h2 id="usage">よく使う API</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="u-client">クライアント</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-server">サーバー</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-type">型</button>
+  </div>
+  <div class="panel" id="u-client">
+<pre><code>// 登録・ログイン（{ data, error } を返す。例外は投げない）
+const { data, error } = await authClient.signUp.email({
+  email, password, name, callbackURL: '/dashboard',
+});
+await authClient.signIn.email({ email, password, rememberMe: true });
+await authClient.signIn.social({ provider: 'github', callbackURL: '/dashboard' });
+await authClient.signOut();
+
+// セッション（React などではフック。サインアウトなどが即座に反映される）
+const { data: session, isPending } = authClient.useSession();
+const { data } = await authClient.getSession();   // フックを使わないとき</code></pre>
+  </div>
+  <div class="panel" id="u-server" hidden>
+<pre><code>// リクエストのヘッダーを渡してセッションを読む
+const session = await auth.api.getSession({ headers: request.headers });
+if (!session) return new Response('Unauthorized', { status: 401 });
+session.user.id;
+
+// サーバーから直接操作する（auth.api はレート制限の対象外）
+await auth.api.signInEmail({
+  body: { email, password },
+  asResponse: true,          // Set-Cookie 付きの Response で受け取る
+});</code></pre>
+    <p class="note">Next.js の Server Action から呼んで Cookie を設定させたいときは、<code>plugins</code> の最後に <code>nextCookies()</code>（<code>better-auth/next-js</code>）を入れる。</p>
+  </div>
+  <div class="panel" id="u-type" hidden>
+<pre><code>type Session = typeof auth.$Infer.Session;   // { session, user }
+
+// user に独自の列を足す
+export const auth = betterAuth({
+  user: {
+    additionalFields: {
+      role: { type: 'string', defaultValue: 'user', input: false },
+    },
+  },
+});
+
+// クライアントにも型を伝える（同じプロジェクトにあるとき）
+import { inferAdditionalFields } from 'better-auth/client/plugins';
+createAuthClient({ plugins: [inferAdditionalFields&lt;typeof auth&gt;()] });</code></pre>
+  </div>
+
+  <h2 id="config">主な設定</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>emailAndPassword.enabled</code></td><td data-l="既定">無効</td><td>メールとパスワードでの登録・ログイン</td></tr>
+        <tr><td><code>emailAndPassword.requireEmailVerification</code></td><td data-l="既定"><code>false</code></td><td>メール確認が済むまでログインさせない</td></tr>
+        <tr><td><code>emailVerification.sendVerificationEmail</code></td><td data-l="既定">—</td><td>確認メールを送る関数（<code>{ user, url, token }</code> を受け取る）。タイミング攻撃を避けるため await しない</td></tr>
+        <tr><td><code>socialProviders.&lt;名前&gt;</code></td><td data-l="既定">—</td><td>GitHub・Google などの <code>clientId</code>・<code>clientSecret</code></td></tr>
+        <tr><td><code>session.expiresIn</code></td><td data-l="既定">7 日</td><td>セッションの有効期限（秒）</td></tr>
+        <tr><td><code>session.updateAge</code></td><td data-l="既定">1 日</td><td>この間隔を過ぎて使われると期限を延長する</td></tr>
+        <tr><td><code>session.cookieCache</code></td><td data-l="既定">無効</td><td><code>{ enabled: true, maxAge: 300 }</code> で短時間 Cookie にキャッシュし、DB の読み込みを減らす</td></tr>
+        <tr><td><code>trustedOrigins</code></td><td data-l="既定"><code>baseURL</code> のみ</td><td>リクエストを受け付けるオリジン（別オリジンのフロントエンド用）</td></tr>
+        <tr><td><code>rateLimit</code></td><td data-l="既定">本番のみ 10 秒 100 回</td><td>IP ごとのレート制限。開発環境では既定で無効</td></tr>
+        <tr><td><code>advanced.cookiePrefix</code></td><td data-l="既定"><code>better-auth</code></td><td>Cookie 名の接頭辞</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="plugins">プラグイン</h2>
+  <p>サーバー（<code>betterAuth({ plugins })</code>）とクライアント（<code>createAuthClient({ plugins })</code>）の両方に足す。テーブルが増えるものは、足したあとに <code>generate</code> / <code>migrate</code> をやり直す。</p>
+<pre><code>// auth.ts
+import { twoFactor } from 'better-auth/plugins';
+betterAuth({ appName: 'My App', plugins: [twoFactor()] });
+
+// auth-client.ts
+import { twoFactorClient } from 'better-auth/client/plugins';
+createAuthClient({ plugins: [twoFactorClient({ twoFactorPage: '/two-factor' })] });
+
+await authClient.twoFactor.enable({ password });</code></pre>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>サーバー側</th><th>できること</th></tr></thead>
+      <tbody>
+        <tr><td><code>twoFactor()</code></td><td>TOTP・バックアップコードの 2 要素認証</td></tr>
+        <tr><td><code>passkey()</code></td><td>パスキー（WebAuthn）。<code>@better-auth/passkey</code> から import</td></tr>
+        <tr><td><code>magicLink()</code>・<code>emailOTP()</code></td><td>メールのリンク・ワンタイムコードでログイン</td></tr>
+        <tr><td><code>username()</code></td><td>ユーザー名でのログイン</td></tr>
+        <tr><td><code>admin()</code></td><td>ユーザーの一覧・BAN・ロール・なりすまし</td></tr>
+        <tr><td><code>organization()</code></td><td>組織・メンバー・招待・ロール（マルチテナント）</td></tr>
+        <tr><td><code>jwt()</code>・<code>bearer()</code></td><td>JWT の発行・JWKS、Cookie の代わりに Bearer トークン</td></tr>
+        <tr><td><code>apiKey()</code></td><td>API キーの発行と検証。<code>@better-auth/api-key</code> から import</td></tr>
+        <tr><td><code>openAPI()</code></td><td>認証 API の OpenAPI 定義を生成し、<code>/api/auth/reference</code> で表示（<a href="swagger.html">Swagger 使い方</a>も参照）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">表のうち <code>passkey()</code>・<code>apiKey()</code> 以外は <code>better-auth/plugins</code> から import し、クライアント側は <code>〜Client()</code>（<code>better-auth/client/plugins</code>）を使う。</p>
+
+  <h2 id="cli">CLI</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>npx auth@latest generate</code></td><td>Prisma・Drizzle のスキーマや SQL を生成。<code>--adapter prisma --dialect postgresql</code> で DB に接続せずに生成</td></tr>
+        <tr><td><code>npx auth@latest migrate</code></td><td>組み込みの Kysely アダプターのとき、DB にテーブルを直接作る</td></tr>
+        <tr><td><code>npx auth@latest check</code></td><td>設定を確認する（<code>check schema</code> でスキーマだけ）</td></tr>
+        <tr><td><code>npx auth@latest create-admin --email …</code></td><td>管理者ユーザーを作る</td></tr>
+        <tr><td><code>--config ./src/auth.ts</code></td><td>設定ファイルが既定の場所にないとき</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Better Auth はログイン用の外部サービスだ</summary><p>npm のライブラリで、自分のサーバーと自分のデータベースの中で動く。ユーザー情報は自分の DB の <code>user</code> テーブルなどに入り、外部に送られない。</p></details>
+  <details class="myth"><summary>プラグインは auth.ts に足すだけで使える</summary><p>クライアント側の <code>〜Client()</code> も足さないと <code>authClient</code> にメソッドが生えない。テーブルや列を増やすプラグインは、<code>generate</code> / <code>migrate</code> でスキーマを更新しないと実行時に失敗する。</p></details>
+  <details class="myth"><summary>signIn が失敗すると例外が投げられる</summary><p>クライアントのメソッドは <code>{ data, error }</code> を返し、既定では例外を投げない。<code>error</code> を確かめて画面に出す。</p></details>
+  <details class="myth"><summary>auth.api を呼べばクライアントからの呼び出しと同じ制限がかかる</summary><p><code>auth.api</code> を使ったサーバー内の呼び出しは、レート制限の対象外。サーバーから呼ぶ処理を外部に公開するなら、自分で制限をかける。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://www.better-auth.com/docs/installation">Better Auth – Installation</a>・<a href="https://www.better-auth.com/docs/basic-usage">Basic Usage</a>（better-auth 1.7.26 時点）</li>
+    <li><a href="https://www.better-auth.com/docs/concepts/session-management">Session Management</a>・<a href="https://www.better-auth.com/docs/concepts/database">Database</a>・<a href="https://www.better-auth.com/docs/concepts/cli">CLI</a></li>
+    <li><a href="https://www.better-auth.com/docs/concepts/rate-limit">Rate Limit</a>・<a href="https://www.better-auth.com/docs/concepts/email">Email</a>・<a href="https://www.better-auth.com/docs/concepts/cookies">Cookies</a></li>
+    <li><a href="https://www.better-auth.com/docs/integrations/hono">Hono Integration</a>・<a href="https://www.better-auth.com/docs/plugins/2fa">Two-Factor Authentication</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-19</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

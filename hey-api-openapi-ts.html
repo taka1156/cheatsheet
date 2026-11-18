@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hey API openapi-ts 使い方</title>
+<meta name="description" content="@hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート">
+<meta name="memo:tags" content="Hey API, OpenAPI, TypeScript">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Hey API openapi-ts 使い方">
+<meta property="og:description" content="@hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/hey-api-openapi-ts.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Hey API openapi-ts 使い方</h1>
+  <p class="subtitle">@hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・HTTP クライアントを生成する（v0.99 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>OpenAPI 定義（ファイル・URL）から、型（<code>types.gen.ts</code>）と型付きの API 関数（<code>sdk.gen.ts</code>）を生成する CLI。</li>
+      <li>何を生成するかはプラグインで決まり、既定は型＋SDK＋Fetch クライアントで、Zod や TanStack Query も足せる。</li>
+      <li>まだ 0.x で破壊的変更が多いので版を固定し、生成物は手で直さず設定と定義の側を変える。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">生成の流れ</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="OpenAPI 定義を入力し、パーサーで解析、プラグインがファイルを生成し、出力フォルダに書き出し、アプリから import する流れ">
+      <div class="st"><b>input</b><span>openapi.yaml・URL・API レジストリ</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>parser</b><span>定義を読み込み、フィルターや変換をかける</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>plugins</b><span>型・SDK・クライアント・Zod など、1 プラグイン＝生成物 1 種類</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>output</b><span><code>src/client/</code> に <code>*.gen.ts</code> を書き出す</span></div>
+    </div>
+  </div>
+
+  <h2 id="install">インストールと実行</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="in-quick">お試し</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-proj">プロジェクトに入れる</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-node">Node から呼ぶ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-vite">Vite プラグイン</button>
+  </div>
+  <div class="panel" id="in-quick">
+<pre><code>npx @hey-api/openapi-ts -i ./openapi.yaml -o src/client</code></pre>
+    <p class="note">Node.js 22 系以上が必要（0.99 の <code>engines</code> は <code>&gt;=22.18.0</code>）。0.91 から ESM のみ。</p>
+  </div>
+  <div class="panel" id="in-proj" hidden>
+<pre><code># 0.x なので完全一致で固定する（-E = --save-exact）
+npm install -D -E @hey-api/openapi-ts
+
+// package.json
+"scripts": {
+  "openapi-ts": "openapi-ts"
+}
+
+npm run openapi-ts    # openapi-ts.config.ts を読んで生成</code></pre>
+  </div>
+  <div class="panel" id="in-node" hidden>
+<pre><code>import { createClient } from '@hey-api/openapi-ts';
+
+await createClient({
+  input: './openapi.yaml',
+  output: 'src/client',
+});</code></pre>
+  </div>
+  <div class="panel" id="in-vite" hidden>
+<pre><code>npm install -D @hey-api/vite-plugin
+
+// vite.config.ts（Vite 5〜8）
+import { heyApiPlugin } from '@hey-api/vite-plugin';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [
+    heyApiPlugin({
+      config: { input: './openapi.yaml', output: 'src/client' },
+    }),
+  ],
+});</code></pre>
+  </div>
+
+  <h3>CLI オプション</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>-i, --input</code></td><td>OpenAPI 定義（パス・URL）。スペース区切りで複数（例 <code>-i a.yaml b.yaml</code>）</td></tr>
+        <tr><td><code>-o, --output</code></td><td>出力フォルダ。スペース区切りで複数</td></tr>
+        <tr><td><code>-c, --client</code></td><td>HTTP クライアントのプラグイン（例 <code>@hey-api/client-axios</code>）</td></tr>
+        <tr><td><code>-p, --plugins</code></td><td>使うプラグイン（スペース区切りで複数）</td></tr>
+        <tr><td><code>-f, --file</code></td><td>設定ファイルのパス</td></tr>
+        <tr><td><code>-w, --watch</code></td><td>定義の変更を監視して再生成（間隔 ms を指定可。監視できるのは URL の入力だけ）</td></tr>
+        <tr><td><code>--dry-run</code></td><td>ファイルを書かずに実行</td></tr>
+        <tr><td><code>-d, --debug</code> / <code>-s, --silent</code></td><td>デバッグログ / 出力を抑える</td></tr>
+        <tr><td><code>-l, --logs</code> / <code>--no-log-file</code></td><td>ログの出力先 / ログファイルを作らない</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="config">設定ファイル</h2>
+  <p>プロジェクトのルートに <code>openapi-ts.config.ts</code>（<code>.mjs</code>・<code>.cjs</code>・<code>.js</code> も可）を置く。</p>
+<pre><code>// openapi-ts.config.ts
+import { defineConfig } from '@hey-api/openapi-ts';
+
+export default defineConfig({
+  input: './openapi.yaml',          // パス・URL・'hey-api/backend' のようなレジストリ指定
+  output: {
+    path: 'src/client',
+    postProcess: ['prettier'],      // 生成後に整形（'biome:format'・'oxfmt'・'eslint' なども可）
+  },
+  plugins: [
+    '@hey-api/typescript',          // types.gen.ts
+    '@hey-api/sdk',                 // sdk.gen.ts
+    '@hey-api/client-fetch',        // client.gen.ts（既定のクライアント）
+  ],
+});</code></pre>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cf-input">input の書き方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cf-output">output の主な項目</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cf-multi">複数の定義</button>
+  </div>
+  <div class="panel" id="cf-input">
+<pre><code>// 認証が要る URL から取る
+input: {
+  path: 'https://api.example.com/openapi.json',
+  fetch: { headers: { Authorization: 'Bearer xxx' } },
+  watch: true,                      // 開発中に URL を監視して再生成
+},</code></pre>
+    <p class="note">自己署名証明書の HTTPS から読むときは、環境変数 <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code> が要る（開発時のみ）。</p>
+  </div>
+  <div class="panel" id="cf-output" hidden>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>キー</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>path</code></td><td>出力フォルダ</td></tr>
+          <tr><td><code>postProcess</code></td><td>生成後に走らせるツール。<code>prettier</code>・<code>biome:format</code>・<code>biome:check</code>・<code>oxfmt</code>・<code>oxlint</code>・<code>eslint</code></td></tr>
+          <tr><td><code>entryFile</code></td><td><code>false</code> で <code>index.ts</code> を作らない</td></tr>
+          <tr><td><code>fileName.suffix</code></td><td>ファイル名の接尾辞（既定 <code>.gen</code>、<code>null</code> で無し）</td></tr>
+          <tr><td><code>module.extension</code></td><td>import に付ける拡張子（Node の ESM なら <code>'.js'</code>）</td></tr>
+          <tr><td><code>source</code></td><td><code>true</code> で入力定義のコピー <code>source.json</code> も出力</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cf-multi" hidden>
+<pre><code>// 定義ごとに別フォルダへ（入力と出力の配列を同じ長さに）
+export default defineConfig({
+  input: ['./foo.yaml', './bar.yaml'],
+  output: ['src/foo', 'src/bar'],
+});
+
+// 1 つにまとめる（出力は 1 つ）
+export default defineConfig({
+  input: ['./foo.yaml', './bar.yaml'],
+  output: 'src/client',
+});
+
+// 設定ごと分けるなら配列で export する
+export default defineConfig([
+  { input: './foo.yaml', output: 'src/foo' },
+  { input: './bar.yaml', output: 'src/bar', plugins: ['zod'] },
+]);</code></pre>
+  </div>
+
+  <h2 id="output">生成されるファイル</h2>
+  <div class="card tree">
+    <div><span class="k">src/client/</span><span class="d">出力フォルダ。手で編集しない（再生成で消える）</span></div>
+    <div><span class="k">├ types.gen.ts</span><span class="d">スキーマ・リクエスト・レスポンスの型。型だけなのでバンドルに残らない</span></div>
+    <div><span class="k">├ sdk.gen.ts</span><span class="d">operation ごとの関数（<code>operationId</code> から名前が付く）</span></div>
+    <div><span class="k">├ client.gen.ts</span><span class="d">SDK が使う既定の <code>client</code> インスタンス</span></div>
+    <div><span class="k">├ client/ ・ core/</span><span class="d">HTTP クライアント本体。定義に依存しない土台</span></div>
+    <div><span class="k">└ index.ts</span><span class="d">型と SDK の再 export（<code>output.entryFile: false</code> で作らない）</span></div>
+  </div>
+
+  <h2 id="usage">生成したクライアントを使う</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="us-call">呼び出し</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="us-config">baseUrl・認証</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="us-runtime">起動時の設定</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="us-icpt">インターセプター</button>
+  </div>
+  <div class="panel" id="us-call">
+<pre><code>import { addPet, getPetById } from './client/sdk.gen';
+
+// 引数は path・query・header・body に分けて渡す（paramsStructure: 'grouped' が既定）
+const { data, error, response } = await getPetById({
+  path: { petId: 1 },
+});
+if (error) {
+  console.error(response?.status, error);   // error は定義の 4xx/5xx の型
+} else {
+  console.log(data.name);                   // data は 2xx の型
+}
+
+// 例外を投げさせて data だけ受け取る
+const { data: pet } = await addPet({
+  body: { name: 'Fluffy' },
+  throwOnError: true,
+});</code></pre>
+    <p class="note">既定（<code>throwOnError: false</code>）では HTTP エラーでも例外にならず、戻り値の <code>error</code> に入る。</p>
+  </div>
+  <div class="panel" id="us-config" hidden>
+<pre><code>import { client } from './client/client.gen';
+
+client.setConfig({
+  baseUrl: 'https://api.example.com',
+  auth: () =&gt; localStorage.getItem('token') ?? undefined,  // securitySchemes がある operation にだけ付く
+});
+
+// 1 回だけ別の設定で呼ぶ
+await getPetById({ path: { petId: 1 }, baseUrl: 'https://staging.example.com' });</code></pre>
+  </div>
+  <div class="panel" id="us-runtime" hidden>
+<pre><code>// openapi-ts.config.ts
+plugins: [
+  { name: '@hey-api/client-fetch', runtimeConfigPath: '../hey-api.ts' },
+],
+
+// src/hey-api.ts（出力フォルダからの相対パスで解決される: 0.97〜）
+import type { CreateClientConfig } from './client/client.gen';
+
+export const createClientConfig: CreateClientConfig = (config) =&gt; ({
+  ...config,
+  baseUrl: import.meta.env.VITE_API_URL,
+});</code></pre>
+    <p class="note"><code>setConfig()</code> より前にリクエストが走る心配がない。<code>client.gen.ts</code> が初期化時にこの関数を呼ぶ。</p>
+  </div>
+  <div class="panel" id="us-icpt" hidden>
+<pre><code>import { client } from './client/client.gen';
+
+const id = client.interceptors.request.use((request, options) =&gt; {
+  request.headers.set('X-Request-Id', crypto.randomUUID());
+  return request;
+});
+client.interceptors.response.use((response) =&gt; {
+  if (response.status === 401) location.href = '/login';
+  return response;
+});
+client.interceptors.request.eject(id);   // 外す（ID か関数の参照で）</code></pre>
+  </div>
+
+  <h2 id="plugins">主なプラグイン</h2>
+  <p>文字列で名前だけ書くか、<code>{ name, ...options }</code> で設定付きで書く。同じプラグインを 2 回書くと設定はマージされる（0.99〜）。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="pl-core">型・SDK</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pl-client">クライアント</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pl-valid">検証・変換</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pl-state">状態管理</button>
+  </div>
+  <div class="panel" id="pl-core">
+    <div class="tbl">
+      <table>
+        <thead><tr><th>プラグイン</th><th>生成物・主なオプション</th></tr></thead>
+        <tbody>
+          <tr><td><code>@hey-api/typescript</code></td><td><code>types.gen.ts</code>。<code>enums: 'javascript'</code> で enum を実行時のオブジェクトとしても出す（既定 <code>false</code> は型だけ）</td></tr>
+          <tr><td><code>@hey-api/sdk</code></td><td><code>sdk.gen.ts</code>。<code>operations.strategy: 'flat'</code>（既定・関数、tree-shaking 可）／<code>'single'</code>（クラス）、<code>paramsStructure: 'flat'</code> で引数を 1 階層に、<code>validator</code>・<code>transformer</code></td></tr>
+          <tr><td><code>@hey-api/schemas</code></td><td><code>schemas.gen.ts</code>。定義の JSON Schema をそのまま値として出す（フォーム生成などに）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="pl-client" hidden>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>プラグイン</th><th>使う場面</th></tr></thead>
+        <tbody>
+          <tr><td><code>@hey-api/client-fetch</code></td><td>既定。Fetch API の薄いラッパー</td></tr>
+          <tr><td><code>@hey-api/client-axios</code></td><td>Axios を使っている（<code>axios</code> が別途必要）</td></tr>
+          <tr><td><code>@hey-api/client-next</code></td><td>Next.js の fetch 拡張（キャッシュ・revalidate）を使う</td></tr>
+          <tr><td><code>@hey-api/client-nuxt</code></td><td>Nuxt の <code>$fetch</code>・<code>useFetch</code> を使う</td></tr>
+          <tr><td><code>@hey-api/client-ofetch</code> / <code>@hey-api/client-ky</code></td><td>ofetch / ky を使う</td></tr>
+          <tr><td><code>@hey-api/client-angular</code></td><td>Angular の <code>HttpClient</code> を使う</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="pl-valid" hidden>
+<pre><code>plugins: [
+  { name: '@hey-api/sdk', validator: 'zod', transformer: true },
+  { name: '@hey-api/transformers', dates: true },   // 日付文字列を Date に変換
+],</code></pre>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>プラグイン</th><th>生成物・用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>zod</code></td><td><code>zod.gen.ts</code>（<code>zPet</code> など）。SDK の <code>validator</code> に指定すると実行時に検証する</td></tr>
+          <tr><td><code>valibot</code></td><td><code>valibot.gen.ts</code>（<code>vPet</code> など）。Zod より小さい</td></tr>
+          <tr><td><code>@hey-api/transformers</code></td><td><code>transformers.gen.ts</code>。<code>dates: true</code> で <code>format: date-time</code> を <code>Date</code> に</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">検証は実行時のコストがかかるので既定では無効。<code>validator: { request: 'zod' }</code> のように片方だけにもできる。</p>
+  </div>
+  <div class="panel" id="pl-state" hidden>
+<pre><code>plugins: ['@tanstack/react-query'],   // vue-query・svelte-query・solid-query なども
+
+// 使う側
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { getPetByIdOptions, addPetMutation } from './client/@tanstack/react-query.gen';
+
+const { data } = useQuery(getPetByIdOptions({ path: { petId: 1 } }));
+const mutation = useMutation(addPetMutation());</code></pre>
+    <p class="note">Vue 向けの <code>@pinia/colada</code>、モック用の <code>msw</code> などもある（SWR は公式ドキュメント上は計画中。0.99 には文書化されていない <code>swr</code> プラグインが含まれている）。</p>
+  </div>
+
+  <h2 id="steps">導入の手順</h2>
+  <ol class="steps">
+    <li><b>定義を用意する</b><code>operationId</code> を全 operation に付けておく（無いとパスとメソッドから関数名が作られ、読みにくい）。定義の書き方は <a href="swagger.html">Swagger 使い方</a></li>
+    <li><b>インストールして設定を書く</b><code>npm i -D -E @hey-api/openapi-ts</code> と <code>openapi-ts.config.ts</code></li>
+    <li><b>生成する</b><code>npm run openapi-ts</code>。CI では生成物との差分が無いことを確かめるか、ビルド前に毎回生成する</li>
+    <li><b>クライアントを設定する</b><code>baseUrl</code>・<code>auth</code> を <code>setConfig()</code> か <code>runtimeConfigPath</code> で入れる</li>
+    <li><b>アップグレードは移行ノートを読んでから</b>0.x のマイナー更新でも破壊的変更がある。版を上げたら再生成して型エラーを確かめる</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>生成された .gen.ts を直接直せば済む</summary><p>次の生成で上書きされて消える。名前や構造を変えたいときはプラグインのオプション（<code>operations.nesting</code> など）か、入力側（定義・parser の設定）で直す。</p></details>
+  <details class="myth"><summary>SDK 関数は HTTP エラーのときに例外を投げる</summary><p>既定では投げず、<code>{ data, error, request, response }</code> の <code>error</code> に入れて返す。例外にしたいときは呼び出しごとか <code>client.setConfig()</code> で <code>throwOnError: true</code> にする。</p></details>
+  <details class="myth"><summary>型を生成すれば実行時のレスポンスも型どおりだと保証される</summary><p>生成されるのは TypeScript の型だけで、実行時には確かめない。サーバーが定義と違う値を返す可能性があるなら、<code>validator: 'zod'</code> などで実行時の検証を有効にする。</p></details>
+  <details class="myth"><summary>0.x でもマイナー更新なら ^ で自動的に上げて大丈夫</summary><p>公式も「初期開発中なので版を完全に固定する」よう勧めている。0.96 で Node 20 の打ち切り、0.91 で CommonJS の打ち切りなど、マイナー版で破壊的変更が入る。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://heyapi.dev/docs/openapi/typescript/get-started">Hey API – Get Started</a>（@hey-api/openapi-ts 0.99.0 時点）</li>
+    <li><a href="https://heyapi.dev/docs/openapi/typescript/configuration">Hey API – Configuration</a>・<a href="https://heyapi.dev/docs/openapi/typescript/output">Output</a></li>
+    <li><a href="https://heyapi.dev/docs/openapi/typescript/clients/fetch">Hey API – Fetch API Client</a>・<a href="https://heyapi.dev/docs/openapi/typescript/plugins/sdk">SDK Plugin</a></li>
+    <li><a href="https://heyapi.dev/docs/openapi/typescript/migrating">Hey API – Migrating</a></li>
+    <li><a href="https://github.com/hey-api/hey-api">hey-api/hey-api（GitHub）</a>（CLI オプションは 0.99.0 の <code>packages/openapi-ts/src/cli/index.ts</code>）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-19</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hono 使い方</title>
+<meta name="description" content="Hono のルーティング・Context・ミドルウェア・バリデーション・RPC・エラー処理をまとめたチートシート">
+<meta name="memo:tags" content="Hono, TypeScript, Cloudflare">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hono 使い方</h1>
+  <p class="subtitle">Web 標準の Request / Response で動く軽量な Web フレームワーク。Cloudflare Workers・Bun・Deno・Node.js で同じコードが動く（v4.13 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Hono は <code>app.get(path, handler)</code> でルートを書く Express 風の軽量フレームワークで、多くのランタイムで動く。</li>
+      <li>ハンドラーは Context <code>c</code> を受け取り、<code>c.req</code> で入力を読み、<code>c.json()</code> などで Response を返す。</li>
+      <li>バリデーターと RPC（<code>hc</code>）を組み合わせると、サーバーの型をそのままクライアントで使える。</li>
+    </ul>
+  </div>
+
+  <h2 id="start">始め方</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="st-create">create-hono</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="st-cf">Cloudflare Workers / Bun</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="st-node">Node.js</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="st-deno">Deno</button>
+  </div>
+  <div class="panel" id="st-create">
+<pre><code>npm create hono@latest my-app   # テンプレート（cloudflare-workers・bun・nodejs …）を選ぶ
+cd my-app &amp;&amp; npm i
+npm run dev</code></pre>
+  </div>
+  <div class="panel" id="st-cf" hidden>
+<pre><code>import { Hono } from 'hono';
+
+const app = new Hono();
+app.get('/', (c) =&gt; c.text('Hello Hono!'));
+
+export default app;   // Workers・Bun はこれだけでよい</code></pre>
+  </div>
+  <div class="panel" id="st-node" hidden>
+<pre><code>npm i hono @hono/node-server
+
+import { serve } from '@hono/node-server';
+import { Hono } from 'hono';
+
+const app = new Hono();
+app.get('/', (c) =&gt; c.text('Hello Node.js!'));
+
+const server = serve({ fetch: app.fetch, port: 3000 });
+process.on('SIGTERM', () =&gt; server.close());</code></pre>
+    <p class="note">Node.js 20 以降（<code>@hono/node-server</code> v2 の要件。v1 系なら 18.14.1 以降でも動く）。<code>serve()</code> は <code>node:http</code> のサーバーを返すので、終了処理は自分で書く。</p>
+  </div>
+  <div class="panel" id="st-deno" hidden>
+<pre><code>import { Hono } from 'hono';   // deno add npm:hono
+
+const app = new Hono();
+app.get('/', (c) =&gt; c.text('Hello Deno!'));
+
+Deno.serve(app.fetch);</code></pre>
+  </div>
+
+  <h2 id="routing">ルーティング</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>app.get('/posts', h)</code></td><td><code>get</code>・<code>post</code>・<code>put</code>・<code>delete</code>・<code>patch</code>・<code>all</code>（全メソッド）</td></tr>
+        <tr><td><code>app.on(['GET', 'POST'], '/x', h)</code></td><td>複数のメソッドをまとめて</td></tr>
+        <tr><td><code>/posts/:id</code></td><td>パスパラメータ → <code>c.req.param('id')</code></td></tr>
+        <tr><td><code>/animal/:type?</code></td><td>省略できるパラメータ</td></tr>
+        <tr><td><code>/post/:date{[0-9]+}</code></td><td>正規表現で制限</td></tr>
+        <tr><td><code>/wild/*/card</code>・<code>/api/*</code></td><td>ワイルドカード</td></tr>
+        <tr><td><code>app.route('/book', book)</code></td><td>別の <code>Hono</code> インスタンスを <code>/book</code> 配下にまとめる</td></tr>
+        <tr><td><code>new Hono().basePath('/api')</code></td><td>全ルートに共通の接頭辞</td></tr>
+        <tr><td><code>app.get('/a', h1).post('/b', h2)</code></td><td>チェーンで続けて書ける（RPC で型をつなぐときに必要）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">先に登録したルートが優先される。<code>/book/a</code> を <code>/book/:slug</code> より前に書く、のように具体的な方を先にする。</p>
+
+  <h2 id="context">Context（c）でよく使うもの</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cx-req">入力（c.req）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cx-res">出力</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cx-var">変数・環境</button>
+  </div>
+  <div class="panel" id="cx-req">
+    <div class="tbl">
+      <table>
+        <thead><tr><th>メソッド</th><th>返すもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>c.req.param('id')</code></td><td>パスパラメータ（引数なしで全部）</td></tr>
+          <tr><td><code>c.req.query('q')</code>・<code>c.req.queries('tag')</code></td><td>クエリ文字列（同名が複数なら <code>queries</code> で配列）</td></tr>
+          <tr><td><code>c.req.header('Authorization')</code></td><td>リクエストヘッダー</td></tr>
+          <tr><td><code>await c.req.json()</code></td><td>JSON のボディ</td></tr>
+          <tr><td><code>await c.req.parseBody()</code></td><td>フォーム（<code>multipart/form-data</code>・<code>x-www-form-urlencoded</code>）。ファイルは <code>File</code></td></tr>
+          <tr><td><code>c.req.valid('json')</code></td><td>バリデーターを通った値（型付き）</td></tr>
+          <tr><td><code>c.req.raw</code></td><td>元の <code>Request</code>（他のライブラリに渡すとき）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cx-res" hidden>
+<pre><code>return c.json({ ok: true }, 201);          // JSON とステータス
+return c.text('hello');
+return c.html('&lt;h1&gt;Hi&lt;/h1&gt;');
+return c.redirect('/login', 302);
+return c.notFound();
+return c.body(stream, 200, { 'Content-Type': 'text/plain' });
+
+c.header('X-Request-Id', id);              // 返す前にヘッダーを足す
+c.status(202);</code></pre>
+  </div>
+  <div class="panel" id="cx-var" hidden>
+<pre><code>type Env = {
+  Bindings: { DB: D1Database; SECRET: string };   // Workers の環境変数・バインディング
+  Variables: { userId: string };                   // c.set / c.get で渡す値
+};
+const app = new Hono&lt;Env&gt;();
+
+app.use(async (c, next) =&gt; {
+  c.set('userId', 'u_1');
+  await next();
+});
+app.get('/', (c) =&gt; c.json({ user: c.get('userId'), hasDb: !!c.env.DB }));</code></pre>
+  </div>
+
+  <h2 id="middleware">ミドルウェア</h2>
+  <p><code>await next()</code> の前がハンドラーの前、後がハンドラーの後に動く。登録した順に入り、逆の順に出る。</p>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="リクエストは logger、cors の順にミドルウェアを通ってハンドラーに届き、レスポンスは cors、logger の逆順で戻る">
+      <div class="st"><b>logger 前半</b><span>1 番目に登録</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>cors 前半</b><span>2 番目に登録</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>handler</b><span>Response を返す</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>cors 後半</b><span><code>next()</code> の後</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>logger 後半</b><span>最後に出る</span></div>
+    </div>
+  </div>
+<pre><code>import { logger } from 'hono/logger';
+import { cors } from 'hono/cors';
+import { createMiddleware } from 'hono/factory';
+
+app.use(logger());
+app.use('/api/*', cors({ origin: 'https://example.com', credentials: true }));
+
+// 自作（型付き）
+const timing = createMiddleware(async (c, next) =&gt; {
+  const start = Date.now();
+  await next();
+  c.header('X-Response-Time', `${Date.now() - start}ms`);
+});
+app.use(timing);</code></pre>
+  <h3>組み込みミドルウェア（<code>hono/〜</code> から import）</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>import 元</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>hono/cors</code></td><td>CORS ヘッダー</td></tr>
+        <tr><td><code>hono/logger</code>・<code>hono/request-id</code>・<code>hono/timing</code></td><td>アクセスログ・リクエスト ID・Server-Timing</td></tr>
+        <tr><td><code>hono/secure-headers</code>・<code>hono/csrf</code></td><td>セキュリティ系ヘッダー・CSRF 対策（<code>Origin</code>・<code>Sec-Fetch-Site</code> の確認）</td></tr>
+        <tr><td><code>hono/basic-auth</code>・<code>hono/bearer-auth</code>・<code>hono/jwt</code>・<code>hono/jwk</code></td><td>認証</td></tr>
+        <tr><td><code>hono/body-limit</code>・<code>hono/timeout</code>・<code>hono/ip-restriction</code></td><td>ボディサイズ・時間・IP の制限</td></tr>
+        <tr><td><code>hono/etag</code>・<code>hono/cache</code>・<code>hono/compress</code></td><td>キャッシュ・圧縮</td></tr>
+        <tr><td><code>hono/combine</code></td><td><code>some</code>・<code>every</code>・<code>except</code> でミドルウェアを組み合わせる</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="validation">バリデーション</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="v-zod">Zod</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="v-std">Standard Schema</button>
+  </div>
+  <div class="panel" id="v-zod">
+<pre><code>npm i zod @hono/zod-validator
+
+import { zValidator } from '@hono/zod-validator';
+import * as z from 'zod';
+
+app.post(
+  '/posts',
+  zValidator('json', z.object({ title: z.string(), body: z.string() })),
+  (c) =&gt; {
+    const { title } = c.req.valid('json');   // 型付き。失敗時は 400 が自動で返る
+    return c.json({ title }, 201);
+  },
+);</code></pre>
+    <p class="note">第 1 引数は検証する場所: <code>json</code>・<code>form</code>・<code>query</code>・<code>param</code>・<code>header</code>・<code>cookie</code>。スキーマの書き方は <a href="zod.html">Zod 使い方</a>。</p>
+  </div>
+  <div class="panel" id="v-std" hidden>
+<pre><code>npm i @hono/standard-validator
+
+import { sValidator } from '@hono/standard-validator';
+// Zod・Valibot・ArkType など Standard Schema 対応のどれでも渡せる
+app.post('/posts', sValidator('json', schema), (c) =&gt; { ... });</code></pre>
+  </div>
+
+  <h2 id="rpc">RPC（型付きクライアント）</h2>
+<pre><code>// server.ts — チェーンで書いて、その結果の型を export する
+const route = app
+  .get('/posts/:id', (c) =&gt; c.json({ id: c.req.param('id'), title: 'Hi' }))
+  .post('/posts', zValidator('json', NewPost), (c) =&gt; c.json({ ok: true }, 201));
+export type AppType = typeof route;
+
+// client.ts
+import { hc } from 'hono/client';
+import type { AppType } from './server';
+
+const client = hc&lt;AppType&gt;('http://localhost:8787/');
+const res = await client.posts[':id'].$get({ param: { id: '1' } });
+if (res.ok) {
+  const post = await res.json();   // { id: string; title: string }
+}</code></pre>
+  <p class="note">型を推論させるにはサーバーとクライアントの両方で <code>"strict": true</code> が必要。レスポンスの型だけ欲しいときは <code>InferResponseType&lt;typeof client.posts.$post&gt;</code>。</p>
+
+  <h2 id="errors">エラー処理とテスト</h2>
+<pre><code>import { HTTPException } from 'hono/http-exception';
+
+app.get('/admin', (c) =&gt; {
+  throw new HTTPException(401, { message: 'Unauthorized' });
+});
+
+app.notFound((c) =&gt; c.json({ error: 'Not Found' }, 404));
+app.onError((err, c) =&gt; {
+  if (err instanceof HTTPException) return err.getResponse();
+  console.error(err);
+  return c.json({ error: 'Internal Server Error' }, 500);
+});
+
+// テスト（サーバーを立てずに Request を渡す）
+const res = await app.request('/posts/1');
+expect(res.status).toBe(200);</code></pre>
+
+  <h2 id="steps">API サーバーを作る手順</h2>
+  <ol class="steps">
+    <li><b>雛形を作る</b><code>npm create hono@latest</code> で動かす先のランタイムを選ぶ</li>
+    <li><b>型を決める</b><code>new Hono&lt;{ Bindings; Variables }&gt;()</code> で環境変数と <code>c.set</code> の型を書く</li>
+    <li><b>ルートを機能ごとに分ける</b>ファイルごとに <code>new Hono()</code> を作り、<code>app.route('/users', users)</code> でつなぐ</li>
+    <li><b>共通処理をミドルウェアにする</b>logger・cors・認証（<a href="better-auth.html">Better Auth</a> など）を <code>app.use</code> で</li>
+    <li><b>入力を検証する</b><code>zValidator</code> を各ルートに付け、<code>c.req.valid()</code> だけを使う</li>
+    <li><b>テストする</b><code>app.request()</code> か <code>testClient()</code>（<code>hono/testing</code>）で Request を直接渡す</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Hono は Cloudflare Workers 専用のフレームワークだ</summary><p>Web 標準の <code>Request</code>・<code>Response</code> だけで書かれているので、Bun・Deno・Node.js（<code>@hono/node-server</code>）・AWS Lambda・Vercel などでも同じコードが動く。違うのはエントリーポイントだけ。</p></details>
+  <details class="myth"><summary>ルートを別々の文で登録しても RPC の型はつながる</summary><p><code>app.get(...)</code> を別々の文で書くと、<code>typeof app</code> にルートの型が積み上がらない。RPC で使うルートは <code>.get().post()</code> とチェーンで書き、その式の型を export する。</p></details>
+  <details class="myth"><summary>c.req.json() で読めば型も検証も済んでいる</summary><p><code>c.req.json()</code> はパースするだけで検証しない。外からの入力はバリデーターを通し、<code>c.req.valid('json')</code> で受け取る。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://hono.dev/docs/getting-started/basic">Hono – Getting Started</a>（hono 4.13.19 時点）</li>
+    <li><a href="https://hono.dev/docs/api/routing">Routing</a>・<a href="https://hono.dev/docs/api/context">Context</a>・<a href="https://hono.dev/docs/api/request">HonoRequest</a></li>
+    <li><a href="https://hono.dev/docs/guides/middleware">Middleware</a>・<a href="https://hono.dev/docs/guides/validation">Validation</a>・<a href="https://hono.dev/docs/guides/rpc">RPC</a></li>
+    <li><a href="https://hono.dev/docs/api/exception">HTTPException</a>・<a href="https://hono.dev/docs/guides/testing">Testing</a>・<a href="https://hono.dev/docs/getting-started/nodejs">Node.js</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-19</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

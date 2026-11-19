@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vi / Vim チートシート</title>
+<meta name="description" content="vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート">
+<meta name="memo:tags" content="Vim, Linux, エディタ">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.92rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { font-size: 0.8rem; color: var(--fg-2); }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.cheat tr.grp td {
+  font: 700 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--fg-2); background: var(--chip); border-bottom: none; padding: 5px 8px;
+}
+.panel.card { padding: 6px 10px; overflow-x: auto; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.danger { font-size: 0.7rem; font-weight: 700; color: var(--c-ng); border: 1px solid var(--c-ng); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+@media (max-width: 520px) { .cheat td:first-child { white-space: normal; word-break: break-all; } }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+/* 図：操作の組み立て */
+.flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.box {
+  background: var(--chip); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 10px; font: 600 0.8rem 'JetBrains Mono', ui-monospace, monospace; text-align: center;
+}
+.box small { display: block; font: 500 0.7rem 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+.op { font: 700 0.9rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); }
+.redir { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 10px; }
+.redir td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.redir td:first-child { white-space: nowrap; font-weight: 700; font-size: 0.78rem; color: var(--fg-2); }
+@media (max-width: 520px) { .redir td:first-child { white-space: normal; } }
+
+/* 図：モード */
+.modes { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; margin: 10px 0; }
+.mode { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--surface); text-align: center; font-size: 0.8rem; }
+.mode b { display: block; font-size: 0.9rem; }
+.mode span { display: block; color: var(--fg-2); }
+.mode small { display: block; margin-top: 4px; font-size: 0.75rem; color: var(--fg-2); }
+.mode small code { font-size: 0.95em; }
+.mode.center { background: var(--chip); border-width: 2px; order: 0; }
+.mode.wide { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  .modes { grid-template-columns: 1fr; }
+  .mode.center { order: -2; }
+}
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="vi / Vim チートシート">
+<meta property="og:description" content="vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/vi.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>vi / Vim チートシート</h1>
+  <p class="subtitle">モードの切り替え・移動・編集・検索置換をキー操作で引くチートシート</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>vi はターミナルで動くテキストエディタで、多くの Linux では <code>vi</code> を打つと高機能版の Vim が起動する。</li>
+      <li>キーで移動・操作する「ノーマルモード」と文字を打つ「挿入モード」を <code>i</code> と <code>Esc</code> で行き来する。</li>
+      <li>迷ったら <code>Esc</code> を押してノーマルモードに戻り、保存せず抜けるなら <code>:q!</code>、保存して抜けるなら <code>:wq</code>。</li>
+    </ul>
+  </div>
+
+  <h2 id="modes">モードの関係</h2>
+  <div class="card">
+    <p>起動直後はノーマルモード。すべての操作はノーマルモードを起点に、各モードへ入って <code>Esc</code> で戻ってくる。</p>
+    <div class="modes" aria-label="モードの遷移図">
+      <div class="mode side"><b>挿入モード</b><span>文字を入力する</span><small><code>i</code> <code>a</code> <code>o</code> などで入る</small></div>
+      <div class="mode center"><b>ノーマルモード</b><span>移動・削除・コピー・貼り付け</span><small>起動直後／<code>Esc</code> で戻る</small></div>
+      <div class="mode side"><b>コマンドライン</b><span>保存・終了・置換・設定</span><small><code>:</code> <code>/</code> <code>?</code> で入る</small></div>
+      <div class="mode side wide"><b>ビジュアルモード（Vim）</b><span>範囲を選んでから操作する</span><small><code>v</code> 文字単位・<code>V</code> 行単位・<code>Ctrl + v</code> 矩形</small></div>
+    </div>
+    <p class="note">「ノーマルモード → 各モード」へはキーで入り、各モードからは <code>Esc</code> でノーマルモードへ戻る。コマンドラインは <code>Enter</code> で実行しても戻る。</p>
+  </div>
+
+  <h2 id="grammar">操作の組み立て方</h2>
+  <div class="card">
+    <p>ノーマルモードの操作は「回数」＋「何をするか（オペレータ）」＋「どこまで（移動・テキストオブジェクト）」の組み合わせでできている。覚えるのは部品だけでよい。</p>
+    <div class="flow" aria-label="操作の組み立て">
+      <span class="box">回数<small>3</small></span><span class="op">+</span>
+      <span class="box">オペレータ<small>d 削除</small></span><span class="op">+</span>
+      <span class="box">範囲<small>w 単語</small></span><span class="op">=</span>
+      <span class="box">3dw<small>3 単語を削除</small></span>
+    </div>
+    <table class="redir"><tbody>
+      <tr><td>オペレータ</td><td><code>d</code> 削除・<code>c</code> 削除して挿入・<code>y</code> コピー（ヤンク）・<code>&gt;</code> <code>&lt;</code> インデント・<code>gU</code> <code>gu</code> 大文字／小文字（Vim）</td></tr>
+      <tr><td>範囲</td><td><code>w</code> 次の単語まで・<code>$</code> 行末まで・<code>0</code> 行頭まで・<code>G</code> ファイル末尾まで・<code>t)</code> <code>)</code> の手前まで</td></tr>
+      <tr><td>テキストオブジェクト（Vim）</td><td><code>iw</code> 単語・<code>i"</code> 引用符の中・<code>a"</code> 引用符ごと・<code>i(</code> 括弧の中・<code>it</code> HTML タグの中・<code>ip</code> 段落</td></tr>
+      <tr><td>同じキー 2 回</td><td>行全体が対象: <code>dd</code> 行削除・<code>yy</code> 行コピー・<code>cc</code> 行を書き直す・<code>&gt;&gt;</code> 行をインデント</td></tr>
+    </tbody></table>
+    <p class="note">例: <code>ci"</code> で引用符の中を消して書き直す、<code>dap</code> で段落ごと消す、<code>yiw</code> でカーソル下の単語をコピー。</p>
+  </div>
+
+  <h2 id="cheatsheet">キー操作 チートシート</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: 保存, 置換, dd）… 全タブから探す" aria-label="キー操作を絞り込む">
+  <p class="note">「Vim」と書いたものは元祖の vi には無く、Vim で使える機能。特に書いていないものはノーマルモードで打つ。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-file">起動・保存・終了</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-move">移動</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-ins">挿入</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-edit">削除・コピー・貼り付け</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-search">検索・置換</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-visual">ビジュアル</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-win">複数ファイル・画面分割</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-set">設定</button>
+  </div>
+
+  <div class="panel card" id="t-file">
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">起動（シェルで）</td></tr>
+<tr><td><code>vi file.txt</code></td><td>ファイルを開く（無ければ保存したときに作られる）</td></tr>
+<tr><td><code>vi +42 file.txt</code></td><td>42 行目を開いた状態で起動（<code>vi + file</code> で最終行）</td></tr>
+<tr><td><code>vi +/word file.txt</code></td><td>word が最初に出る所で起動</td></tr>
+<tr><td><code>vi -R file.txt</code> / <code>view</code></td><td>読み取り専用で開く</td></tr>
+<tr><td><code>vimdiff a b</code></td><td>2 つのファイルを並べて差分表示（Vim）</td></tr>
+<tr class="grp"><td colspan="2">保存・終了（コマンドライン）</td></tr>
+<tr><td><code>:w</code></td><td>保存</td></tr>
+<tr><td><code>:w other.txt</code></td><td>別名で保存</td></tr>
+<tr><td><code>:q</code></td><td>終了（変更が残っていると止められる）</td></tr>
+<tr><td><code>:wq</code> / <code>:x</code> / <code>ZZ</code></td><td>保存して終了（<code>:x</code> と <code>ZZ</code> は変更があるときだけ書き込む）</td></tr>
+<tr><td><code>:q!</code> / <code>ZQ</code> <span class="danger">破棄</span></td><td>変更を捨てて終了（<code>ZQ</code> は Vim）</td></tr>
+<tr><td><code>:e!</code> <span class="danger">破棄</span></td><td>変更を捨てて、最後に保存した状態に戻す</td></tr>
+<tr><td><code>:w !sudo tee %</code></td><td>root 権限が要るファイルを開いてしまったとき、sudo で保存する（Vim）</td></tr>
+<tr><td><code>:wa</code> / <code>:qa</code> / <code>:wqa</code></td><td>開いている全部を保存／終了／保存して終了（Vim）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-move" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">文字・単語</td></tr>
+<tr><td><code>h</code> <code>j</code> <code>k</code> <code>l</code></td><td>左・下・上・右（<code>5j</code> で 5 行下）</td></tr>
+<tr><td><code>w</code> / <code>b</code></td><td>次の単語の先頭へ／前の単語の先頭へ</td></tr>
+<tr><td><code>e</code></td><td>単語の末尾へ</td></tr>
+<tr><td><code>W</code> <code>B</code> <code>E</code></td><td>空白だけで区切った「大きな単語」単位で移動（記号を飛ばせる）</td></tr>
+<tr class="grp"><td colspan="2">行の中</td></tr>
+<tr><td><code>0</code> / <code>^</code> / <code>$</code></td><td>行頭／行頭の最初の文字（空白を飛ばす）／行末</td></tr>
+<tr><td><code>f x</code> / <code>F x</code></td><td>行の中で次の x へ／前の x へ</td></tr>
+<tr><td><code>t x</code> / <code>T x</code></td><td>次の x の手前へ／前の x の直後へ</td></tr>
+<tr><td><code>;</code> / <code>,</code></td><td>直前の f・t をもう一度／逆向きに</td></tr>
+<tr class="grp"><td colspan="2">ファイル全体</td></tr>
+<tr><td><code>gg</code> / <code>G</code></td><td>先頭行へ／最終行へ（Vim。vi は <code>1G</code> で先頭）</td></tr>
+<tr><td><code>42G</code> / <code>:42</code></td><td>42 行目へ</td></tr>
+<tr><td><code>%</code></td><td>対応する括弧 <code>() [] {}</code> へ飛ぶ</td></tr>
+<tr><td><code>{</code> / <code>}</code></td><td>前の段落／次の段落（空行）へ</td></tr>
+<tr><td><code>H</code> / <code>M</code> / <code>L</code></td><td>画面の上端／中央／下端の行へ</td></tr>
+<tr class="grp"><td colspan="2">スクロール</td></tr>
+<tr><td><code>Ctrl + f</code> / <code>Ctrl + b</code></td><td>1 画面下へ／上へ</td></tr>
+<tr><td><code>Ctrl + d</code> / <code>Ctrl + u</code></td><td>半画面下へ／上へ</td></tr>
+<tr><td><code>zz</code></td><td>カーソル行を画面の中央にする（Vim）</td></tr>
+<tr class="grp"><td colspan="2">ジャンプ・マーク</td></tr>
+<tr><td><code>m a</code> → <code>' a</code></td><td>今の位置に印 a を付ける → 印 a の行へ戻る（<code>`a</code> で列まで）</td></tr>
+<tr><td><code>''</code></td><td>直前にジャンプした位置へ戻る</td></tr>
+<tr><td><code>Ctrl + o</code> / <code>Ctrl + i</code></td><td>ジャンプの履歴を戻る／進む（Vim）</td></tr>
+<tr><td><code>gd</code></td><td>カーソル下の語が最初に出る所（ローカル定義）へ（Vim）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-ins" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">挿入モードに入る</td></tr>
+<tr><td><code>i</code> / <code>a</code></td><td>カーソルの前に／後ろに挿入</td></tr>
+<tr><td><code>I</code> / <code>A</code></td><td>行頭（最初の文字の前）に／行末に挿入</td></tr>
+<tr><td><code>o</code> / <code>O</code></td><td>下に／上に新しい行を作って挿入</td></tr>
+<tr><td><code>s</code> / <code>S</code></td><td>1 文字消して挿入／行を消して挿入（<code>cc</code> と同じ）</td></tr>
+<tr><td><code>C</code></td><td>カーソルから行末まで消して挿入（<code>c$</code> と同じ）</td></tr>
+<tr><td><code>R</code></td><td>上書き（置換）モード。打った文字で上書きしていく</td></tr>
+<tr><td><code>r x</code></td><td>カーソル下の 1 文字を x に置き換える（モードは変わらない）</td></tr>
+<tr class="grp"><td colspan="2">挿入モード中</td></tr>
+<tr><td><code>Esc</code> / <code>Ctrl + [</code></td><td>ノーマルモードへ戻る（<code>Ctrl + [</code> は Esc と同じ働きでホームポジションから押しやすい）</td></tr>
+<tr><td><code>Ctrl + w</code></td><td>直前の単語を消す</td></tr>
+<tr><td><code>Ctrl + u</code></td><td>行頭まで消す</td></tr>
+<tr><td><code>Ctrl + n</code> / <code>Ctrl + p</code></td><td>ファイル内の単語で補完（Vim）</td></tr>
+<tr><td><code>Ctrl + o</code> → コマンド</td><td>ノーマルモードの操作を 1 回だけして挿入モードに戻る（Vim）</td></tr>
+<tr><td><code>Ctrl + r "</code></td><td>直前にコピーした内容を貼り付け（Vim）</td></tr>
+<tr class="grp"><td colspan="2">貼り付け前の準備</td></tr>
+<tr><td><code>:set paste</code></td><td>外からの貼り付けで自動インデントが崩れるのを防ぐ（終わったら <code>:set nopaste</code>）。最近の Vim は端末の bracketed paste で自動対応することが多い（Vim）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-edit" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">削除（消したものはレジスタに入り、p で貼れる＝切り取り）</td></tr>
+<tr><td><code>x</code> / <code>X</code></td><td>カーソル下の 1 文字／前の 1 文字を削除</td></tr>
+<tr><td><code>dd</code></td><td>行を削除（<code>3dd</code> で 3 行）</td></tr>
+<tr><td><code>dw</code> / <code>diw</code></td><td>次の単語の先頭まで削除／カーソル下の単語を削除（<code>diw</code> は Vim）</td></tr>
+<tr><td><code>D</code></td><td>カーソルから行末まで削除（<code>d$</code> と同じ）</td></tr>
+<tr><td><code>dG</code> / <code>dgg</code></td><td>ファイル末尾まで／先頭まで削除（<code>dgg</code> は Vim。vi は <code>d1G</code>）</td></tr>
+<tr><td><code>:10,20d</code></td><td>10〜20 行目を削除</td></tr>
+<tr><td><code>ggdG</code> <span class="danger">全消去</span></td><td>ファイルの中身を全部削除（<code>u</code> で戻せる。Vim。vi は <code>1GdG</code>）</td></tr>
+<tr class="grp"><td colspan="2">コピー（ヤンク）・貼り付け</td></tr>
+<tr><td><code>yy</code> / <code>Y</code></td><td>行をコピー（<code>5yy</code> で 5 行）</td></tr>
+<tr><td><code>yw</code> / <code>yiw</code></td><td>単語をコピー（<code>yiw</code> は Vim）</td></tr>
+<tr><td><code>y$</code></td><td>行末までコピー</td></tr>
+<tr><td><code>p</code> / <code>P</code></td><td>カーソルの後ろ（行なら下）に／前（行なら上）に貼り付け</td></tr>
+<tr><td><code>ddp</code></td><td>行を 1 つ下と入れ替える</td></tr>
+<tr><td><code>"+y</code> / <code>"+p</code></td><td>OS のクリップボードにコピー／から貼り付け（Vim。<code>+clipboard</code> 付きでビルドされている場合）</td></tr>
+<tr><td><code>"ayy</code> → <code>"ap</code></td><td>名前付きレジスタ a にコピー → a から貼り付け。<code>:reg</code> で中身を一覧（Vim）</td></tr>
+<tr class="grp"><td colspan="2">取り消し・繰り返し</td></tr>
+<tr><td><code>u</code></td><td>取り消し（Vim は何段でも戻れる。既定は 1000 回分で <code>'undolevels'</code> で変えられる。元祖 vi は 1 回分だけ）</td></tr>
+<tr><td><code>Ctrl + r</code></td><td>やり直し（Vim）</td></tr>
+<tr><td><code>U</code></td><td>カーソル行への変更をまとめて取り消す</td></tr>
+<tr><td><code>.</code></td><td>直前の変更をもう一度（例: <code>cw</code> で書き換えたあと別の単語で <code>.</code>）</td></tr>
+<tr class="grp"><td colspan="2">その他の編集</td></tr>
+<tr><td><code>J</code></td><td>次の行を今の行につなげる</td></tr>
+<tr><td><code>&gt;&gt;</code> / <code>&lt;&lt;</code></td><td>行をインデント／インデントを戻す</td></tr>
+<tr><td><code>=G</code> / <code>gg=G</code></td><td>末尾まで／ファイル全体を自動インデントで整える（Vim）</td></tr>
+<tr><td><code>~</code></td><td>カーソル下の大文字・小文字を入れ替える</td></tr>
+<tr><td><code>Ctrl + a</code> / <code>Ctrl + x</code></td><td>カーソル付近の数値を 1 増やす／減らす（Vim）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-search" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">検索</td></tr>
+<tr><td><code>/word</code></td><td>下向きに検索（<code>Enter</code> で実行）</td></tr>
+<tr><td><code>?word</code></td><td>上向きに検索</td></tr>
+<tr><td><code>n</code> / <code>N</code></td><td>次の一致へ／逆向きに次の一致へ</td></tr>
+<tr><td><code>*</code> / <code>#</code></td><td>カーソル下の単語で下向き／上向きに検索（Vim）</td></tr>
+<tr><td><code>/word\c</code></td><td>この検索だけ大文字・小文字を区別しない（Vim）</td></tr>
+<tr><td><code>:noh</code></td><td>検索結果のハイライトを消す（Vim）</td></tr>
+<tr class="grp"><td colspan="2">置換（:s）</td></tr>
+<tr><td><code>:s/old/new/</code></td><td>今の行の最初の 1 つを置換</td></tr>
+<tr><td><code>:s/old/new/g</code></td><td>今の行のすべてを置換</td></tr>
+<tr><td><code>:%s/old/new/g</code></td><td>ファイル全体のすべてを置換（<code>%</code> は全行の意味）</td></tr>
+<tr><td><code>:%s/old/new/gc</code></td><td>1 つずつ確認しながら置換（<code>y</code> する・<code>n</code> 飛ばす・<code>a</code> 残り全部・<code>q</code> やめる）</td></tr>
+<tr><td><code>:10,20s/old/new/g</code></td><td>10〜20 行目だけ置換</td></tr>
+<tr><td><code>:'&lt;,'&gt;s/old/new/g</code></td><td>ビジュアルモードで選んだ範囲だけ置換（選んで <code>:</code> を押すと自動で入る）</td></tr>
+<tr><td><code>:%s#/usr/local#/opt#g</code></td><td>区切り文字は <code>/</code> 以外も使える（パスの置換で便利）</td></tr>
+<tr><td><code>:%s/\s\+$//e</code></td><td>行末の空白を全部消す（<code>e</code> は一致が無くてもエラーにしない）</td></tr>
+<tr class="grp"><td colspan="2">行単位でまとめて（:g）</td></tr>
+<tr><td><code>:g/pattern/d</code></td><td>pattern を含む行を全部削除</td></tr>
+<tr><td><code>:v/pattern/d</code></td><td>pattern を含ま<b>ない</b>行を全部削除（<code>:g!</code> と同じ）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-visual" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">選ぶ（Vim）</td></tr>
+<tr><td><code>v</code></td><td>文字単位で選択開始。移動キーで範囲を広げる</td></tr>
+<tr><td><code>V</code></td><td>行単位で選択</td></tr>
+<tr><td><code>Ctrl + v</code></td><td>矩形（ブロック）で選択</td></tr>
+<tr><td><code>viw</code> / <code>vi"</code> / <code>vip</code></td><td>単語／引用符の中／段落を選ぶ</td></tr>
+<tr><td><code>gv</code></td><td>直前の選択範囲をもう一度選ぶ</td></tr>
+<tr><td><code>o</code></td><td>選択範囲の反対の端へカーソルを移す</td></tr>
+<tr class="grp"><td colspan="2">選んだ範囲に</td></tr>
+<tr><td><code>d</code> / <code>y</code> / <code>c</code></td><td>削除／コピー／削除して挿入</td></tr>
+<tr><td><code>&gt;</code> / <code>&lt;</code></td><td>インデント／インデントを戻す</td></tr>
+<tr><td><code>U</code> / <code>u</code></td><td>大文字に／小文字に</td></tr>
+<tr><td><code>:</code></td><td>選んだ範囲にコマンドラインの操作（置換など）</td></tr>
+<tr><td><code>Ctrl + v</code> → <code>j</code> → <code>I</code> → 文字 → <code>Esc</code></td><td>複数行の行頭にまとめて文字を入れる（コメントアウトの定番。<code>A</code> なら末尾に）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-win" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">ファイル（バッファ）</td></tr>
+<tr><td><code>:e other.txt</code></td><td>別のファイルを開く</td></tr>
+<tr><td><code>:ls</code></td><td>開いているファイル（バッファ）の一覧（Vim）</td></tr>
+<tr><td><code>:bn</code> / <code>:bp</code> / <code>:b 2</code></td><td>次／前／2 番のバッファへ（Vim）</td></tr>
+<tr><td><code>Ctrl + ^</code></td><td>直前に開いていたファイルと行き来する</td></tr>
+<tr><td><code>:r file</code></td><td>カーソルの下にファイルの中身を読み込む</td></tr>
+<tr><td><code>:r !date</code></td><td>シェルコマンドの出力を読み込む</td></tr>
+<tr><td><code>:!ls</code></td><td>vi を閉じずにシェルコマンドを実行</td></tr>
+<tr class="grp"><td colspan="2">画面分割（Vim）</td></tr>
+<tr><td><code>:sp file</code> / <code>:vs file</code></td><td>上下に／左右に分割して開く</td></tr>
+<tr><td><code>Ctrl + w</code> → <code>w</code></td><td>次のウィンドウへ（<code>h j k l</code> で方向を指定）</td></tr>
+<tr><td><code>Ctrl + w</code> → <code>q</code></td><td>今のウィンドウを閉じる</td></tr>
+<tr><td><code>Ctrl + w</code> → <code>=</code></td><td>ウィンドウの大きさをそろえる</td></tr>
+<tr><td><code>:only</code></td><td>今のウィンドウ以外を閉じる</td></tr>
+<tr class="grp"><td colspan="2">タブ（Vim）</td></tr>
+<tr><td><code>:tabnew file</code></td><td>新しいタブで開く</td></tr>
+<tr><td><code>gt</code> / <code>gT</code></td><td>次／前のタブへ</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-set" hidden>
+<table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">その場で切り替える（:set）</td></tr>
+<tr><td><code>:set number</code> / <code>:set nu</code></td><td>行番号を表示（<code>:set nonu</code> で消す）</td></tr>
+<tr><td><code>:set relativenumber</code></td><td>今の行からの相対行番号（<code>5j</code> などが数えやすい。Vim）</td></tr>
+<tr><td><code>:set ignorecase smartcase</code></td><td>検索で大文字・小文字を区別しない。ただし大文字を含めたら区別する（<code>smartcase</code> は Vim）</td></tr>
+<tr><td><code>:set hlsearch incsearch</code></td><td>一致をハイライト・打ちながら検索（Vim）</td></tr>
+<tr><td><code>:set list</code></td><td>タブや行末を記号で見せる</td></tr>
+<tr><td><code>:set expandtab tabstop=4 shiftwidth=4</code></td><td>Tab を空白 4 つにする（<code>expandtab</code> は Vim）</td></tr>
+<tr><td><code>:syntax on</code></td><td>シンタックスハイライト（Vim）</td></tr>
+<tr><td><code>:set fileformat=unix</code></td><td>改行コードを LF にする（Windows の CRLF を直す。Vim）</td></tr>
+<tr><td><code>:set fileencoding=utf-8</code></td><td>保存時の文字コードを指定（Vim）</td></tr>
+<tr><td><code>:set 設定名?</code></td><td>今の値を確かめる（例: <code>:set tabstop?</code>）</td></tr>
+<tr class="grp"><td colspan="2">ヘルプ</td></tr>
+<tr><td><code>:help 語</code></td><td>Vim のヘルプ（例: <code>:help :s</code>）。<code>:q</code> で閉じる（Vim）</td></tr>
+<tr><td><code>vimtutor</code></td><td>シェルで実行。30 分ほどの対話式チュートリアル</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="vimrc">設定ファイルの例（~/.vimrc）</h2>
+<pre>" 毎回の設定は ~/.vimrc に書く（" から行末はコメント）
+set number            " 行番号
+set expandtab         " Tab を空白に
+set tabstop=4         " Tab の見た目の幅
+set shiftwidth=4      " &gt;&gt; や自動インデントの幅
+set autoindent        " 前の行のインデントを引き継ぐ
+set ignorecase        " 検索で大文字小文字を区別しない
+set smartcase         " ただし大文字を含めたら区別する
+set hlsearch          " 一致をハイライト
+set incsearch         " 打ちながら検索
+syntax on             " シンタックスハイライト
+set encoding=utf-8</pre>
+  <p class="note">元祖の vi や、busybox の vi のような互換実装は <code>~/.vimrc</code> を読まず、使える設定も少ない。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>vi を開いたら終了する方法がない</summary><p><code>Esc</code> を何回か押してノーマルモードに戻り、<code>:q!</code> と打って <code>Enter</code> で、変更を捨てて抜けられる。保存するなら <code>:wq</code>。</p></details>
+  <details class="myth"><summary>どの環境でも vi を打てば Vim と同じ機能が使える</summary><p>多くのディストリビューションでは <code>vi</code> が Vim（機能を絞った vim-tiny のこともある）を起動するが、Docker の軽量イメージなどでは busybox の vi で、ビジュアルモードやテキストオブジェクト、画面分割などが使えない。正体は <code>readlink -f "$(which vi)"</code> で確かめる（busybox なら <code>/bin/busybox</code> を指す）。</p></details>
+  <details class="myth"><summary>dd はコピーされずに消えてしまう</summary><p><code>d</code> で消したものはレジスタに入り、<code>p</code> で貼り付けられる。つまり削除は「切り取り」として使える。直前のヤンクを残したいときは <code>"0p</code>（最後にコピーしたもの）で貼る（Vim）。</p></details>
+  <details class="myth"><summary>u を押しすぎて戻した変更は取り返せない</summary><p>Vim なら <code>Ctrl + r</code> でやり直せる。元祖の vi は取り消しが 1 段だけで、もう一度 <code>u</code> を押すと取り消しの取り消しになる。</p></details>
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card"><ul>
+    <li><a href="https://vimhelp.org/">Vim help files (vimhelp.org)</a>（<a href="https://vimhelp.org/quickref.txt.html">quickref</a>・<a href="https://vimhelp.org/change.txt.html">change.txt</a>・<a href="https://vimhelp.org/motion.txt.html">motion.txt</a>・<a href="https://vimhelp.org/visual.txt.html">visual.txt</a>）</li>
+    <li><a href="https://vimhelp.org/vi_diff.txt.html">vi_diff.txt — Vim と元祖 vi の違い</a></li>
+    <li><a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/vi.html">POSIX vi (The Open Group)</a></li>
+  </ul><p>確認日: 2026-11-19（Vim 9 系を前提）</p></div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 絞り込み：入力があれば全タブの行から探し、該当する行だけ出す（見出し行はその下に該当があれば残す）
+const filter = document.getElementById('filter');
+const panels = [...document.querySelectorAll('.panel')];
+const tabs = [...document.querySelectorAll('.tab')];
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelector('.tabs').style.display = q ? 'none' : '';
+  panels.forEach(p => {
+    let hit = 0;
+    let grp = null, grpHit = 0;
+    const closeGrp = () => { if (grp) grp.hidden = q ? grpHit === 0 : false; };
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      if (tr.classList.contains('grp')) { closeGrp(); grp = tr; grpHit = 0; return; }
+      const ok = !q || (tr.textContent + ' ' + (grp ? grp.textContent : '')).toLowerCase().includes(q);
+      tr.hidden = !ok;
+      if (ok) { hit++; grpHit++; }
+    });
+    closeGrp();
+    const selected = tabs.find(t => t.dataset.panel === p.id).getAttribute('aria-selected') === 'true';
+    p.hidden = q ? hit === 0 : !selected;
+  });
+});
+</script>
+
+</body>
+</html>

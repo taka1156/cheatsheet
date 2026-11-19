@@ -12,6 +12,18 @@
   "quizzes": 0
  },
  {
+  "file": "vi.html",
+  "title": "vi / Vim チートシート",
+  "desc": "vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート",
+  "tags": [
+   "Vim",
+   "Linux",
+   "エディタ"
+  ],
+  "date": "2026-11-19",
+  "quizzes": 0
+ },
+ {
   "file": "swagger.html",
   "title": "Swagger 使い方",
   "desc": "OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート",
@@ -19,6 +31,18 @@
    "Swagger",
    "OpenAPI",
    "API"
+  ],
+  "date": "2026-11-19",
+  "quizzes": 0
+ },
+ {
+  "file": "linux-commands.html",
+  "title": "Linux よく使うコマンド",
+  "desc": "ファイル操作・検索・プロセス・ネットワーク・サービス管理・タイムゾーン確認など、Linux の日常でよく使うコマンドを用途別にまとめたチートシート",
+  "tags": [
+   "Linux",
+   "シェル",
+   "コマンド"
   ],
   "date": "2026-11-19",
   "quizzes": 0

@@ -5,7 +5,9 @@
 ## Memos
 
 - [Zod 使い方](https://cs.taka1156.site/md/zod.md): Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート（Zod, TypeScript, バリデーション / 2026-11-19）
+- [vi / Vim チートシート](https://cs.taka1156.site/md/vi.md): vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート（Vim, Linux, エディタ / 2026-11-19）
 - [Swagger 使い方](https://cs.taka1156.site/md/swagger.md): OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート（Swagger, OpenAPI, API / 2026-11-19）
+- [Linux よく使うコマンド](https://cs.taka1156.site/md/linux-commands.md): ファイル操作・検索・プロセス・ネットワーク・サービス管理・タイムゾーン確認など、Linux の日常でよく使うコマンドを用途別にまとめたチートシート（Linux, シェル, コマンド / 2026-11-19）
 - [Hono 使い方](https://cs.taka1156.site/md/hono.md): Hono のルーティング・Context・ミドルウェア・バリデーション・RPC・エラー処理をまとめたチートシート（Hono, TypeScript, Cloudflare / 2026-11-19）
 - [Hey API openapi-ts 使い方](https://cs.taka1156.site/md/hey-api-openapi-ts.md): @hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート（Hey API, OpenAPI, TypeScript / 2026-11-19）
 - [Better Auth 使い方](https://cs.taka1156.site/md/better-auth.md): Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート（Better Auth, 認証, TypeScript / 2026-11-19）

@@ -4,6 +4,10 @@
 
 ## Memos
 
+- [sqlc 使い方](https://cs.taka1156.site/md/sqlc.md): sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート（データベース / 2026-11-20）
+- [Skeema 使い方](https://cs.taka1156.site/md/skeema.md): Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート（データベース / 2026-11-20）
+- [Gin 使い方](https://cs.taka1156.site/md/gin.md): Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート（API・バックエンド / 2026-11-20）
+- [ent 使い方](https://cs.taka1156.site/md/ent.md): ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート（データベース / 2026-11-20）
 - [Drizzle ORM 使い方](https://cs.taka1156.site/md/drizzle.md): Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート（API・バックエンド / 2026-11-20）
 - [Colima 使い方](https://cs.taka1156.site/md/colima.md): macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。（開発ツール / 2026-11-20）
 - [Zod 使い方](https://cs.taka1156.site/md/zod.md): Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート（TypeScript / 2026-11-19）

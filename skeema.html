@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skeema 使い方</title>
+<meta name="description" content="Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート">
+<meta name="memo:tags" content="データベース">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Skeema 使い方">
+<meta property="og:description" content="Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/skeema.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Skeema 使い方</h1>
+  <p class="subtitle">MySQL・MariaDB のスキーマを CREATE 文のファイルで管理し、DB との差分から ALTER を自動で作る宣言型のツール（v1.14 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Skeema は、テーブルごとの <code>CREATE TABLE</code> の .sql ファイルを「あるべき姿」として Git で管理する CLI。</li>
+      <li><code>skeema diff</code> がファイルと DB を比べて ALTER を作り、<code>skeema push</code> がそれを実行する。</li>
+      <li>列やテーブルを消す変更は既定で止まるので、意図したときだけ <code>--allow-unsafe</code> を付ける。</li>
+    </ul>
+  </div>
+
+  <h2 id="idea">考え方: マイグレーションのファイルを書かない</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="CREATE 文のファイルを書き換え、skeema diff が DB と比べて ALTER を作り、レビュー後に skeema push で当てる。DB を直接変えたときは skeema pull でファイルに戻す">
+      <div class="st"><b>users.sql を編集</b><span>CREATE TABLE に列を足す</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>skeema diff</b><span>DB と比べて <code>ALTER TABLE …</code> を表示</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>PR でレビュー</b><span>CI で <code>skeema lint</code></span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>skeema push</b><span>生成した DDL を実行</span></div>
+    </div>
+  </div>
+  <p class="note">逆向き（DB を手で変えた・別のツールで変えた）は <code>skeema pull</code> でファイルを DB に合わせる。</p>
+
+  <h2 id="install">インストール</h2>
+<pre><code>brew install skeema/tap/skeema     # macOS / Linux（Homebrew）
+# Linux は skeema.io・GitHub Releases の .deb / .rpm / tarball も使える</code></pre>
+  <p class="note">このリポジトリの無料版（Community）が扱うのはテーブルとルーチン（プロシージャ・関数）。ビュー・トリガー・イベント・シードデータ・Windows 版は有料の Premium 版。</p>
+
+  <h2 id="layout">フォルダの構成と .skeema</h2>
+  <div class="card tree">
+    <div><span class="k">schemas/</span><span class="d">ホストごとのフォルダ（<code>init -d</code> で名前を決める）</span></div>
+    <div><span class="k">├─ .skeema</span><span class="d"><code>[production]</code> などの節に host・port・user・flavor</span></div>
+    <div><span class="k">├─ app/</span><span class="d">スキーマ（データベース）ごとのフォルダ</span></div>
+    <div><span class="k">│  ├─ .skeema</span><span class="d"><code>schema=app</code>・既定の文字コードと照合順序</span></div>
+    <div><span class="k">│  ├─ users.sql</span><span class="d">1 ファイル 1 テーブルの <code>CREATE TABLE</code></span></div>
+    <div><span class="k">│  └─ orders.sql</span><span class="d"></span></div>
+    <div><span class="k">└─ analytics/</span><span class="d">別のスキーマ</span></div>
+  </div>
+<pre><code># schemas/.skeema（ホストの設定。節が無い行は全環境に効く）
+user=app
+ignore-table=^_
+
+[production]
+host=db.internal
+port=3306
+flavor=mysql:8.0
+
+[development]
+host=127.0.0.1
+port=3306
+
+# schemas/app/.skeema
+schema=app
+default-character-set=utf8mb4
+default-collation=utf8mb4_0900_ai_ci</code></pre>
+  <p class="note">設定は親フォルダの <code>.skeema</code> から子へ引き継がれる。環境名を省くと <code>production</code> の節が使われる。パスワードはファイルに書かず、環境変数 <code>MYSQL_PWD</code> か、<code>-p</code>（値なしで入力を求める）で渡す。</p>
+
+  <h2 id="commands">コマンド</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>skeema init -h HOST -u USER -p -d schemas</code></td><td>DB の今のスキーマを .sql ファイルに書き出してフォルダを作る（<code>--schema app</code> で 1 つだけ）</td></tr>
+        <tr><td><code>skeema add-environment development -h 127.0.0.1 -d schemas</code></td><td><code>.skeema</code> に別の環境の節を足す（手で書いてもよい）</td></tr>
+        <tr><td><code>skeema diff [環境]</code></td><td>ファイルに合わせるための DDL を表示するだけ（<code>push --dry-run</code> と同じ）</td></tr>
+        <tr><td><code>skeema push [環境]</code></td><td>その DDL を実行する</td></tr>
+        <tr><td><code>skeema pull [環境]</code></td><td>DB 側の変更をファイルに取り込む</td></tr>
+        <tr><td><code>skeema lint [環境]</code></td><td>ファイルの CREATE 文をルールで検査する（既定で整形もする。止めるなら <code>--skip-format</code>）</td></tr>
+        <tr><td><code>skeema format</code></td><td>CREATE 文を <code>SHOW CREATE</code> と同じ正規の形に整える</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">終了コード: <code>diff</code> は差分なし 0・差分あり 1・エラー 2 以上。<code>lint</code> は警告か整形があると 1・エラーがあると 2 以上、<code>format</code> は整形したファイルがあると 1。CI ではこれで判定する。</p>
+
+  <h2 id="options">よく使うオプション</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="o-safe">安全装置</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="o-ws">作業場所（workspace）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="o-lint">lint のルール</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="o-osc">オンライン変更</button>
+  </div>
+  <div class="panel" id="o-safe">
+    <div class="tbl stack">
+      <table>
+        <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>--allow-unsafe</code></td><td>DROP や列の型を狭めるなど、データが消えうる変更を許す（既定 false）</td></tr>
+          <tr><td><code>--safe-below-size=10m</code></td><td>このサイズ未満のテーブルなら消す変更も許す（開発環境向け）</td></tr>
+          <tr><td><code>--dry-run</code></td><td><code>push</code> で実行せずに表示だけ</td></tr>
+          <tr><td><code>--ignore-table='^_'</code>・<code>--ignore-schema</code></td><td>正規表現に合うテーブル・スキーマを対象から外す（gh-ost の作業用テーブルなど）</td></tr>
+          <tr><td><code>--first-only</code></td><td>同じフォルダに複数のホスト・スキーマがあるとき最初の 1 つだけ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="o-ws" hidden>
+    <p>Skeema はファイルの CREATE 文を一度どこかの DB で実際に流し、その結果と比べる。その場所が workspace。</p>
+    <div class="tbl stack">
+      <table>
+        <thead><tr><th>設定</th><th>動き</th></tr></thead>
+        <tbody>
+          <tr><td><code>workspace=temp-schema</code>（既定）</td><td>対象の DB サーバーに一時スキーマ <code>_skeema_tmp</code> を作って流し、終わったら消す（<code>temp-schema</code> で名前を変更）</td></tr>
+          <tr><td><code>workspace=docker</code></td><td>ローカルの Docker で <code>flavor</code>（例: <code>mysql:8.0</code>）のコンテナを立てて使う。本番に一時スキーマを作りたくないとき・CI 向け</td></tr>
+          <tr><td><code>docker-cleanup=stop</code>／<code>destroy</code></td><td>終わったときにコンテナを止める・消す（v1.14 の既定は <code>none</code>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="o-lint" hidden>
+    <p>各ルールは <code>lint-ルール名=ignore|warning|error</code> で強さを決める（<code>.skeema</code> に書ける）。<code>error</code> のルールに当たると <code>push</code> も止まる。</p>
+    <div class="tbl stack">
+      <table>
+        <thead><tr><th>ルール</th><th>見るもの（既定）</th></tr></thead>
+        <tbody>
+          <tr><td><code>lint-pk</code></td><td>主キーが無いテーブル（warning）</td></tr>
+          <tr><td><code>lint-dupe-index</code></td><td>重複したセカンダリインデックス（warning）</td></tr>
+          <tr><td><code>lint-charset</code> + <code>allow-charset=utf8mb4</code></td><td>許可した文字コード以外（warning）</td></tr>
+          <tr><td><code>lint-engine</code> + <code>allow-engine=innodb</code></td><td>許可したストレージエンジン以外（warning）</td></tr>
+          <tr><td><code>lint-auto-inc</code>・<code>lint-pk-type</code></td><td>AUTO_INCREMENT・主キーの型（warning・ignore）</td></tr>
+          <tr><td><code>lint-zero-date</code>・<code>lint-reserved-word</code>・<code>lint-display-width</code></td><td>ゼロ日付の既定値・予約語の名前・<code>int(11)</code> のような表示幅（warning）</td></tr>
+          <tr><td><code>lint-definer</code> + <code>allow-definer</code></td><td>ルーチンの DEFINER（error）</td></tr>
+          <tr><td><code>lint-has-fk</code>・<code>lint-has-enum</code>・<code>lint-has-float</code>・<code>lint-name-case</code></td><td>外部キー・ENUM・FLOAT・大文字の名前を禁止したいとき（ignore）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="o-osc" hidden>
+<pre><code># .skeema — 大きいテーブルだけ gh-ost で ALTER する
+[production]
+alter-wrapper="gh-ost --execute --alter {CLAUSES} --database={SCHEMA} --table={TABLE} --host={HOST} --user={USER} --password={PASSWORD}"
+alter-wrapper-min-size=1g     # これ未満は通常の ALTER
+alter-algorithm=inplace       # 通常の ALTER に ALGORITHM= を付ける
+alter-lock=none</code></pre>
+    <p class="note"><code>{CLAUSES}</code> は ALTER TABLE の後ろの部分、<code>{DDL}</code> は文全体。pt-online-schema-change も同じように指定できる。</p>
+  </div>
+
+  <h2 id="steps">導入の手順</h2>
+  <ol class="steps">
+    <li><b>今の DB から書き出す</b><code>skeema init -h HOST -u USER -p -d schemas</code> でフォルダを作り、Git に入れる</li>
+    <li><b>環境を足す</b>開発用の DB を <code>[development]</code> 節に書き、<code>skeema push development</code> で同じ形にする</li>
+    <li><b>変更はファイルで</b>.sql の CREATE 文を直し、<code>skeema diff</code> で出る ALTER を確かめる</li>
+    <li><b>CI で検査</b>PR ごとに <code>skeema lint</code>（<code>workspace=docker</code> にすると本番 DB を使わない）</li>
+    <li><b>本番へ</b>マージ後に <code>skeema diff</code> → <code>skeema push</code>。消す変更なら <code>--allow-unsafe</code> を明示する</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>列名を変えるには CREATE 文の列名を書き換えればよい</summary><p>Skeema はファイルと DB の「差」しか見ないので、名前の変更は「古い列を消して新しい列を足す」と解釈され、データが消える（unsafe として止まる）。名前の変更は <code>ALTER TABLE … RENAME COLUMN</code> を DB で直接実行し、<code>skeema pull</code> でファイルを合わせる。</p></details>
+  <details class="myth"><summary>diff はファイルを読むだけなので、DB には何もしない</summary><p>既定の <code>workspace=temp-schema</code> では、対象の DB サーバーに一時スキーマを作って CREATE 文を流してから比べる。権限や負荷が気になる環境では <code>workspace=docker</code> にする。</p></details>
+  <details class="myth"><summary>Skeema は PostgreSQL にも使える</summary><p>対応するのは MySQL と MariaDB（とその互換の Percona Server・Aurora など）だけ。PostgreSQL で宣言型の管理をするなら Atlas などを使う。</p></details>
+  <p class="note">関連: Skeema のフォルダを <a href="sqlc.html">sqlc</a> の <code>schema</code> に指定すれば、同じ CREATE 文から Go のコードを生成できる。</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://www.skeema.io/docs/">Skeema Documentation</a>（<a href="https://www.skeema.io/docs/commands/">Commands</a>・<a href="https://www.skeema.io/docs/options/">Options</a>・<a href="https://www.skeema.io/docs/config/">Configuration</a>）</li>
+    <li><a href="https://github.com/skeema/skeema">skeema/skeema</a>（README・各コマンドとオプションの定義、v1.14.2）</li>
+    <li><a href="https://www.skeema.io/docs/features/safety/">Safety features</a>・<a href="https://www.skeema.io/docs/features/osc/">Online schema change tools</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-20（skeema v1.14.2。2.0 の開発が進んでおり、一部のオプションは v2 で変わる予定）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

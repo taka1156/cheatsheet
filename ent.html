@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ent 使い方</title>
+<meta name="description" content="ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート">
+<meta name="memo:tags" content="データベース">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="ent 使い方">
+<meta property="og:description" content="ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/ent.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>ent 使い方</h1>
+  <p class="subtitle">Go のコードでスキーマ（エンティティと関係）を書き、型付きのクライアントを生成する Go の ORM（v0.14 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>ent は <code>ent/schema/*.go</code> に Fields と Edges を書くと、型付きのクエリビルダーを生成する ORM。</li>
+      <li>スキーマを変えたら <code>go generate ./ent</code> で作り直し、<code>client.User.Query().Where(…)</code> のように呼ぶ。</li>
+      <li>開発中は自動マイグレーションで足りるが、本番は Atlas でマイグレーションのファイルを作って当てる。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">生成の流れ</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="ent/schema に Go でスキーマを書き、go generate で ent パッケージを生成し、アプリはそのクライアントを使い、スキーマの変更は Atlas でマイグレーションにする">
+      <div class="st"><b>ent/schema/user.go</b><span>Fields・Edges・Indexes</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>go generate ./ent</b><span><code>entc</code> がコードを生成</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>ent パッケージ</b><span><code>client.go</code>・<code>user_query.go</code>・<code>user/where.go</code> …</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>DB</b><span>自動マイグレーション or Atlas</span></div>
+    </div>
+  </div>
+
+  <h2 id="start">始め方</h2>
+<pre><code>go mod init example.com/app
+go run -mod=mod entgo.io/ent/cmd/ent new User Car   # ent/schema/user.go・car.go の雛形
+go generate ./ent                                   # ent/generate.go の go:generate を実行</code></pre>
+<pre><code>// ent/generate.go（new で作られる）
+package ent
+
+//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate ./schema</code></pre>
+  <p class="note">機能フラグは <code>generate --feature sql/upsert,sql/versioned-migration ./schema</code> のように足す（upsert・バージョン付きマイグレーションなど）。</p>
+
+  <h2 id="schema">スキーマを書く</h2>
+<pre><code>package schema
+
+type User struct{ ent.Schema }
+
+func (User) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("name").NotEmpty().MaxLen(50),
+		field.String("email").Unique(),
+		field.Int("age").Positive().Optional(),
+		field.Enum("role").Values("admin", "member").Default("member"),
+		field.String("password").Sensitive(),        // String() や JSON に出さない
+		field.UUID("uid", uuid.UUID{}).Default(uuid.New).Immutable(),
+		field.Time("deleted_at").Optional().Nillable(),   // *time.Time
+	}
+}
+
+func (User) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("cars", Car.Type),                    // User 1 — n Car
+	}
+}
+
+func (User) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name", "age"),
+	}
+}
+
+func (User) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.Time{}}                  // create_time・update_time を足す
+}</code></pre>
+
+  <h3>フィールドのオプション</h3>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>Optional()</code></td><td>作成時に省略できる。DB の列は NULL 可になる（フィールドは既定で必須）</td></tr>
+        <tr><td><code>Nillable()</code></td><td>Go の型を <code>*T</code> にして、ゼロ値と NULL を区別する（<code>Optional</code> と一緒に使う）</td></tr>
+        <tr><td><code>Default(v)</code>・<code>UpdateDefault(fn)</code></td><td>作成時・更新時の既定値（<code>time.Now</code> や <code>uuid.New</code> を関数で渡せる）</td></tr>
+        <tr><td><code>Unique()</code>・<code>Immutable()</code></td><td>一意制約・作成後に変更できない（Update に setter が生えない）</td></tr>
+        <tr><td><code>Sensitive()</code></td><td>出力やログに値を出さない</td></tr>
+        <tr><td><code>NotEmpty()</code>・<code>MaxLen(n)</code>・<code>Match(re)</code>・<code>Positive()</code>・<code>Range(a,b)</code>・<code>Validate(fn)</code></td><td>検証（保存時に走る）</td></tr>
+        <tr><td><code>StorageKey("col")</code>・<code>SchemaType(map…)</code>・<code>GoType(T)</code></td><td>列名・DB の型・Go の型を変える</td></tr>
+        <tr><td><code>Comment("…")</code></td><td>生成コードのコメント（DB の列コメントにするには <code>entsql.WithComments(true)</code> のアノテーションも付ける）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>エッジ（関係）</h3>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>関係</th><th>書き方</th></tr></thead>
+      <tbody>
+        <tr><td>1 対多</td><td>User: <code>edge.To("cars", Car.Type)</code> ／ Car: <code>edge.From("owner", User.Type).Ref("cars").Unique()</code></td></tr>
+        <tr><td>1 対 1</td><td>User: <code>edge.To("card", Card.Type).Unique()</code> ／ Card: <code>edge.From("owner", User.Type).Ref("card").Unique().Required()</code></td></tr>
+        <tr><td>多対多</td><td>Group: <code>edge.To("users", User.Type)</code> ／ User: <code>edge.From("groups", Group.Type).Ref("users")</code></td></tr>
+        <tr><td>自己参照</td><td><code>edge.To("friends", User.Type)</code>（双方向）・<code>edge.To("following", User.Type).From("followers")</code></td></tr>
+        <tr><td>外部キーを列として持つ</td><td>Car に <code>field.Int("owner_id").Optional()</code> を書き、<code>edge.From("owner", …).Ref("cars").Unique().Field("owner_id")</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note"><code>edge.To</code> が持つ側（外部キーや結合テーブルの持ち主）、<code>edge.From(…).Ref(…)</code> は逆向きの参照（DB には新しい列を作らない）。</p>
+
+  <h2 id="crud">CRUD</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="c-open">接続</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-create">作成</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-query">取得</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-update">更新・削除</button>
+  </div>
+  <div class="panel" id="c-open">
+<pre><code>client, err := ent.Open("postgres", "host=localhost user=app dbname=app sslmode=disable")
+// ent.Open("mysql", "user:pass@tcp(localhost:3306)/app?parseTime=True")
+// ent.Open("sqlite3", "file:ent?mode=memory&amp;cache=shared&amp;_fk=1")
+if err != nil { log.Fatal(err) }
+defer client.Close()
+
+// 開発用: スキーマに合わせてテーブルを作る・足す
+if err := client.Schema.Create(ctx); err != nil { log.Fatal(err) }</code></pre>
+    <p class="note">ドライバーは別に import する（<code>_ "github.com/lib/pq"</code>・<code>_ "github.com/go-sql-driver/mysql"</code>・<code>_ "github.com/mattn/go-sqlite3"</code> など）。</p>
+  </div>
+  <div class="panel" id="c-create" hidden>
+<pre><code>u, err := client.User.Create().
+	SetName("a8m").
+	SetEmail("a8m@example.com").
+	AddCars(tesla, ford).          // エッジもつなげる
+	Save(ctx)
+
+// まとめて作成
+users, err := client.User.CreateBulk(
+	client.User.Create().SetName("a").SetEmail("a@x"),
+	client.User.Create().SetName("b").SetEmail("b@x"),
+).Save(ctx)
+
+// upsert（--feature sql/upsert が必要）
+err = client.User.Create().SetName("a").SetEmail("a@x").
+	OnConflictColumns(user.FieldEmail).UpdateNewValues().Exec(ctx)</code></pre>
+  </div>
+  <div class="panel" id="c-query" hidden>
+<pre><code>u, err := client.User.Get(ctx, id)                 // ID で 1 件
+u, err := client.User.Query().
+	Where(user.Email("a8m@example.com")).
+	Only(ctx)                                       // 0 件か 2 件以上ならエラー
+
+users, err := client.User.Query().
+	Where(user.AgeGT(20), user.NameHasPrefix("a")).   // AND。OR は user.Or(…)
+	Order(user.ByCreateTime(sql.OrderDesc())).  // mixin.Time の create_time。sql は entgo.io/ent/dialect/sql
+	Limit(10).Offset(20).
+	All(ctx)
+
+n, err := client.User.Query().Where(user.HasCars()).Count(ctx)
+ok, err := client.User.Query().Where(user.Email(e)).Exist(ctx)
+
+// エッジをたどる・まとめて読む（N+1 を避ける）
+cars, err := u.QueryCars().All(ctx)
+users, err = client.User.Query().WithCars().All(ctx)  // users[i].Edges.Cars
+
+if ent.IsNotFound(err) { /* 見つからない */ }</code></pre>
+  </div>
+  <div class="panel" id="c-update" hidden>
+<pre><code>u, err = u.Update().SetAge(31).AddCarIDs(carID).Save(ctx)   // 取得済みの 1 件
+n, err := client.User.Update().
+	Where(user.AgeLT(18)).
+	SetRole(user.RoleMember).
+	Save(ctx)                                  // 条件に合う全件。戻り値は件数
+
+err = client.User.DeleteOne(u).Exec(ctx)
+n, err = client.User.Delete().Where(user.NameEQ("x")).Exec(ctx)</code></pre>
+  </div>
+
+  <h2 id="tx">トランザクション</h2>
+<pre><code>func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
+	tx, err := client.Tx(ctx)
+	if err != nil { return err }
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+	if err := fn(tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+		}
+		return err
+	}
+	return tx.Commit()
+}
+
+// tx.User.Create()… のように、tx から同じ API を使う</code></pre>
+
+  <h2 id="migrate">マイグレーション</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="m-auto">自動（開発向け）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="m-ver">Atlas でファイルを作る（本番向け）</button>
+  </div>
+  <div class="panel" id="m-auto">
+<pre><code>err := client.Schema.Create(ctx,
+	migrate.WithDropIndex(true),    // 既定では消さない
+	migrate.WithDropColumn(true),
+)</code></pre>
+    <p class="note">起動のたびに今の DB との差分を当てる。消す変更は既定で行わない。複数台の同時起動やレビューのしにくさがあるので、本番ではファイル方式にする。</p>
+  </div>
+  <div class="panel" id="m-ver" hidden>
+<pre><code># 差分からマイグレーションのファイルを作る（--dev-url は差分計算用の空の DB）
+atlas migrate diff add_users \
+  --dir "file://ent/migrate/migrations" \
+  --to "ent://ent/schema" \
+  --dev-url "docker://postgres/15/test?search_path=public"
+
+# 当てる
+atlas migrate apply \
+  --dir "file://ent/migrate/migrations" \
+  --url "postgres://app:pass@localhost:5432/app?sslmode=disable"</code></pre>
+    <p class="note"><code>atlas.sum</code> がフォルダの中身の改ざんや順番の入れ替えを検出する。手でファイルを直したら <code>atlas migrate hash</code>。</p>
+  </div>
+
+  <h2 id="steps">導入の手順</h2>
+  <ol class="steps">
+    <li><b>雛形を作る</b><code>ent new User</code> でスキーマを作り、Fields と Edges を書く</li>
+    <li><b>生成する</b><code>go generate ./ent</code>。生成物（<code>ent/</code> の下）はコミットする</li>
+    <li><b>開発中は自動で</b><code>client.Schema.Create</code> でテーブルを作って試す</li>
+    <li><b>本番前にファイル方式へ</b><code>atlas migrate diff</code> で SQL のファイルを作り、レビューしてから <code>apply</code></li>
+    <li><b>API に載せる</b>ハンドラー（<a href="gin.html">Gin</a> など）から <code>c.Request.Context()</code> を渡して呼ぶ</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Optional を付ければ、Go の値でも NULL と 0 を区別できる</summary><p><code>Optional</code> は「作成時に省略できる・列が NULL 可」というだけで、Go の型は <code>T</code> のまま（NULL はゼロ値で読まれる）。区別したいなら <code>Nillable()</code> も付けて <code>*T</code> にする。</p></details>
+  <details class="myth"><summary>edge.From を書くと、DB に別の外部キー列ができる</summary><p><code>edge.From(…).Ref(…)</code> は <code>edge.To</code> の逆向きの参照で、新しい列やテーブルは作らない。関係の実体は <code>edge.To</code> の側で 1 つだけ。</p></details>
+  <details class="myth"><summary>client.Schema.Create を本番で毎回走らせれば、マイグレーションは要らない</summary><p>自動マイグレーションは列やインデックスを消さず、変更内容をレビューする場所もない。本番ではバージョン付きのマイグレーション（Atlas）でファイルを作ってから当てる。</p></details>
+  <p class="note">関連: SQL を先に書いてコードを生成する方式は <a href="sqlc.html">sqlc 使い方</a>。</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://entgo.io/docs/getting-started">ent – Quick Introduction</a></li>
+    <li><a href="https://entgo.io/docs/schema-fields">Fields</a>・<a href="https://entgo.io/docs/schema-edges">Edges</a>・<a href="https://entgo.io/docs/schema-indexes">Indexes</a>・<a href="https://entgo.io/docs/schema-mixin">Mixin</a></li>
+    <li><a href="https://entgo.io/docs/crud">CRUD API</a>・<a href="https://entgo.io/docs/eager-load">Eager Loading</a>・<a href="https://entgo.io/docs/transactions">Transactions</a></li>
+    <li><a href="https://entgo.io/docs/migrate">Automatic Migration</a>・<a href="https://entgo.io/docs/versioned-migrations">Versioned Migrations</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-20（ent v0.14.6）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

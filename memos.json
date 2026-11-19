@@ -1,5 +1,45 @@
 [
  {
+  "file": "sqlc.html",
+  "title": "sqlc 使い方",
+  "desc": "sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート",
+  "tags": [
+   "データベース"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
+  "file": "skeema.html",
+  "title": "Skeema 使い方",
+  "desc": "Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート",
+  "tags": [
+   "データベース"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
+  "file": "gin.html",
+  "title": "Gin 使い方",
+  "desc": "Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート",
+  "tags": [
+   "API・バックエンド"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
+  "file": "ent.html",
+  "title": "ent 使い方",
+  "desc": "ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート",
+  "tags": [
+   "データベース"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
   "file": "drizzle.html",
   "title": "Drizzle ORM 使い方",
   "desc": "Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート",

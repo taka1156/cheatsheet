@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sqlc 使い方</title>
+<meta name="description" content="sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート">
+<meta name="memo:tags" content="データベース">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="sqlc 使い方">
+<meta property="og:description" content="sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/sqlc.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>sqlc 使い方</h1>
+  <p class="subtitle">書いた SQL から型付きの Go コードを生成するツール。PostgreSQL・MySQL・SQLite に対応（v1.31 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>sqlc は、スキーマ（DDL）とクエリの SQL を読んで、型付きの Go の関数と構造体を生成するコード生成ツール。</li>
+      <li>クエリに <code>-- name: GetUser :one</code> と名前と戻り方を書くと、<code>q.GetUser(ctx, id)</code> が生える。</li>
+      <li>ORM ではないので SQL はそのまま書く。動的な条件の組み立ては苦手で、マイグレーションも別のツールで行う。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">生成の流れ</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="schema.sql と query.sql を sqlc generate が読み、db.go・models.go・query.sql.go を出力し、アプリから呼ぶ">
+      <div class="st"><b>schema.sql</b><span>CREATE TABLE（マイグレーションのフォルダでもよい）</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>query.sql</b><span><code>-- name:</code> 付きのクエリ</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>sqlc generate</b><span>sqlc.yaml に従って解析</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>生成コード</b><span><code>db.go</code>・<code>models.go</code>・<code>query.sql.go</code></span></div>
+    </div>
+  </div>
+
+  <h2 id="install">インストール</h2>
+<pre><code>brew install sqlc
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+docker run --rm -v $(pwd):/src -w /src sqlc/sqlc generate</code></pre>
+
+  <h2 id="config">sqlc.yaml</h2>
+<pre><code>version: "2"
+sql:
+  - engine: "postgresql"        # postgresql / mysql / sqlite
+    schema: "db/migrations"     # ファイルでもフォルダでもよい
+    queries: "db/queries"
+    gen:
+      go:
+        package: "db"
+        out: "internal/db"
+        sql_package: "pgx/v5"   # 既定は database/sql
+        emit_json_tags: true
+        emit_interface: true    # Querier インターフェースも出す（モック用）
+        overrides:
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>キー（<code>gen.go</code> の下）</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>sql_package</code></td><td><code>database/sql</code>（既定）・<code>pgx/v5</code>・<code>pgx/v4</code></td></tr>
+        <tr><td><code>emit_json_tags</code>・<code>json_tags_case_style</code></td><td>構造体に <code>json:"…"</code> を付ける・その表記（<code>camel</code>・<code>snake</code> など）</td></tr>
+        <tr><td><code>emit_interface</code></td><td><code>Querier</code> インターフェースを出す</td></tr>
+        <tr><td><code>emit_empty_slices</code></td><td><code>:many</code> が 0 件のとき <code>nil</code> ではなく空のスライスを返す</td></tr>
+        <tr><td><code>emit_pointers_for_null_types</code></td><td>NULL になる列を <code>*string</code> などにする（PostgreSQL + pgx と SQLite のみ。既定は <code>sql.NullString</code>・<code>pgtype.Text</code>）</td></tr>
+        <tr><td><code>emit_prepared_queries</code></td><td>プリペアドステートメントを使う <code>Prepare</code> を出す</td></tr>
+        <tr><td><code>query_parameter_limit</code></td><td>引数がこの数を超えたら Params 構造体にまとめる（既定 1）</td></tr>
+        <tr><td><code>overrides</code></td><td>DB の型（<code>db_type</code>）か列（<code>column: "users.id"</code>）ごとに Go の型を差し替える</td></tr>
+        <tr><td><code>rename</code></td><td>生成される名前を変える（<code>rename: { "uid": "UserID" }</code>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note"><code>overrides</code> の <code>db_type</code> は NULL 可かどうかで別扱い。両方を差し替えるなら <code>nullable: true</code> 付きともう 1 つの 2 行を書く。</p>
+
+  <h2 id="annotations">クエリの書き方（注釈）</h2>
+<pre><code>-- name: GetAuthor :one
+SELECT * FROM authors WHERE id = $1 LIMIT 1;
+
+-- name: ListAuthors :many
+SELECT * FROM authors ORDER BY name;
+
+-- name: CreateAuthor :one
+INSERT INTO authors (name, bio) VALUES ($1, $2) RETURNING *;
+
+-- name: DeleteAuthor :exec
+DELETE FROM authors WHERE id = $1;</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>注釈</th><th>生成される関数の戻り値</th></tr></thead>
+      <tbody>
+        <tr><td><code>:one</code></td><td>1 行（<code>(Author, error)</code>）。0 件なら <code>sql.ErrNoRows</code>（pgx は <code>pgx.ErrNoRows</code>）</td></tr>
+        <tr><td><code>:many</code></td><td>複数行（<code>([]Author, error)</code>）</td></tr>
+        <tr><td><code>:exec</code></td><td><code>error</code> だけ</td></tr>
+        <tr><td><code>:execrows</code></td><td>影響した行数（<code>(int64, error)</code>）</td></tr>
+        <tr><td><code>:execresult</code></td><td><code>sql.Result</code>（pgx では <code>pgconn.CommandTag</code>）</td></tr>
+        <tr><td><code>:execlastid</code></td><td>最後に挿入した ID（<code>LastInsertId</code>。MySQL・SQLite 向け）</td></tr>
+        <tr><td><code>:copyfrom</code></td><td>大量 INSERT（PostgreSQL の COPY・MySQL の LOAD DATA）。PostgreSQL は <code>sql_package: pgx/v5</code>（か v4）、MySQL は <code>sql_driver: github.com/go-sql-driver/mysql</code> も必要</td></tr>
+        <tr><td><code>:batchexec</code>・<code>:batchmany</code>・<code>:batchone</code></td><td>pgx のバッチ送信（PostgreSQL + <code>pgx</code> のみ）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="macros">マクロ</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>マクロ</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>sqlc.arg(name)</code>・<code>@name</code></td><td>引数に名前を付ける（<code>$1</code> の代わり。略記の <code>@name</code> は MySQL では使えない）</td></tr>
+        <tr><td><code>sqlc.narg(name)</code></td><td>NULL を渡せる引数にする（任意の検索条件など）</td></tr>
+        <tr><td><code>sqlc.slice(ids)</code></td><td><code>IN (…)</code> にスライスを渡す（MySQL・SQLite。PostgreSQL は <code>= ANY($1::int[])</code>）</td></tr>
+        <tr><td><code>sqlc.embed(users)</code></td><td>JOIN の結果に既存のモデル構造体を丸ごと埋め込む</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>-- name: SearchAuthors :many
+SELECT * FROM authors
+WHERE (sqlc.narg(name)::text IS NULL OR name ILIKE sqlc.narg(name))
+  AND created_at &gt;= @since
+ORDER BY id;</code></pre>
+
+  <h2 id="use">生成したコードを使う</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="u-pgx">pgx/v5</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-sql">database/sql</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-tx">トランザクション</button>
+  </div>
+  <div class="panel" id="u-pgx">
+<pre><code>pool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+if err != nil { return err }
+defer pool.Close()
+
+q := db.New(pool)
+a, err := q.CreateAuthor(ctx, db.CreateAuthorParams{
+	Name: "Ada",
+	Bio:  pgtype.Text{String: "math", Valid: true},
+})
+authors, err := q.ListAuthors(ctx)</code></pre>
+  </div>
+  <div class="panel" id="u-sql" hidden>
+<pre><code>conn, err := sql.Open("mysql", "user:pass@/app?parseTime=true")
+if err != nil { return err }
+
+q := db.New(conn)
+a, err := q.GetAuthor(ctx, 1)
+if errors.Is(err, sql.ErrNoRows) {
+	// 見つからない
+}</code></pre>
+  </div>
+  <div class="panel" id="u-tx" hidden>
+<pre><code>tx, err := pool.Begin(ctx)
+if err != nil { return err }
+defer tx.Rollback(ctx)        // Commit 後に呼んでも害はない
+
+qtx := q.WithTx(tx)           // 同じクエリをトランザクションの中で
+if _, err := qtx.CreateAuthor(ctx, p); err != nil { return err }
+if err := qtx.DeleteAuthor(ctx, oldID); err != nil { return err }
+return tx.Commit(ctx)</code></pre>
+  </div>
+
+  <h2 id="cli">コマンド</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>sqlc init</code></td><td>空の <code>sqlc.yaml</code> を作る</td></tr>
+        <tr><td><code>sqlc generate</code></td><td>コードを生成する</td></tr>
+        <tr><td><code>sqlc compile</code></td><td>生成せずに SQL の文法と型だけを確かめる</td></tr>
+        <tr><td><code>sqlc diff</code></td><td>生成結果と今のファイルが違えば失敗（CI で「generate し忘れ」を検出）</td></tr>
+        <tr><td><code>sqlc vet</code></td><td><code>rules</code> に CEL で書いた独自ルールでクエリを検査</td></tr>
+        <tr><td><code>sqlc parse</code></td><td>SQL の AST を JSON で出力する（v1.31 で追加。<code>sqlc fmt</code>・<code>sqlc analyze</code> は main ブランチにあるが v1.31.1 時点では未リリース）</td></tr>
+        <tr><td><code>-f path/sqlc.yaml</code></td><td>設定ファイルを指定する（CLI のドキュメントに載っている <code>--no-database</code> は今の版には実装されていない）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="migrate">マイグレーションとの組み合わせ</h2>
+  <p>sqlc はスキーマを変更しない。<code>schema</code> にマイグレーションのフォルダを指定すると、ファイル名の順に読んで最終的な形を組み立てる。対応しているツールの形式: atlas・dbmate・golang-migrate・goose・sql-migrate・tern。ダウン側（<code>-- +goose Down</code> など）は無視される。</p>
+  <p class="note">MySQL で「CREATE 文を正として差分を当てる」宣言型の管理をするなら <a href="skeema.html">Skeema</a> と組み合わせ、<code>schema</code> に Skeema のフォルダを指定する、という使い方もできる。</p>
+
+  <h2 id="steps">導入の手順</h2>
+  <ol class="steps">
+    <li><b>設定を作る</b><code>sqlc init</code> のあと、エンジン・スキーマ・クエリ・出力先を書く</li>
+    <li><b>クエリを書く</b><code>-- name: 名前 :注釈</code> を付けて、1 ファイルに機能ごとのクエリをまとめる</li>
+    <li><b>生成する</b><code>sqlc generate</code>。生成物はコミットし、<code>go generate</code> から呼んでもよい</li>
+    <li><b>CI で確かめる</b><code>sqlc diff</code> と <code>sqlc vet</code> を流し、生成し忘れと危ないクエリを止める</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>sqlc は ORM の一種で、マイグレーションも面倒を見てくれる</summary><p>sqlc はコードを生成するだけで、実行時には何もしない。スキーマの変更は golang-migrate・goose・Atlas・Skeema など別のツールで行い、sqlc はその結果のスキーマを読むだけ。</p></details>
+  <details class="myth"><summary>条件を足し引きする動的なクエリも sqlc で自由に組み立てられる</summary><p>生成されるのは書いたとおりの固定の SQL。任意の条件は <code>sqlc.narg</code> と <code>IS NULL OR …</code> で表すのが基本で、並び替えの列を変えるなどの大きな組み立ては、その部分だけ手書きやクエリビルダーにする。</p></details>
+  <details class="myth"><summary>SELECT * と書くと、実行時に列が増えても自動で追従する</summary><p><code>*</code> は生成時に列名へ展開されて固定される。スキーマを変えたら <code>sqlc generate</code> をやり直す（CI の <code>sqlc diff</code> で検出できる）。</p></details>
+  <p class="note">関連: Go のコードでスキーマを書く方式は <a href="ent.html">ent 使い方</a>。</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://docs.sqlc.dev/en/latest/">sqlc Documentation</a></li>
+    <li><a href="https://docs.sqlc.dev/en/latest/reference/config.html">Configuration</a>・<a href="https://docs.sqlc.dev/en/latest/reference/query-annotations.html">Query annotations</a>・<a href="https://docs.sqlc.dev/en/latest/reference/macros.html">Macros</a>・<a href="https://docs.sqlc.dev/en/latest/reference/cli.html">CLI</a></li>
+    <li><a href="https://docs.sqlc.dev/en/latest/howto/overrides.html">Overriding types</a>・<a href="https://docs.sqlc.dev/en/latest/howto/transactions.html">Using transactions</a>・<a href="https://docs.sqlc.dev/en/latest/howto/ddl.html">Modifying the database schema</a></li>
+    <li><a href="https://docs.sqlc.dev/en/latest/reference/changelog.html">Changelog</a>（v1.31.1、2026-04-22）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-20（sqlc v1.31.1）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

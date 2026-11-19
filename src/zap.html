@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>zap 使い方</title>
+<meta name="description" content="Go の構造化ロガー zap の Logger と SugaredLogger、フィールド、Config、zapcore、レベル変更、テストをまとめたチートシート">
+<meta name="memo:tags" content="Go, API・バックエンド">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* Logger と Core の構造図 */
+.arch { display: flex; align-items: stretch; gap: 8px; }
+.arch .box {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.arch .box b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.arch .box span { color: var(--fg-2); }
+.arch .lg { flex: 0 0 9.5em; align-self: center; }
+.arch .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.arch .ar::before { content: '→'; }
+.arch .core { flex: 1; display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--fg-2); border-radius: 10px; padding: 8px; min-width: 0; }
+.arch .core > .ttl { font: 700 0.78rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); }
+.arch .parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.arch .out { flex: 0 0 8em; align-self: center; }
+@media (max-width: 600px) {
+  .arch { flex-direction: column; }
+  .arch .lg, .arch .out { flex: none; align-self: stretch; }
+  .arch .ar { align-self: center; }
+  .arch .ar::before { content: '↓'; }
+  .arch .parts { grid-template-columns: 1fr; }
+}
+
+/* レベルの並び */
+.levels { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.levels .lv {
+  flex: 1 1 0; min-width: 6.2em; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  background: var(--surface); font-size: 0.78rem; text-align: center;
+}
+.levels .lv b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.levels .lv span { color: var(--fg-2); }
+.levels .lv.stop { border-color: var(--c-ng); border-width: 2px; }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>zap 使い方</h1>
+  <p class="subtitle">Uber 製の Go 向け構造化ロガー（structured logger）。速さとメモリ確保の少なさが売り（v1.28 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>zap は JSON などの構造化ログを速く書く Go のロガーで、<code>zap.NewProduction()</code> で始められる。</li>
+      <li>型付きフィールドで書く <code>*zap.Logger</code> と、<code>printf</code> 風に書ける <code>*zap.SugaredLogger</code> の 2 種類がある。</li>
+      <li>出力先・形式・レベルは <code>zap.Config</code> か <code>zapcore</code> で組み、終了前に <code>Sync()</code> で書き出す。</li>
+    </ul>
+  </div>
+
+  <h2 id="start">始め方</h2>
+<pre><code>go get -u go.uber.org/zap   # 対応する Go は最新の 2 つのマイナー版</code></pre>
+<pre><code>package main
+
+import (
+	"time"
+
+	"go.uber.org/zap"
+)
+
+func main() {
+	logger, err := zap.NewProduction()   // 開発中は zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()   // バッファに残ったログを書き出す
+
+	logger.Info("server started",
+		zap.String("addr", ":8080"),
+		zap.Int("workers", 4),
+		zap.Duration("boot", 120*time.Millisecond),
+	)
+}</code></pre>
+  <p>出力（1 行の JSON。<code>ts</code> は UNIX 秒）:</p>
+<pre><code>{"level":"info","ts":1763600000.123,"caller":"app/main.go:16","msg":"server started","addr":":8080","workers":4,"boot":0.12}</code></pre>
+
+  <h2 id="kinds">Logger と SugaredLogger</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="k-logger">Logger</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="k-sugar">SugaredLogger</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="k-cmp">使い分け</button>
+  </div>
+  <div class="panel" id="k-logger">
+    <p>メッセージ＋型付きフィールド。リフレクションを使わないので最も速く、メモリ確保もほぼ無い。</p>
+<pre><code>logger.Info("user login",
+	zap.String("user", "alice"),
+	zap.Int64("id", 42),
+	zap.Error(err),          // キーは "error"
+)
+logger.Warn("slow query", zap.Duration("took", d))</code></pre>
+  </div>
+  <div class="panel" id="k-sugar" hidden>
+    <p><code>logger.Sugar()</code> で作る。キーと値を交互に並べる・<code>printf</code> 風に書ける。Logger より 2〜4 割ほど遅く、メモリ確保も多いが、それでも多くのロガーより速い。</p>
+<pre><code>sugar := logger.Sugar()
+sugar.Infow("user login", "user", "alice", "id", 42)   // w: キーと値の組
+sugar.Infof("user %s logged in", "alice")             // f: printf 風
+sugar.Info("user ", "alice", " logged in")            // fmt.Sprint 風
+sugar.Infoln("user", "alice")                          // fmt.Sprintln 風（間に空白）
+
+plain := sugar.Desugar()   // Logger に戻す（コストはほぼ無い）</code></pre>
+  </div>
+  <div class="panel" id="k-cmp" hidden>
+    <div class="tbl stack">
+      <table>
+        <thead><tr><th>観点</th><th>Logger</th><th>SugaredLogger</th></tr></thead>
+        <tbody>
+          <tr><td>書き方</td><td data-l="Logger"><code>Info(msg, zap.String(k, v))</code></td><td data-l="SugaredLogger"><code>Infow(msg, k, v)</code>・<code>Infof(…)</code></td></tr>
+          <tr><td>型の確認</td><td data-l="Logger">コンパイル時</td><td data-l="SugaredLogger">実行時（キーが文字列でないと開発モードで panic）</td></tr>
+          <tr><td>速さ</td><td data-l="Logger">最速・確保ほぼ 0</td><td data-l="SugaredLogger">2〜4 割遅い・確保が多い</td></tr>
+          <tr><td>向く所</td><td data-l="Logger">リクエスト処理などよく通る所・ライブラリ</td><td data-l="SugaredLogger">起動処理・CLI・速さが要らない所</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">1 つのアプリで両方を使ってよい。<code>Sugar()</code> と <code>Desugar()</code> はどちらも安い。</p>
+  </div>
+
+  <h2 id="presets">用意されたロガー</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>関数</th><th>形式</th><th>最低レベル</th><th>スタックトレース</th><th>そのほか</th></tr></thead>
+      <tbody>
+        <tr><td><code>zap.NewProduction()</code></td><td data-l="形式">JSON・<code>ts</code> は UNIX 秒</td><td data-l="最低レベル">Info</td><td data-l="スタックトレース">Error 以上</td><td data-l="そのほか">サンプリングあり（1 秒ごと、同じレベル・メッセージは最初の 100 件、以降 100 件に 1 件）。出力は stderr</td></tr>
+        <tr><td><code>zap.NewDevelopment()</code></td><td data-l="形式">console（タブ区切り）・ISO 8601 の時刻</td><td data-l="最低レベル">Debug</td><td data-l="スタックトレース">Warn 以上</td><td data-l="そのほか">開発モード: <code>DPanic</code> で panic する。出力は stderr</td></tr>
+        <tr><td><code>zap.NewExample()</code></td><td data-l="形式">JSON・時刻と caller なし</td><td data-l="最低レベル">Debug</td><td data-l="スタックトレース">なし</td><td data-l="そのほか">出力が毎回同じになるのでテストやドキュメントの例向け。stdout</td></tr>
+        <tr><td><code>zap.NewNop()</code></td><td data-l="形式">何も出さない</td><td data-l="最低レベル">—</td><td data-l="スタックトレース">—</td><td data-l="そのほか">ロガーを受け取る関数に「ログ不要」を渡すとき</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>開発用の出力（<code>NewDevelopment</code>）:</p>
+<pre><code>2026-11-20T10:00:00.000+0900	INFO	app/main.go:16	server started	{"addr": ":8080", "workers": 4, "boot": "120ms"}</code></pre>
+  <p class="note">どれもオプションを渡せる: <code>zap.NewProduction(zap.AddCaller(), zap.Fields(zap.String("app", "api")))</code>。エラーを返さない形にするなら <code>zap.Must(zap.NewProduction())</code>（失敗すると panic）。</p>
+
+  <h2 id="levels">レベル</h2>
+  <div class="levels" role="img" aria-label="レベルは低い順に Debug、Info、Warn、Error、DPanic、Panic、Fatal。Panic と Fatal はログを書いたあと処理を止める">
+    <div class="lv"><b>Debug</b><span>-1</span></div>
+    <div class="lv"><b>Info</b><span>0（既定）</span></div>
+    <div class="lv"><b>Warn</b><span>1</span></div>
+    <div class="lv"><b>Error</b><span>2</span></div>
+    <div class="lv"><b>DPanic</b><span>開発モードだけ panic</span></div>
+    <div class="lv stop"><b>Panic</b><span>書いてから panic</span></div>
+    <div class="lv stop"><b>Fatal</b><span>書いてから os.Exit(1)</span></div>
+  </div>
+  <p class="note">赤い枠の 2 つは、ログを書いたあとに必ず処理を止める（レベルで出力が無効になっていても止める）。<code>DPanic</code> は「起きてはいけないが回復できる」ことに使い、本番では Error のように書くだけで続行する。</p>
+<pre><code>logger.Log(zap.WarnLevel, "msg")              // レベルを変数で渡す
+if ce := logger.Check(zap.DebugLevel, "dump"); ce != nil {
+	ce.Write(zap.Any("state", expensive()))   // 出すときだけ重い値を作る
+}
+lvl, _ := zapcore.ParseLevel("warn")         // 文字列から（"debug" "info" "warn" "error" "dpanic" "panic" "fatal"）</code></pre>
+
+  <h2 id="fields">フィールド</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>関数</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>zap.String</code>・<code>Int</code>・<code>Int64</code>・<code>Uint</code>・<code>Float64</code>・<code>Bool</code></td><td>基本の型。ポインタ版（<code>Stringp</code> など。nil なら <code>null</code>）と、スライス版（<code>Strings</code>・<code>Ints</code> など）もある</td></tr>
+        <tr><td><code>zap.Duration</code>・<code>zap.Time</code></td><td>時間（形式は EncoderConfig の <code>EncodeDuration</code>・<code>EncodeTime</code> で決まる）</td></tr>
+        <tr><td><code>zap.Error(err)</code>・<code>zap.NamedError("cause", err)</code></td><td>エラー。キーは <code>error</code>／指定した名前。<code>Errors("errs", list)</code> で複数</td></tr>
+        <tr><td><code>zap.Any("k", v)</code></td><td>型を見て適切なフィールドを選ぶ。分からない型はリフレクション（<code>zap.Reflect</code>）になり遅い</td></tr>
+        <tr><td><code>zap.Stringer("k", v)</code></td><td><code>String()</code> を持つ値（書くときに呼ぶ）</td></tr>
+        <tr><td><code>zap.Object("k", v)</code>・<code>zap.Array("k", v)</code></td><td><code>zapcore.ObjectMarshaler</code>・<code>ArrayMarshaler</code> を実装した型（下の「独自の型」）</td></tr>
+        <tr><td><code>zap.Inline(v)</code></td><td>ObjectMarshaler の中身を入れ子にせず同じ階層に展開</td></tr>
+        <tr><td><code>zap.Dict("k", fields...)</code></td><td>その場でフィールドをまとめて入れ子のオブジェクトにする</td></tr>
+        <tr><td><code>zap.Namespace("k")</code></td><td>これ以降のフィールドを <code>k</code> の中に入れる</td></tr>
+        <tr><td><code>zap.Stack("stack")</code>・<code>zap.Skip()</code></td><td>今のスタックトレース／何もしないフィールド（条件付きで足すとき）</td></tr>
+        <tr><td><code>zap.Binary</code>・<code>zap.ByteString</code></td><td>バイト列（base64）／UTF-8 の文字列として</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>logger.Info("order",
+	zap.Dict("user", zap.String("name", "alice"), zap.Int("id", 42)),
+	zap.Namespace("payment"),
+	zap.String("method", "card"),
+)
+// {…,"msg":"order","user":{"name":"alice","id":42},"payment":{"method":"card"}}（level・ts などは省略）</code></pre>
+
+  <h2 id="child">子ロガー（With・Named）</h2>
+<pre><code>reqLog := logger.With(zap.String("request_id", id))   // 以後のログに毎回付く
+reqLog.Info("start")                                  // {"msg":"start","request_id":"…"}
+
+db := logger.Named("db")          // "logger":"db"。重ねると "db.pool"
+db.Info("connected")
+
+lazy := logger.WithLazy(zap.Object("cfg", cfg))   // 実際に書くときまでエンコードを遅らせる
+quiet := logger.WithOptions(zap.IncreaseLevel(zap.WarnLevel))   // この子だけ Warn 以上</code></pre>
+  <p class="note"><code>With</code> したフィールドはその場で一度だけエンコードされ、毎回のログでは使い回される。リクエストごとの値は <code>With</code> で付けた子ロガーを <code>context.Context</code> などで渡すとよい（zap 自体には context から取り出す仕組みは無い）。</p>
+
+  <h2 id="options">オプション（zap.Option）</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>オプション</th><th>効果</th></tr></thead>
+      <tbody>
+        <tr><td><code>zap.AddCaller()</code>・<code>zap.WithCaller(false)</code></td><td>呼び出し元のファイル:行を付ける／外す</td></tr>
+        <tr><td><code>zap.AddCallerSkip(1)</code></td><td>ロガーを包む関数を自分で書いたとき、caller をその分だけ上にずらす</td></tr>
+        <tr><td><code>zap.AddStacktrace(zap.ErrorLevel)</code></td><td>このレベル以上にスタックトレースを付ける</td></tr>
+        <tr><td><code>zap.Fields(fs...)</code></td><td>全ログに付けるフィールド（<code>With</code> と同じ）</td></tr>
+        <tr><td><code>zap.IncreaseLevel(lvl)</code></td><td>最低レベルを上げる（下げることはできない）</td></tr>
+        <tr><td><code>zap.Development()</code></td><td>開発モード（<code>DPanic</code> で panic、Sugar の不正なキーで panic）</td></tr>
+        <tr><td><code>zap.Hooks(func(zapcore.Entry) error)</code></td><td>書くたびに呼ばれる関数（件数の計測など）</td></tr>
+        <tr><td><code>zap.WrapCore(func(zapcore.Core) zapcore.Core)</code></td><td>Core を差し替える・包む（出力先の追加など）</td></tr>
+        <tr><td><code>zap.ErrorOutput(ws)</code></td><td>zap 自身の内部エラーの書き先</td></tr>
+        <tr><td><code>zap.WithFatalHook(…)</code>・<code>zap.WithPanicHook(…)</code></td><td>Fatal・Panic の後の動作を変える（テストで <code>os.Exit</code> させない、など）</td></tr>
+        <tr><td><code>zap.WithClock(clock)</code></td><td>時刻の取得元を差し替える（テスト用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="config">Config で組み立てる</h2>
+  <p>プリセットを元に一部だけ変えるのが簡単。<code>zap.Config</code> は JSON・YAML のタグを持つので、設定ファイルから読むこともできる。</p>
+<pre><code>cfg := zap.NewProductionConfig()
+cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+cfg.OutputPaths = []string{"stdout", "/var/log/app.log"}
+cfg.EncoderConfig.TimeKey = "time"
+cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder   // ts を読める形に
+cfg.Sampling = nil                                          // サンプリングを止める
+cfg.InitialFields = map[string]any{"service": "api"}
+
+logger, err := cfg.Build()   // ここにも zap.Option を渡せる</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>フィールド（JSON キー）</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>Level</code>（<code>level</code>）</td><td>最低レベル。<code>AtomicLevel</code> なので後から変えられる</td></tr>
+        <tr><td><code>Development</code>（<code>development</code>）</td><td>開発モード。スタックトレースの既定も Warn 以上になる</td></tr>
+        <tr><td><code>DisableCaller</code>・<code>DisableStacktrace</code></td><td>caller・スタックトレースを付けない</td></tr>
+        <tr><td><code>Sampling</code>（<code>sampling</code>）</td><td><code>{Initial, Thereafter}</code>。<code>nil</code> で無効</td></tr>
+        <tr><td><code>Encoding</code>（<code>encoding</code>）</td><td><code>"json"</code> か <code>"console"</code></td></tr>
+        <tr><td><code>EncoderConfig</code>（<code>encoderConfig</code>）</td><td>キー名（<code>MessageKey</code>・<code>LevelKey</code>・<code>TimeKey</code> など）と値の形式（<code>EncodeLevel</code>・<code>EncodeTime</code>・<code>EncodeCaller</code>）</td></tr>
+        <tr><td><code>OutputPaths</code>（<code>outputPaths</code>）</td><td>書き先。<code>"stdout"</code>・<code>"stderr"</code>・ファイルパス</td></tr>
+        <tr><td><code>ErrorOutputPaths</code></td><td>zap 自身の内部エラーの書き先</td></tr>
+        <tr><td><code>InitialFields</code>（<code>initialFields</code>）</td><td>全ログに付けるフィールド</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>EncoderConfig でよく変えるもの</h3>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>項目</th><th>選べる値の例</th></tr></thead>
+      <tbody>
+        <tr><td><code>EncodeTime</code></td><td><code>zapcore.EpochTimeEncoder</code>（本番の既定）・<code>ISO8601TimeEncoder</code>・<code>RFC3339TimeEncoder</code>・<code>RFC3339NanoTimeEncoder</code>・<code>zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")</code></td></tr>
+        <tr><td><code>EncodeLevel</code></td><td><code>LowercaseLevelEncoder</code>（info）・<code>CapitalLevelEncoder</code>（INFO）・<code>CapitalColorLevelEncoder</code>（色付き。console 向け）</td></tr>
+        <tr><td><code>EncodeDuration</code></td><td><code>SecondsDurationEncoder</code>（0.12）・<code>StringDurationEncoder</code>（"120ms"）・<code>MillisDurationEncoder</code></td></tr>
+        <tr><td><code>EncodeCaller</code></td><td><code>ShortCallerEncoder</code>（pkg/file.go:12）・<code>FullCallerEncoder</code>（フルパス）</td></tr>
+        <tr><td>キー名</td><td><code>zapcore.OmitKey</code>（空文字）を入れるとその項目を出さない</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="zapcore">zapcore で組み立てる</h2>
+  <p>Config で足りないとき（出力先ごとにレベルや形式を変える、ローテーションするファイルに書く、など）は Core を自分で作る。Core は「どう書くか」「どこへ書くか」「どのレベルを書くか」の 3 つでできている。</p>
+  <div class="card">
+    <div class="arch" role="img" aria-label="Logger は Core にログを渡す。Core は Encoder、WriteSyncer、LevelEnabler の 3 つで構成され、書き先へ出力する">
+      <div class="box lg"><b>*zap.Logger</b><span>Info などを呼ぶ所</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="core">
+        <div class="ttl">zapcore.Core = NewCore(…)</div>
+        <div class="parts">
+          <div class="box"><b>Encoder</b><span>どう書くか（JSON・console）</span></div>
+          <div class="box"><b>WriteSyncer</b><span>どこへ書くか（stdout・ファイル）</span></div>
+          <div class="box"><b>LevelEnabler</b><span>どのレベルを書くか</span></div>
+        </div>
+      </div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="box out"><b>書き先</b><span>端末・ファイル・収集基盤</span></div>
+    </div>
+  </div>
+<pre><code>encCfg := zap.NewProductionEncoderConfig()
+encCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+
+// Error 以上はファイルへ JSON、全部を stdout へ console 形式で
+file := zapcore.AddSync(&amp;lumberjack.Logger{   // gopkg.in/natefinch/lumberjack.v2
+	Filename: "/var/log/app/error.log", MaxSize: 100, MaxBackups: 3, MaxAge: 28,
+})
+core := zapcore.NewTee(
+	zapcore.NewCore(zapcore.NewJSONEncoder(encCfg), file, zap.ErrorLevel),
+	zapcore.NewCore(zapcore.NewConsoleEncoder(encCfg), zapcore.Lock(os.Stdout), zap.DebugLevel),
+)
+logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>関数</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>zapcore.NewCore(enc, ws, lvl)</code></td><td>Core を作る</td></tr>
+        <tr><td><code>zapcore.NewTee(cores...)</code></td><td>複数の Core に同じログを流す</td></tr>
+        <tr><td><code>zapcore.AddSync(w)</code></td><td><code>io.Writer</code> を WriteSyncer にする</td></tr>
+        <tr><td><code>zapcore.Lock(ws)</code></td><td>排他制御を付ける（<code>*os.File</code> を複数の goroutine から書くとき）</td></tr>
+        <tr><td><code>zapcore.NewMultiWriteSyncer(ws...)</code></td><td>同じ形式のまま複数の書き先へ</td></tr>
+        <tr><td><code>&amp;zapcore.BufferedWriteSyncer{WS: ws}</code></td><td>バッファしてまとめて書く（<code>Sync</code>・<code>Stop</code> を忘れない）</td></tr>
+        <tr><td><code>zapcore.NewSamplerWithOptions(core, time.Second, 100, 100)</code></td><td>サンプリングを付ける</td></tr>
+        <tr><td><code>zap.LevelEnablerFunc(func(l zapcore.Level) bool {…})</code></td><td>「Warn だけ」など任意の条件でレベルを選ぶ</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">zap 自体にはファイルのローテーション機能が無い。公式 FAQ は <code>logrotate</code> などの外部の仕組みか、<code>lumberjack</code> を WriteSyncer として使う方法を案内している。</p>
+
+  <h2 id="atomic">実行中にレベルを変える</h2>
+<pre><code>atom := zap.NewAtomicLevelAt(zap.InfoLevel)
+cfg := zap.NewProductionConfig()
+cfg.Level = atom
+logger := zap.Must(cfg.Build())
+
+atom.SetLevel(zap.DebugLevel)        // 再起動せずに変わる（goroutine 安全）
+
+http.Handle("/log/level", atom)      // AtomicLevel は http.Handler
+// GET  → {"level":"info"}
+// PUT  → curl -X PUT localhost:8080/log/level -d level=debug
+//        curl -X PUT localhost:8080/log/level -H "Content-Type: application/json" -d '{"level":"debug"}'</code></pre>
+  <p class="note">レベルを変えるエンドポイントは管理用のポートに置くなど、外から触れないようにする。</p>
+
+  <h2 id="global">グローバルロガー・標準 log・slog</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="g-global">グローバル</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-std">標準 log</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-slog">slog</button>
+  </div>
+  <div class="panel" id="g-global">
+<pre><code>undo := zap.ReplaceGlobals(logger)   // 戻す関数が返る
+defer undo()
+
+zap.L().Info("via global")           // *Logger
+zap.S().Infof("via %s", "sugar")     // *SugaredLogger</code></pre>
+    <p class="note"><code>ReplaceGlobals</code> を呼ぶまで <code>zap.L()</code>・<code>zap.S()</code> は <code>NewNop()</code> で、何も出さない。公式はグローバルよりも引数で渡すことを勧めている。</p>
+  </div>
+  <div class="panel" id="g-std" hidden>
+<pre><code>undo := zap.RedirectStdLog(logger)   // log.Print などを Info で zap へ
+defer undo()
+
+std := zap.NewStdLog(logger)                      // *log.Logger を作る（http.Server.ErrorLog など）
+std, _ = zap.NewStdLogAt(logger, zap.ErrorLevel)  // レベルを指定</code></pre>
+  </div>
+  <div class="panel" id="g-slog" hidden>
+    <p><code>log/slog</code> の API で書いて、出力は zap の Core に任せる。<code>go.uber.org/zap/exp</code> は実験的なモジュールで、API が変わることがある（v0.3.0 で <code>HandlerOptions</code> から関数オプションへ変わった）。</p>
+<pre><code>import "go.uber.org/zap/exp/zapslog"   // go get go.uber.org/zap/exp（Go 1.21 以上）
+
+h := zapslog.NewHandler(logger.Core(),
+	zapslog.WithCaller(true),
+	zapslog.WithName("api"),
+)
+slog.SetDefault(slog.New(h))
+slog.Info("hello", "user", "alice")</code></pre>
+  </div>
+
+  <h2 id="marshaler">独自の型をログに出す</h2>
+  <p><code>zapcore.ObjectMarshaler</code> を実装すると、<code>zap.Object</code> でリフレクション無しに書ける。出したくない項目（パスワードなど）をここで省ける。</p>
+<pre><code>type User struct {
+	Name     string
+	Email    string
+	Password string
+}
+
+func (u User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("name", u.Name)
+	enc.AddString("email", u.Email)
+	// Password は書かない
+	return nil
+}
+
+logger.Info("signup", zap.Object("user", u))   // {"user":{"name":"…","email":"…"}}
+logger.Info("signup", zap.Inline(u))           // {"name":"…","email":"…"}
+
+// スライスは ObjectValues / Objects（ジェネリクス）で
+logger.Info("batch", zap.ObjectValues("users", users))   // []User（メソッドがポインタ受け取りでも可）</code></pre>
+
+  <h2 id="test">テスト</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-zaptest">zaptest</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-observer">observer</button>
+  </div>
+  <div class="panel" id="t-zaptest">
+    <p>ログを <code>t.Log</code> に流す。失敗したテストのときだけ表示されるので見通しがよい。</p>
+<pre><code>import "go.uber.org/zap/zaptest"
+
+func TestService(t *testing.T) {
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	svc := NewService(logger)
+	// …
+}</code></pre>
+  </div>
+  <div class="panel" id="t-observer" hidden>
+    <p>書かれたログをメモリに貯めて、内容を確かめる。</p>
+<pre><code>import "go.uber.org/zap/zaptest/observer"
+
+core, logs := observer.New(zap.InfoLevel)
+logger := zap.New(core)
+
+DoSomething(logger)
+
+if logs.FilterMessage("retrying").Len() != 3 {
+	t.Errorf("got %v", logs.All())
+}
+entry := logs.All()[0]
+_ = entry.ContextMap()   // フィールドを map[string]any で</code></pre>
+  </div>
+
+  <h2 id="gin">Gin とつなぐ</h2>
+  <p><a href="gin.html">Gin</a> の組み込みの Logger・Recovery の代わりに、<a href="https://github.com/gin-contrib/zap">gin-contrib/zap</a> を使うとアクセスログと panic を zap で書ける。</p>
+<pre><code>import ginzap "github.com/gin-contrib/zap"
+
+r := gin.New()
+r.Use(ginzap.Ginzap(logger, time.RFC3339, true))   // 第 3 引数: 時刻を UTC にする
+r.Use(ginzap.RecoveryWithZap(logger, true))        // 第 2 引数: スタックトレースを付ける</code></pre>
+
+  <h2 id="steps">アプリに入れる手順</h2>
+  <ol class="steps">
+    <li><b>main で 1 つ作る</b>環境変数などで <code>NewProductionConfig</code> と <code>NewDevelopmentConfig</code> を切り替え、<code>defer logger.Sync()</code></li>
+    <li><b>引数で渡す</b>構造体のフィールドやコンストラクタの引数に <code>*zap.Logger</code> を持たせる。使わない所には <code>zap.NewNop()</code></li>
+    <li><b>文脈を With で付ける</b>リクエスト ID・ユーザー ID などは子ロガーに付けて渡す。部品ごとに <code>Named</code></li>
+    <li><b>よく通る所は Logger</b>型付きフィールドで書き、重い値は <code>Check</code> で出すときだけ作る</li>
+    <li><b>本番の設定</b>時刻の形式・サンプリング・出力先を決め、<code>AtomicLevel</code> で後からレベルを変えられるようにする</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Sync() がエラーを返したらログが失われている</summary><p>出力先が端末の stderr・stdout のとき、OS によっては <code>fsync</code> に対応しておらず <code>sync /dev/stderr: invalid argument</code> などのエラーが返る。書き込み自体は済んでいるので、<code>defer logger.Sync()</code> の戻り値は無視するのが一般的（<code>_ = logger.Sync()</code>）。ファイルに書いているときのエラーは確かめる。</p></details>
+  <details class="myth"><summary>logger.Fatal を呼んでも defer の後始末は実行される</summary><p><code>Fatal</code> はログを書いたあと <code>os.Exit(1)</code> を呼ぶので、<code>defer</code> は実行されない（DB の切断なども行われない）。後始末が要るなら、エラーを返して main で終わらせるか、<code>zap.WithFatalHook</code> で動作を変える。</p></details>
+  <details class="myth"><summary>zap.Any を使えばどんな型でも速く書ける</summary><p><code>Any</code> は知っている型なら専用のフィールドを選ぶが、それ以外は <code>zap.Reflect</code>（<code>encoding/json</code> 相当のリフレクション）になり遅い。よく出す独自の型は <code>ObjectMarshaler</code> を実装して <code>zap.Object</code> で書く。</p></details>
+  <details class="myth"><summary>NewProduction のロガーは渡したログを全部出す</summary><p>本番の設定はサンプリングが有効で、1 秒の間に同じレベル・同じメッセージが 100 件を超えると、以降は 100 件に 1 件しか出さない。全部要るなら <code>cfg.Sampling = nil</code> にして <code>cfg.Build()</code> する。</p></details>
+  <details class="myth"><summary>ReplaceGlobals を呼ばなくても zap.L() でログが出る</summary><p>グローバルロガーの初期値は <code>NewNop()</code> なので、置き換えるまで何も出ない。</p></details>
+  <p class="note">関連: HTTP サーバーのフレームワークは <a href="gin.html">Gin 使い方</a>。</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://pkg.go.dev/go.uber.org/zap">pkg.go.dev – go.uber.org/zap</a>・<a href="https://pkg.go.dev/go.uber.org/zap/zapcore">zapcore</a></li>
+    <li><a href="https://github.com/uber-go/zap">uber-go/zap</a>（README・<a href="https://github.com/uber-go/zap/blob/master/FAQ.md">FAQ</a>・<a href="https://github.com/uber-go/zap/blob/master/CHANGELOG.md">CHANGELOG</a>。既定値は <code>config.go</code> のソースで確認）</li>
+    <li><a href="https://github.com/uber-go/zap/blob/master/exp/CHANGELOG.md">zap/exp CHANGELOG</a>（zapslog v0.3.0）</li>
+    <li><a href="https://github.com/gin-contrib/zap">gin-contrib/zap</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-20（zap v1.28.0・zap/exp v0.3.0）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

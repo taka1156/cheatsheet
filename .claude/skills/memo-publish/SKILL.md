@@ -81,6 +81,7 @@ python3 scripts/memo.py meta NAME \
   - `TypeScript` … 型や TS の設定そのものが主題のもの
   - `Linux` … コマンド・エディタなど Linux 環境の操作
   - `データベース` … スキーマ管理・マイグレーション・ORM・クエリのコード生成など DB を扱うもの
+  - `Go` … Go のコードから使うライブラリ・フレームワーク・コード生成ツール（Go 製でも言語に依存しない CLI には付けない）
   - どれにも当てはまらないときだけ新しい分野タグを作り、ユーザーに一言伝える。新しいタグは今後 2 本以上に使える粒度にし、作ったらこの一覧に追記する。表記は既存タグに合わせる（`Docker` と `docker` を混在させない）。
 - **date**: `--date` を値なしで渡すと今日（`memo.config.json` のタイムゾーン。実行環境の時計が UTC でもずれない）。登録後は `memo.py list` で日付を確認する。
 - OGP タグ（og:title / og:description）は、build が title / description から `dist/` のページに作る。`meta` は原本の title / description / タグ / 日付を書くだけで、`<!-- memo:head -->` ブロックは原本に書かない。

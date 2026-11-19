@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gin 使い方</title>
+<meta name="description" content="Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート">
+<meta name="memo:tags" content="API・バックエンド">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 生成の流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 定義ファイルの構造図 */
+.tree { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.tree div { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.tree div:last-child { border-bottom: none; }
+.tree .k { flex: 0 0 13em; white-space: nowrap; }
+.tree .d { font-family: 'Noto Sans JP', system-ui, sans-serif; color: var(--fg-2); }
+@media (max-width: 600px) {
+  .tree div { flex-direction: column; gap: 0; }
+  .tree .k { flex: none; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gin 使い方</h1>
+  <p class="subtitle">Go の HTTP Web フレームワーク。ルーティング・ミドルウェア・バインディング（入力の検証）・レンダリングをまとめて提供する（v1.12 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Gin は <code>net/http</code> の上で動く Go の Web フレームワークで、<code>r.GET(path, handler)</code> でルートを書く。</li>
+      <li>ハンドラーは <code>*gin.Context</code> を受け取り、<code>c.Param</code>・<code>ShouldBind…</code> で入力を読み、<code>c.JSON</code> で返す。</li>
+      <li>入力の検証は構造体タグ <code>binding:"required"</code> で書き、失敗時の応答を自分で決めたいなら <code>ShouldBind</code> 系を使う。</li>
+    </ul>
+  </div>
+
+  <h2 id="start">始め方</h2>
+<pre><code>go mod init example.com/app
+go get -u github.com/gin-gonic/gin   # v1.12 は Go 1.25 以上</code></pre>
+<pre><code>package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	r := gin.Default()   // Logger と Recovery 入り。何も入れないなら gin.New()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "pong"})
+	})
+	r.Run(":8080")       // 省略時は :8080（環境変数 PORT があればそれ）
+}</code></pre>
+  <p class="note"><code>gin.H</code> は <code>map[string]any</code> の別名。本番では <code>GIN_MODE=release</code> か <code>gin.SetMode(gin.ReleaseMode)</code> でデバッグ出力を止める。</p>
+
+  <h2 id="routing">ルーティング</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>r.GET("/users", h)</code></td><td><code>GET</code>・<code>POST</code>・<code>PUT</code>・<code>PATCH</code>・<code>DELETE</code>・<code>OPTIONS</code>・<code>HEAD</code></td></tr>
+        <tr><td><code>r.Any("/x", h)</code>・<code>r.Match([]string{"GET","POST"}, "/x", h)</code></td><td>全メソッド・指定した複数メソッド</td></tr>
+        <tr><td><code>/users/:id</code></td><td>パスパラメータ → <code>c.Param("id")</code></td></tr>
+        <tr><td><code>/files/*path</code></td><td>残り全部（<code>c.Param("path")</code> は <code>/</code> から始まる）</td></tr>
+        <tr><td><code>v1 := r.Group("/v1")</code></td><td>共通の接頭辞とミドルウェアをまとめる（<code>r.Group("/admin", auth)</code>）</td></tr>
+        <tr><td><code>r.NoRoute(h)</code>・<code>r.NoMethod(h)</code></td><td>404・405 のときのハンドラー（405 を返すには <code>r.HandleMethodNotAllowed = true</code> が必要。既定は無効で 404 になる）</td></tr>
+        <tr><td><code>r.Static("/assets", "./assets")</code>・<code>r.StaticFile("/favicon.ico", "./f.ico")</code></td><td>静的ファイル</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>v1 := r.Group("/v1")
+{
+	v1.GET("/users", listUsers)
+	v1.GET("/users/:id", getUser)
+	v1.POST("/users", createUser)
+}</code></pre>
+
+  <h2 id="context">Context（c）でよく使うもの</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cx-in">入力</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cx-out">出力</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cx-kv">値の受け渡し</button>
+  </div>
+  <div class="panel" id="cx-in">
+    <div class="tbl stack">
+      <table>
+        <thead><tr><th>メソッド</th><th>返すもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>c.Param("id")</code></td><td>パスパラメータ</td></tr>
+          <tr><td><code>c.Query("q")</code>・<code>c.DefaultQuery("page", "1")</code></td><td>クエリ文字列（無ければ空文字・既定値）</td></tr>
+          <tr><td><code>c.GetQuery("q")</code></td><td>値と「あったか」の <code>bool</code></td></tr>
+          <tr><td><code>c.QueryArray("tag")</code>・<code>c.QueryMap("ids")</code></td><td><code>?tag=a&amp;tag=b</code> の配列・<code>?ids[a]=1</code> のマップ</td></tr>
+          <tr><td><code>c.PostForm("name")</code>・<code>c.DefaultPostForm(…)</code></td><td>フォームの値</td></tr>
+          <tr><td><code>c.FormFile("file")</code>・<code>c.SaveUploadedFile(f, dst)</code></td><td>アップロードされたファイル</td></tr>
+          <tr><td><code>c.GetHeader("Authorization")</code>・<code>c.Cookie("sid")</code></td><td>ヘッダー・Cookie</td></tr>
+          <tr><td><code>c.ClientIP()</code></td><td>クライアントの IP（信頼するプロキシの設定に左右される。下の「よくある誤解」）</td></tr>
+          <tr><td><code>c.Request</code></td><td>元の <code>*http.Request</code>（<code>c.Request.Context()</code> など）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cx-out" hidden>
+<pre><code>c.JSON(http.StatusOK, user)                  // JSON
+c.IndentedJSON(200, v)                       // 整形した JSON（開発用）
+c.PureJSON(200, v)                           // &lt; &gt; などをエスケープしない
+c.String(200, "hello %s", name)
+c.XML(200, v); c.YAML(200, v); c.TOML(200, v)
+c.HTML(200, "index.tmpl", gin.H{"title": "Top"})   // r.LoadHTMLGlob("templates/*") が必要
+c.Redirect(http.StatusFound, "/login")
+c.File("./report.pdf"); c.FileAttachment("./a.csv", "data.csv")
+c.Data(200, "image/png", bytes)
+c.Header("X-Request-Id", id)                 // 返す前にヘッダーを足す
+c.Status(http.StatusNoContent)</code></pre>
+  </div>
+  <div class="panel" id="cx-kv" hidden>
+<pre><code>// ミドルウェアで入れて、ハンドラーで取り出す（リクエストごとの値）
+c.Set("userID", 42)
+id := c.GetInt("userID")          // GetString・GetBool・GetTime なども
+v, ok := c.Get("userID")          // any と bool
+v := c.MustGet("userID")          // 無ければ panic
+c.Delete("userID")                // v1.12 で追加</code></pre>
+  </div>
+
+  <h2 id="binding">バインディングと検証</h2>
+  <p>構造体タグで「どこから読むか」と「検証ルール」を書き、<code>ShouldBind…</code> で詰める。検証は <a href="https://github.com/go-playground/validator">go-playground/validator</a> のルール（<code>required</code>・<code>min</code>・<code>max</code>・<code>email</code>・<code>oneof</code> など）。</p>
+<pre><code>type CreateUser struct {
+	Name  string `json:"name"  binding:"required,max=50"`
+	Email string `json:"email" binding:"required,email"`
+	Age   int    `json:"age"   binding:"gte=0,lte=150"`
+}
+
+func createUser(c *gin.Context) {
+	var in CreateUser
+	if err := c.ShouldBindJSON(&amp;in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, in)
+}</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>読む場所（タグ）</th></tr></thead>
+      <tbody>
+        <tr><td><code>ShouldBindJSON</code></td><td>JSON ボディ（<code>json:"…"</code>）</td></tr>
+        <tr><td><code>ShouldBindQuery</code></td><td>クエリ文字列だけ（<code>form:"…"</code>。<code>form:"page,default=1"</code> で既定値）</td></tr>
+        <tr><td><code>ShouldBind</code></td><td>Content-Type とメソッドで自動選択（GET はクエリ、POST の JSON・フォームなど）</td></tr>
+        <tr><td><code>ShouldBindUri</code></td><td>パスパラメータ（<code>uri:"id"</code>）</td></tr>
+        <tr><td><code>ShouldBindHeader</code></td><td>ヘッダー（<code>header:"…"</code>）</td></tr>
+        <tr><td><code>ShouldBindBodyWithJSON</code></td><td>ボディを保存してから読む。同じボディを別の構造体で 2 回読みたいとき</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note"><code>Bind…</code>（<code>Should</code> なし）は失敗すると自動で 400 を書き込み <code>Abort</code> する。エラーの形を自分で決めたいなら <code>ShouldBind…</code> を使う。</p>
+
+  <h2 id="middleware">ミドルウェア</h2>
+  <p><code>c.Next()</code> の前がハンドラーの前、後がハンドラーの後に動く。登録した順に入り、逆の順に出る。止めるときは <code>c.Abort…</code>。</p>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="リクエストは Logger、auth の順にミドルウェアを通ってハンドラーに届き、auth、Logger の逆順で戻る">
+      <div class="st"><b>Logger 前半</b><span>1 番目に登録</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>auth 前半</b><span>ここで Abort すると先へ進まない</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>handler</b><span>c.JSON などで応答</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>auth 後半</b><span><code>c.Next()</code> の後</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>Logger 後半</b><span>所要時間などを記録</span></div>
+    </div>
+  </div>
+<pre><code>func Auth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return   // Abort しても関数は続くので return も書く
+		}
+		c.Set("userID", lookup(token))
+		c.Next()
+	}
+}
+
+r := gin.New()
+r.Use(gin.Logger(), gin.Recovery())   // 全体に
+admin := r.Group("/admin", Auth())    // グループだけに</code></pre>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>組み込み</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>gin.Logger()</code>・<code>gin.LoggerWithConfig(…)</code></td><td>アクセスログ（<code>SkipPaths</code> で除外）</td></tr>
+        <tr><td><code>gin.Recovery()</code>・<code>gin.CustomRecovery(fn)</code></td><td>panic を 500 にして落ちないようにする</td></tr>
+        <tr><td><code>gin.BasicAuth(gin.Accounts{…})</code></td><td>Basic 認証</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">CORS・セッション・gzip などは <a href="https://github.com/gin-contrib">gin-contrib</a> の別モジュール（<code>github.com/gin-contrib/cors</code> など）。</p>
+
+  <h2 id="errors">エラー処理</h2>
+<pre><code>// ハンドラーではエラーを積んで、最後にまとめて返す書き方もできる
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+		if len(c.Errors) &gt; 0 {
+			c.JSON(-1, gin.H{"error": c.Errors.Last().Error()})   // -1 は既に決まったステータスを使う
+		}
+	}
+}
+
+func getUser(c *gin.Context) {
+	u, err := repo.Find(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		_ = c.Error(err)   // c.Errors に積む
+		return
+	}
+	c.JSON(200, u)
+}</code></pre>
+
+  <h2 id="server">サーバーの設定と終了処理</h2>
+<pre><code>r := gin.Default()
+r.SetTrustedProxies([]string{"10.0.0.0/8"})   // プロキシを使わないなら nil
+
+srv := &amp;http.Server{
+	Addr:              ":8080",
+	Handler:           r,                   // *gin.Engine は http.Handler
+	ReadHeaderTimeout: 5 * time.Second,
+}
+go func() {
+	if err := srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal(err)
+	}
+}()
+
+ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+defer stop()
+&lt;-ctx.Done()
+shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+srv.Shutdown(shutdownCtx)   // 処理中のリクエストを待ってから止める</code></pre>
+  <p class="note"><code>r.Run()</code> はタイムアウトも終了処理も設定できないので、本番は <code>http.Server</code> に渡す形にする。</p>
+
+  <h2 id="test">テスト</h2>
+<pre><code>func TestPing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := setupRouter()   // ルートを登録した *gin.Engine を返す関数に分けておく
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "pong") {
+		t.Fatalf("got %d %s", w.Code, w.Body.String())
+	}
+}</code></pre>
+
+  <h2 id="steps">API サーバーを作る手順</h2>
+  <ol class="steps">
+    <li><b>ルーターを関数に分ける</b><code>setupRouter() *gin.Engine</code> にすると main とテストで同じものを使える</li>
+    <li><b>グループで区切る</b><code>/v1</code>・<code>/admin</code> などを <code>Group</code> にし、認証はグループのミドルウェアにする</li>
+    <li><b>入力は構造体で受ける</b><code>binding</code> タグで検証し、<code>ShouldBind…</code> のエラーを共通の形で返す</li>
+    <li><b>DB 層をつなぐ</b><code>c.Request.Context()</code> を渡す。クエリは <a href="sqlc.html">sqlc</a> や <a href="ent.html">ent</a> で生成すると型が付く</li>
+    <li><b>本番の設定</b><code>GIN_MODE=release</code>・<code>SetTrustedProxies</code>・<code>http.Server</code> のタイムアウトと <code>Shutdown</code></li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>c.ClientIP() は常に本当のクライアントの IP を返す</summary><p>何も設定しないと Gin はすべてのプロキシを信頼し、<code>X-Forwarded-For</code> の値をそのまま使う（公式も安全ではないと明記）。前段のプロキシのアドレスを <code>SetTrustedProxies</code> で指定するか、プロキシが無いなら <code>SetTrustedProxies(nil)</code> にする。CDN 経由なら <code>r.TrustedPlatform = gin.PlatformCloudflare</code> なども使える。</p></details>
+  <details class="myth"><summary>c.Abort() を呼べばハンドラーの残りの処理も止まる</summary><p><code>Abort</code> は「この後のハンドラー（チェーンの続き）を呼ばない」印を付けるだけで、今の関数は最後まで実行される。止めたいところで <code>return</code> も書く。</p></details>
+  <details class="myth"><summary>ハンドラーで起動した goroutine にそのまま c を渡してよい</summary><p><code>*gin.Context</code> はリクエストが終わると再利用される。goroutine で使うなら <code>cCp := c.Copy()</code> した読み取り専用の複製を渡す。</p></details>
+  <details class="myth"><summary>ShouldBindJSON でボディを読んだあと、もう一度読める</summary><p>ボディは一度読むと空になる。別の構造体でもう一度読むなら、最初から <code>ShouldBindBodyWithJSON</code>（読んだボディを Context に保存する）を使う。</p></details>
+  <p class="note">関連: 同じ「Express 風」の書き方をする TypeScript のフレームワークは <a href="hono.html">Hono 使い方</a>。</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://gin-gonic.com/en/docs/">Gin Web Framework – Documentation</a></li>
+    <li><a href="https://github.com/gin-gonic/gin/blob/master/docs/doc.md">gin-gonic/gin docs/doc.md</a>（ルーティング・バインディング・ミドルウェア・テストの例）</li>
+    <li><a href="https://github.com/gin-gonic/gin/blob/master/CHANGELOG.md">CHANGELOG</a>（v1.12.0: <code>GetError</code>・<code>Delete</code> の追加、Go 1.25 以上）</li>
+    <li><a href="https://pkg.go.dev/github.com/gin-gonic/gin">pkg.go.dev – gin</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-20（gin v1.12.0）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

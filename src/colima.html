@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colima 使い方</title>
+<meta name="description" content="macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.cm { color: var(--fg-2); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.8rem; }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.panel.card { padding: 6px 10px; overflow-x: auto; }
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 4px 10px; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.danger { font-size: 0.7rem; font-weight: 700; color: var(--c-ng); border: 1px solid var(--c-ng); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+@media (max-width: 520px) {
+  .cheat td:first-child { white-space: normal; word-break: break-all; }
+  .cheat.flags td:first-child { white-space: nowrap; word-break: normal; }
+}
+
+/* 図：仕組み */
+.arch { display: flex; align-items: stretch; gap: 8px; margin: 6px 0; }
+.arch .node {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
+  font-size: 0.8rem;
+}
+.arch .node b { display: block; font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+.arch .node .sub { color: var(--fg-2); font-size: 0.75rem; }
+.arch .node.vm { flex: 1.5; border-style: dashed; }
+.arch .inner { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.arch .inner span { background: var(--chip); border-radius: 4px; padding: 1px 6px; font: 500 0.72rem 'JetBrains Mono', ui-monospace, monospace; }
+.arch .arrow { align-self: center; color: var(--fg-2); font: 700 1rem 'JetBrains Mono', ui-monospace, monospace; }
+.arch .arrow::before { content: "→"; }
+.paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.paths div { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 8px 10px; font-size: 0.78rem; }
+.paths b { display: block; font-size: 0.8rem; }
+@media (max-width: 600px) {
+  .arch { flex-direction: column; }
+  .arch .arrow::before { content: "↓"; }
+  .paths { grid-template-columns: 1fr; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Colima 使い方</h1>
+  <p class="subtitle">macOS（と Linux）で Docker / containerd / Kubernetes を手軽に動かす CLI のチートシート（v0.10.3 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Colima は Lima の Linux VM の中で Docker などを動かし、Mac の <code>docker</code> コマンドから使えるようにする CLI。</li>
+      <li><code>colima start</code> で VM を作って起動し、Docker コンテキスト <code>colima</code> に自動で切り替える。</li>
+      <li>VM の種類やマウント方式は作成後に変えられないので、変えたいときは <code>colima delete</code> して作り直す。</li>
+    </ul>
+  </div>
+
+  <h2 id="arch">仕組み</h2>
+  <p>名前の由来は Containers on Lima。Mac 上の <code>docker</code> CLI は、Colima が作った Docker コンテキストを通して VM の中の Docker Engine に話しかける。</p>
+  <div class="arch" role="img" aria-label="Mac の docker CLI から、Docker コンテキストと UNIX ソケットを経由して、Lima VM の中の Docker Engine につながる図">
+    <div class="node"><b>Mac（ホスト）</b><span class="sub"><code>docker</code> / <code>kubectl</code> / <code>nerdctl</code> などのクライアント</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>Docker コンテキスト</b><span class="sub">名前は <code>colima</code>（別プロファイルは <code>colima-名前</code>）。<br>ソケット <code>~/.colima/default/docker.sock</code></span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node vm"><b>Lima VM（Ubuntu）</b><span class="sub">VM の種類: vz（macOS 13 以降の既定）/ qemu / krunkit</span>
+      <div class="inner"><span>dockerd</span><span>containerd</span><span>k3s</span><span>incus</span></div>
+    </div>
+  </div>
+  <div class="paths">
+    <div><b>マウント</b>既定で <code>$HOME</code> を書き込み可でマウント。ほかの場所は <code>mounts</code> に足す。</div>
+    <div><b>ポート転送</b>コンテナが公開したポートは自動で Mac の <code>localhost</code> に転送される（既定は ssh 方式、TCP のみ）。</div>
+    <div><b>ホストへの接続</b>コンテナから Mac へは <code>host.docker.internal</code> で届く。</div>
+  </div>
+
+  <h2 id="start">はじめかた</h2>
+  <ol class="steps">
+    <li><b>インストール</b><code>brew install colima docker</code>。Colima は VM を用意するだけなので、<code>docker</code> クライアント（必要なら <code>docker-compose</code>・<code>docker-buildx</code>・<code>kubectl</code>）は別に入れる。</li>
+    <li><b>起動</b><code>colima start</code>。初回は VM イメージをダウンロードして作成する。既定は 2 CPU・メモリ 2GiB・ディスク 100GiB。</li>
+    <li><b>使う</b><code>docker run hello-world</code>。追加の設定なしで Mac の <code>docker</code> がそのまま使える。</li>
+    <li><b>止める</b><code>colima stop</code>。コンテナやイメージは残り、次の <code>colima start</code> で戻る。</li>
+  </ol>
+  <p class="note">ログイン時に自動で起動したいときは、Homebrew で入れていれば <code>brew services start colima</code>。</p>
+
+  <h2 id="commands">コマンド チートシート</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: profile, ssh, kubernetes）… 全タブから探す" aria-label="コマンドを絞り込む">
+  <p class="note">プロファイル名を省くと <code>default</code>。<code>-p 名前</code>（<code>--profile</code>）でも指定できる。<span class="danger">危険</span> はデータが消える操作。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-life">起動・停止</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-prof">状態・プロファイル</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-vm">VM の操作</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-rt">ランタイム</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-cfg">設定・保守</button>
+  </div>
+
+  <div class="panel card" id="t-life">
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>colima start</code></td><td>VM を作成（初回）または起動する。すでに起動中なら何もしない</td></tr>
+<tr><td><code>colima start --cpus 4 --memory 8</code></td><td>CPU・メモリ（GiB）を指定して起動。止めてから実行すると既存の VM にも反映される</td></tr>
+<tr><td><code>colima start --edit</code></td><td>設定ファイル（<code>colima.yaml</code>）をエディタで開いてから起動する</td></tr>
+<tr><td><code>colima start --foreground</code></td><td>フォアグラウンドで動かし続ける（launchd などで管理するとき）</td></tr>
+<tr><td><code>colima stop</code></td><td>VM を止める。コンテナ・イメージ・ボリュームは残る</td></tr>
+<tr><td><code>colima stop --force</code></td><td>正常終了を待たずに止める。<code>colima list</code> が <code>Broken</code> のときに使う</td></tr>
+<tr><td><code>colima restart</code></td><td>止めてから起動し直す（設定ファイルを書き換えたあとなど）</td></tr>
+<tr><td><code>colima delete</code> <span class="danger">危険</span></td><td>VM を削除する。v0.9.0 以降、コンテナのデータは別ディスクに残り、次の <code>start</code> で戻る</td></tr>
+<tr><td><code>colima delete --data</code> <span class="danger">危険</span></td><td>コンテナ・イメージ・ボリュームのデータも含めてすべて消す</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-prof" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>colima status</code></td><td>起動状態・ランタイム・ソケットのパスなどを表示（<code>-e</code> で詳細、<code>-j</code> で JSON）</td></tr>
+<tr><td><code>colima list</code></td><td>全プロファイルの状態・CPU・メモリ・ディスク・ランタイム・IP を一覧（<code>ls</code> でも可）</td></tr>
+<tr><td><code>colima start work</code></td><td>プロファイル <code>work</code> で別の VM を作って起動する（同時に複数動かせる）</td></tr>
+<tr><td><code>colima stop work</code></td><td>プロファイル <code>work</code> を止める</td></tr>
+<tr><td><code>colima clone default work</code></td><td>既存のプロファイルを複製して新しいプロファイルを作る</td></tr>
+<tr><td><code>colima version</code></td><td>Colima と、中で動くランタイムのバージョンを表示</td></tr>
+<tr><td><code>docker context ls</code></td><td>Docker コンテキストの一覧。<code>*</code> が今使っているもの</td></tr>
+<tr><td><code>docker context use colima</code></td><td>Colima の Docker に切り替える（Docker Desktop に戻すなら <code>desktop-linux</code> など）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-vm" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>colima ssh</code></td><td>VM にログインする</td></tr>
+<tr><td><code>colima ssh -- uname -a</code></td><td>VM の中で 1 コマンドだけ実行する。<code>--</code> で Colima のフラグと区切る</td></tr>
+<tr><td><code>colima ssh-config</code></td><td>VM に接続するための SSH 設定を表示（エディタのリモート接続などに使う）</td></tr>
+<tr><td><code>colima ssh -- sudo fstrim -a</code></td><td>VM の中で空いたディスク領域を Mac 側に返す（v0.5.0 以降は起動時にも自動で行う）</td></tr>
+<tr><td><code>colima start --network-address</code></td><td>Mac から直接届く IP アドレスを VM に割り当てる（macOS のみ。既定はオフ）</td></tr>
+<tr><td><code>colima start --dns 1.1.1.1</code></td><td>VM の DNS サーバーを指定する。VM からネットにつながらないときに試す</td></tr>
+<tr><td><code>colima start --mount ~/work:w</code></td><td>マウントするディレクトリを指定（<code>:w</code> で書き込み可）。指定すると既定の <code>$HOME</code> の代わりになる</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-rt" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">containerd</td></tr>
+<tr><td><code>colima start --runtime containerd</code></td><td>Docker の代わりに containerd で起動する</td></tr>
+<tr><td><code>colima nerdctl -- ps</code></td><td>VM の中の nerdctl を実行する</td></tr>
+<tr><td><code>colima nerdctl install</code></td><td>Mac の <code>$PATH</code> に <code>nerdctl</code> のラッパーを置き、<code>nerdctl</code> だけで呼べるようにする</td></tr>
+<tr class="grp"><td colspan="2">Kubernetes（k3s）</td></tr>
+<tr><td><code>colima start --kubernetes</code></td><td>Kubernetes（k3s）も一緒に起動し、<code>kubectl</code> のコンテキストを切り替える</td></tr>
+<tr><td><code>colima kubernetes stop</code></td><td>Kubernetes だけ止める（<code>start</code>・<code>delete</code>・<code>reset</code> もある）</td></tr>
+<tr class="grp"><td colspan="2">Incus</td></tr>
+<tr><td><code>colima start --runtime incus</code></td><td>Incus（コンテナと VM を扱う）で起動する。Mac の <code>incus</code> クライアントから使う</td></tr>
+<tr class="grp"><td colspan="2">AI モデル（Apple Silicon・macOS 13 以降）</td></tr>
+<tr><td><code>colima start --vm-type krunkit</code></td><td>GPU を使える krunkit の VM で起動する（krunkit を別に入れておく）</td></tr>
+<tr><td><code>colima model run gemma3</code></td><td>AI モデルを取得して実行する（Docker ランタイムと krunkit が必要）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-cfg" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>colima start --edit</code></td><td>そのプロファイルの <code>colima.yaml</code> を編集してから起動</td></tr>
+<tr><td><code>colima template</code></td><td>新しく作る VM の既定値（テンプレート）を編集する</td></tr>
+<tr><td><code>colima template --print</code></td><td>テンプレートのファイルのパスを表示するだけ</td></tr>
+<tr><td><code>colima update</code></td><td>中の Docker / containerd だけを最新にする（v0.7.6 以降）</td></tr>
+<tr><td><code>brew upgrade colima</code></td><td>Colima 本体を更新する。新しい VM イメージを使うには <code>colima delete</code> → <code>colima start</code></td></tr>
+<tr><td><code>colima prune</code></td><td>ダウンロード済みのイメージなどのキャッシュを消す（<code>-a</code> で Lima の分も）</td></tr>
+<tr><td><code>colima start --verbose</code></td><td>詳しいログを出して起動する。起動しない原因を調べるとき</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="flags">colima start のよく使うオプション</h2>
+  <div class="tblwrap">
+<table class="cheat flags"><thead><tr><th>オプション</th><th>既定値</th><th>意味</th></tr></thead><tbody>
+<tr><td><code>-c</code><br><code>--cpus</code></td><td>2</td><td>CPU 数</td></tr>
+<tr><td><code>-m</code><br><code>--memory</code></td><td>2</td><td>メモリ（GiB）</td></tr>
+<tr><td><code>-d</code><br><code>--disk</code></td><td>100</td><td>コンテナ用ディスク（GiB）。あとから増やせるが減らせない</td></tr>
+<tr><td><code>-r</code><br><code>--runtime</code></td><td>docker</td><td><code>docker</code> / <code>containerd</code> / <code>incus</code></td></tr>
+<tr><td><code>-t</code><br><code>--vm-type</code></td><td>vz</td><td><code>vz</code>（Apple の仮想化。macOS 13 以降の既定）/ <code>qemu</code> / <code>krunkit</code>。作成後は変えられない</td></tr>
+<tr><td><code>--vz-rosetta</code></td><td>オフ</td><td>Apple Silicon で amd64 のイメージを Rosetta 2 で速く動かす（vz のみ）</td></tr>
+<tr><td><code>-a</code><br><code>--arch</code></td><td>Mac と同じ</td><td><code>aarch64</code> / <code>x86_64</code>。違う方を選ぶと qemu のエミュレーションになり遅い</td></tr>
+<tr><td><code>--mount-type</code></td><td>virtiofs（vz）</td><td><code>virtiofs</code> / <code>9p</code> / <code>sshfs</code>。qemu の既定は sshfs。作成後は変えられない</td></tr>
+<tr><td><code>-V</code><br><code>--mount</code></td><td><code>$HOME</code></td><td>マウントするディレクトリ。<code>:w</code> で書き込み可、<code>none</code> でマウントなし</td></tr>
+<tr><td><code>-k</code><br><code>--kubernetes</code></td><td>オフ</td><td>k3s を一緒に起動する</td></tr>
+<tr><td><code>--network-address</code></td><td>オフ</td><td>Mac から届く IP を VM に割り当てる</td></tr>
+<tr><td><code>-n</code><br><code>--dns</code></td><td>なし</td><td>VM の DNS サーバー（複数回指定できる）</td></tr>
+<tr><td><code>--env</code></td><td>なし</td><td>VM に渡す環境変数（<code>--env KEY=value</code>）</td></tr>
+<tr><td><code>--port-forwarder</code></td><td>ssh</td><td><code>ssh</code>（TCP のみ・安定）/ <code>grpc</code>（UDP も可・試験的）/ <code>none</code></td></tr>
+<tr><td><code>-p</code><br><code>--profile</code></td><td>default</td><td>プロファイル名（<code>colima start 名前</code> と同じ）</td></tr>
+</tbody></table>
+  </div>
+  <p class="note">CPU・メモリ・ディスクは、<code>colima stop</code> してから新しい値で <code>colima start</code> すれば変えられる。VM の種類・マウント方式・アーキテクチャは作り直しが必要。</p>
+
+  <h2 id="config">設定ファイル</h2>
+  <p>フラグの代わりに YAML でも設定できる。<code>colima start --edit</code> で開くのが早い。</p>
+  <div class="tblwrap">
+<table class="cheat"><thead><tr><th>ファイル</th><th>中身</th></tr></thead><tbody>
+<tr><td><code>~/.colima/default/colima.yaml</code></td><td>プロファイル <code>default</code> の設定。別プロファイルは <code>~/.colima/名前/colima.yaml</code></td></tr>
+<tr><td><code>~/.colima/_templates/default.yaml</code></td><td>新しく作る VM の既定値（<code>colima template</code> で編集）</td></tr>
+<tr><td><code>~/.colima/default/docker.sock</code></td><td>Docker のソケット。<code>colima status</code> でも確かめられる</td></tr>
+<tr><td><code>~/.colima/_lima/_config/override.yaml</code></td><td>Lima の設定を上書きする（上級者向け）</td></tr>
+</tbody></table>
+  </div>
+  <p class="note">置き場所は <code>$COLIMA_HOME</code> で変えられる。設定していなければ <code>~/.colima</code> が使われる（<code>~/.colima</code> が無く <code>$XDG_CONFIG_HOME</code> が設定されているときは <code>$XDG_CONFIG_HOME/colima</code>。Linux で両方とも無いときは <code>~/.config/colima</code>）。</p>
+
+  <h3>colima.yaml の例</h3>
+<pre><code>cpu: 4
+memory: 8           <span class="cm"># GiB</span>
+disk: 100           <span class="cm"># GiB。増やすのは値を変えて再起動するだけ</span>
+runtime: docker
+vmType: vz          <span class="cm"># 作成後は変えられない</span>
+rosetta: true       <span class="cm"># Apple Silicon で amd64 イメージを速く</span>
+mountType: virtiofs <span class="cm"># 作成後は変えられない</span>
+mounts:             <span class="cm"># 書くと既定の $HOME マウントの代わりになる</span>
+  - location: ~/work
+    writable: true
+  - location: /Volumes/data
+    writable: true
+network:
+  dns: [1.1.1.1]
+docker:             <span class="cm"># Docker の daemon.json に入る内容</span>
+  insecure-registries:
+    - myregistry.local:5000
+env:
+  TZ: Asia/Tokyo</code></pre>
+
+  <h2 id="desktop">Docker Desktop との共存・ソケット</h2>
+  <p>Colima は起動時に Docker コンテキスト <code>colima</code> を作って既定にするので、Docker Desktop を入れたままでも使える。どちらを使うかは <code>docker context use</code> で切り替える。</p>
+  <p>コンテキストを見ないツール（一部の IDE やライブラリ）が <code>Cannot connect to the Docker daemon at unix:///var/run/docker.sock</code> と言うときは、どちらかで Colima のソケットを教える。</p>
+<pre><code><span class="cm"># 1. 環境変数で指す（シェルの設定ファイルに書く）</span>
+export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
+
+<span class="cm"># 2. 既定のパスにリンクを張る（ほかの Docker と衝突することがある）</span>
+sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock</code></pre>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>起動中に colima start --cpus 4 を実行すれば CPU 数が変わる</summary><p>起動中の <code>colima start</code> は「already running」と出して何もしない。先に <code>colima stop</code> してから新しい値で <code>colima start</code> する。</p></details>
+  <details class="myth"><summary>colima start --vm-type や --mount-type を付け直せば既存の VM も切り替わる</summary><p>VM の種類とマウント方式は作成時に決まり、あとから変えられない。<code>colima delete</code> してから作り直す（v0.9.0 以降はコンテナのデータは残る）。</p></details>
+  <details class="myth"><summary>colima delete をするとイメージやボリュームもすべて消える</summary><p>v0.9.0 以降はコンテナのデータを別ディスクに置くので、<code>colima delete</code> では消えず、次の <code>colima start</code> で戻る。すべて消したいときは <code>colima delete --data</code>。</p></details>
+  <details class="myth"><summary>Mac のどのディレクトリでも docker run -v でマウントできる</summary><p>既定で VM にマウントされるのは <code>$HOME</code> だけ。それ以外（<code>/Volumes/…</code> など）を <code>-v</code> で指定するとエラーにならず空のディレクトリになる。<code>colima.yaml</code> の <code>mounts</code> に足して <code>colima restart</code> する。</p></details>
+  <details class="myth"><summary>Colima を使うには Docker Desktop をアンインストールする必要がある</summary><p>Docker コンテキストで切り替えるので共存できる。Colima は起動時に自分のコンテキストを既定にする。</p></details>
+  <details class="myth"><summary>docker system prune で消せば Mac のディスクもすぐ空く</summary><p>VM の中で空いた領域が Mac 側に返るのは次の起動時（v0.5.0 以降）。すぐ返したいときは <code>colima ssh -- sudo fstrim -a</code>。</p></details>
+
+  <h2 id="trouble">うまく動かないとき</h2>
+  <ol class="steps">
+    <li><b><code>colima list</code> が Broken</b>Mac の再起動のあとなどに起きる。<code>colima stop --force</code> で Stopped に戻してから <code>colima start</code>。</li>
+    <li><b>起動に失敗する</b><code>colima start --verbose</code> でログを見る。Apple Silicon で x86_64 版の Homebrew（と Colima）を使っていないかも確かめる。</li>
+    <li><b>更新したらおかしくなった</b><code>colima start debug</code> のように別プロファイルで試し、そちらが動くなら <code>colima delete</code> → <code>colima start</code> で作り直す。</li>
+    <li><b>VM からネットにつながらない</b>多くは DNS。<code>colima start --dns 8.8.8.8 --dns 1.1.1.1</code> を試し、<code>colima ssh -- ping -c4 google.com</code> で確かめる。</li>
+  </ol>
+
+  <h2 id="sources">出典</h2>
+  <ul class="note">
+    <li><a href="https://github.com/abiosoft/colima">abiosoft/colima（README）</a></li>
+    <li><a href="https://github.com/abiosoft/colima/blob/main/docs/FAQ.md">Colima FAQ</a></li>
+    <li><a href="https://colima.run/docs/">colima.run/docs</a></li>
+  </ul>
+  <p class="note">v0.10.3 のソース（<code>cmd/</code>・<code>embedded/defaults/colima.yaml</code>）と照らして 2026-11-20 に確認。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 絞り込み：入力があれば全タブの行から探し、該当する行だけ出す（見出し行はその下に該当があれば残す）
+const filter = document.getElementById('filter');
+const panels = [...document.querySelectorAll('.panel')];
+const tabs = [...document.querySelectorAll('.tab')];
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelector('.tabs').style.display = q ? 'none' : '';
+  panels.forEach(p => {
+    let hit = 0;
+    let grp = null, grpHit = 0;
+    const closeGrp = () => { if (grp) grp.hidden = q ? grpHit === 0 : false; };
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      if (tr.classList.contains('grp')) { closeGrp(); grp = tr; grpHit = 0; return; }
+      const ok = !q || (tr.textContent + ' ' + (grp ? grp.textContent : '')).toLowerCase().includes(q);
+      tr.hidden = !ok;
+      if (ok) { hit++; grpHit++; }
+    });
+    closeGrp();
+    const selected = tabs.find(t => t.dataset.panel === p.id).getAttribute('aria-selected') === 'true';
+    p.hidden = q ? hit === 0 : !selected;
+  });
+});
+</script>
+
+</body>
+</html>

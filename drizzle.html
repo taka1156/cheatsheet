@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drizzle ORM 使い方</title>
+<meta name="description" content="Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート">
+<meta name="memo:tags" content="API・バックエンド">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* 流れの図 */
+.flow-row { margin: 4px 0 14px; }
+.flow-row:last-child { margin-bottom: 0; }
+.flow-row > .lbl { font-size: 0.8rem; color: var(--fg-2); margin-bottom: 4px; }
+.flow-row > .lbl b { color: var(--fg); }
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; text-align: center; }
+.pipe .ar::before { content: '→'; display: block; font-size: 0.9rem; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Drizzle ORM 使い方">
+<meta property="og:description" content="Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/drizzle.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Drizzle ORM 使い方</h1>
+  <p class="subtitle">TypeScript でテーブルを定義し、SQL に近い形で型付きクエリを書く ORM。マイグレーションは drizzle-kit（drizzle-orm 0.45・drizzle-kit 0.31 の安定版が前提。v1 RC との違いは最後の節）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Drizzle は TypeScript でテーブルを書き、SQL とほぼ同じ形のクエリを型付きで書ける ORM。</li>
+      <li>スキーマのファイルが唯一の元で、型はそこから推論され、drizzle-kit が差分の SQL マイグレーションを作る。</li>
+      <li>安定版は 0.45 で v1 は RC。リレーションの書き方と移行フォルダが変わるので、記事の版を確かめる。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">全体の流れ</h2>
+  <div class="card">
+    <div class="flow-row">
+      <div class="lbl"><b>マイグレーション</b>（スキーマを変えたとき・開発者の手元や CI）</div>
+      <div class="pipe" role="img" aria-label="schema.ts を drizzle-kit generate で SQL ファイルにし、drizzle-kit migrate で DB に適用する流れ">
+        <div class="st"><b>schema.ts</b><span>テーブル・列・インデックスを TS で定義</span></div>
+        <div class="ar" aria-hidden="true">generate</div>
+        <div class="st"><b>drizzle/*.sql</b><span>前回のスナップショットとの差分 SQL。Git に入れる</span></div>
+        <div class="ar" aria-hidden="true">migrate</div>
+        <div class="st"><b>データベース</b><span>適用済みの記録は <code>__drizzle_migrations</code> テーブル</span></div>
+      </div>
+    </div>
+    <div class="flow-row">
+      <div class="lbl"><b>アプリの実行時</b></div>
+      <div class="pipe" role="img" aria-label="drizzle() で db を作り、クエリビルダーで書いたクエリが SQL になって DB で実行され、型付きの結果が返る流れ">
+        <div class="st"><b>drizzle(接続)</b><span>ドライバー（pg・D1・mysql2 など）を包んで <code>db</code> を作る</span></div>
+        <div class="ar" aria-hidden="true"></div>
+        <div class="st"><b>db.select()…</b><span>クエリビルダーまたは <code>db.query</code>（リレーション）で書く</span></div>
+        <div class="ar" aria-hidden="true"></div>
+        <div class="st"><b>型付きの結果</b><span>選んだ列・JOIN の種類から戻り値の型が決まる</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="setup">セットアップ</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="su-pg">PostgreSQL</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="su-d1">SQLite（D1）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="su-my">MySQL</button>
+  </div>
+  <div class="panel card" id="su-pg">
+    <pre><code>npm i drizzle-orm pg
+npm i -D drizzle-kit @types/pg</code></pre>
+    <pre><code>// src/db.ts
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from './schema';
+
+export const db = drizzle(process.env.DATABASE_URL!, { schema });</code></pre>
+    <pre><code>// drizzle.config.ts
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  dialect: 'postgresql',
+  schema: './src/schema.ts',      // glob も可: './src/db/schema/*.ts'
+  out: './drizzle',               // マイグレーションの出力先
+  dbCredentials: { url: process.env.DATABASE_URL! },
+});</code></pre>
+    <p class="note">ドライバーは用途で選ぶ: <code>drizzle-orm/postgres-js</code>（postgres.js）・<code>drizzle-orm/neon-http</code>（Neon）・<code>drizzle-orm/pglite</code>（WASM の PostgreSQL。テスト向き）など。</p>
+  </div>
+  <div class="panel card" id="su-d1" hidden>
+    <pre><code>npm i drizzle-orm
+npm i -D drizzle-kit</code></pre>
+    <pre><code>// Worker の中で、バインディング（env.DB）から作る
+import { drizzle } from 'drizzle-orm/d1';
+import * as schema from './schema';
+
+export default {
+  async fetch(req: Request, env: Env) {
+    const db = drizzle(env.DB, { schema });
+    const rows = await db.select().from(schema.users);
+    return Response.json(rows);
+  },
+};</code></pre>
+    <pre><code>// drizzle.config.ts（push・studio で本番 D1 に HTTP でつなぐとき）
+export default defineConfig({
+  dialect: 'sqlite',
+  driver: 'd1-http',
+  schema: './src/schema.ts',
+  out: './drizzle',
+  dbCredentials: {
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    databaseId: process.env.CLOUDFLARE_DATABASE_ID!,
+    token: process.env.CLOUDFLARE_D1_TOKEN!,
+  },
+});</code></pre>
+    <p>generate で作った SQL は、wrangler の設定で D1 の <code>migrations_dir</code> を <code>drizzle</code> にして <code>wrangler d1 migrations apply &lt;DB名&gt;</code>（本番は <code>--remote</code>）で適用してもよい。</p>
+    <p class="note">ローカルファイルの SQLite は <code>drizzle-orm/better-sqlite3</code>・<code>drizzle-orm/libsql</code>（Turso）など。</p>
+  </div>
+  <div class="panel card" id="su-my" hidden>
+    <pre><code>npm i drizzle-orm mysql2
+npm i -D drizzle-kit</code></pre>
+    <pre><code>import { drizzle } from 'drizzle-orm/mysql2';
+import * as schema from './schema';
+
+// 0.x でリレーションを使うときは mode が要る（PlanetScale なら 'planetscale'）
+export const db = drizzle(process.env.DATABASE_URL!, { schema, mode: 'default' });</code></pre>
+    <pre><code>export default defineConfig({
+  dialect: 'mysql',
+  schema: './src/schema.ts',
+  out: './drizzle',
+  dbCredentials: { url: process.env.DATABASE_URL! },
+});</code></pre>
+    <p class="note">MySQL には <code>RETURNING</code> がないので、挿入した ID は <code>.$returningId()</code> で受け取る。</p>
+  </div>
+
+  <h2 id="schema">スキーマ定義</h2>
+  <pre><code>// src/schema.ts（PostgreSQL の例）
+import { pgTable, integer, text, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  email: varchar({ length: 255 }).notNull().unique(),
+  role: text({ enum: ['admin', 'member'] }).notNull().default('member'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').$onUpdate(() =&gt; new Date()),
+});
+
+export const posts = pgTable('posts', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  title: text().notNull(),
+  authorId: integer('author_id').notNull()
+    .references(() =&gt; users.id, { onDelete: 'cascade' }),   // 外部キー
+}, (t) =&gt; [
+  index('posts_author_idx').on(t.authorId),                  // 3 つ目の引数は配列で返す
+]);
+
+// 型はテーブルから推論する
+export type User = typeof users.$inferSelect;     // SELECT の結果
+export type NewUser = typeof users.$inferInsert;  // INSERT の入力（既定値のある列は省略可）</code></pre>
+  <p>列名を省くとキー名がそのまま DB の列名になる。キーは camelCase・DB は snake_case にしたいときは、列ごとに名前を渡すか、<code>drizzle(url, { casing: 'snake_case' })</code> と <code>drizzle.config.ts</code> の <code>casing: 'snake_case'</code> を両方に書く（v1 では書き方が変わる）。</p>
+
+  <h3>列の型（DB ごとの import 元）</h3>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>用途</th><th>PostgreSQL（<code>pg-core</code>）</th><th>SQLite（<code>sqlite-core</code>）</th><th>MySQL（<code>mysql-core</code>）</th></tr></thead>
+      <tbody>
+        <tr><td>テーブル</td><td data-l="PG"><code>pgTable</code></td><td data-l="SQLite"><code>sqliteTable</code></td><td data-l="MySQL"><code>mysqlTable</code></td></tr>
+        <tr><td>自動採番の主キー</td><td data-l="PG"><code>integer().primaryKey().generatedAlwaysAsIdentity()</code>（または <code>serial()</code>）</td><td data-l="SQLite"><code>integer().primaryKey({ autoIncrement: true })</code></td><td data-l="MySQL"><code>int().primaryKey().autoincrement()</code>（または <code>serial()</code>）</td></tr>
+        <tr><td>文字列</td><td data-l="PG"><code>text()</code>・<code>varchar({ length })</code></td><td data-l="SQLite"><code>text()</code></td><td data-l="MySQL"><code>varchar({ length })</code>・<code>text()</code></td></tr>
+        <tr><td>真偽値</td><td data-l="PG"><code>boolean()</code></td><td data-l="SQLite"><code>integer({ mode: 'boolean' })</code></td><td data-l="MySQL"><code>boolean()</code></td></tr>
+        <tr><td>日時</td><td data-l="PG"><code>timestamp({ withTimezone: true })</code></td><td data-l="SQLite"><code>integer({ mode: 'timestamp' })</code>（秒。ミリ秒は <code>'timestamp_ms'</code>）</td><td data-l="MySQL"><code>datetime()</code>・<code>timestamp()</code></td></tr>
+        <tr><td>JSON</td><td data-l="PG"><code>jsonb().$type&lt;T&gt;()</code></td><td data-l="SQLite"><code>text({ mode: 'json' }).$type&lt;T&gt;()</code></td><td data-l="MySQL"><code>json().$type&lt;T&gt;()</code></td></tr>
+        <tr><td>列挙</td><td data-l="PG"><code>pgEnum('role', [...])</code>（DB の型を作る）・<code>text({ enum })</code></td><td data-l="SQLite"><code>text({ enum: [...] })</code>（型だけ）</td><td data-l="MySQL"><code>mysqlEnum('role', [...])</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>列の修飾子</h3>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>.notNull()</code></td><td data-l="意味">NOT NULL。付けないと型が <code>T | null</code> になる</td></tr>
+        <tr><td><code>.primaryKey()</code>・<code>.unique()</code></td><td data-l="意味">主キー・一意制約。複合主キーは 3 つ目の引数で <code>primaryKey({ columns: [t.a, t.b] })</code></td></tr>
+        <tr><td><code>.default(v)</code>・<code>.defaultNow()</code></td><td data-l="意味"><b>DB 側</b>の既定値（DDL に入る）。式は <code>.default(sql`...`)</code></td></tr>
+        <tr><td><code>.$defaultFn(() =&gt; …)</code></td><td data-l="意味"><b>アプリ側</b>で INSERT のときに値を作る（例: <code>crypto.randomUUID()</code>）。DDL には出ない</td></tr>
+        <tr><td><code>.$onUpdate(() =&gt; …)</code></td><td data-l="意味">Drizzle で UPDATE したときにアプリ側で値を入れる（<code>updatedAt</code> など）。既定値がない列なら INSERT でも入る</td></tr>
+        <tr><td><code>.references(() =&gt; t.id, opts)</code></td><td data-l="意味">外部キー。<code>onDelete</code>・<code>onUpdate</code> に <code>'cascade'</code>・<code>'set null'</code> など</td></tr>
+        <tr><td><code>.$type&lt;T&gt;()</code></td><td data-l="意味">TypeScript の型だけを差し替える（DB の型は変わらない）</td></tr>
+        <tr><td><code>index()</code>・<code>uniqueIndex()</code></td><td data-l="意味">3 つ目の引数の配列で <code>index('名前').on(t.col)</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="query">クエリ</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="q-select">select</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="q-insert">insert</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="q-update">update・delete</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="q-join">join・集計</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="q-tx">トランザクション・SQL</button>
+  </div>
+  <div class="panel card" id="q-select">
+    <pre><code>import { and, desc, eq, like } from 'drizzle-orm';
+
+const all = await db.select().from(users);              // User[]
+
+const admins = await db
+  .select({ id: users.id, name: users.name })           // 列を選ぶと型も絞られる
+  .from(users)
+  .where(and(eq(users.role, 'admin'), like(users.name, 'A%')))
+  .orderBy(desc(users.createdAt))
+  .limit(10)
+  .offset(20);
+
+// 条件を後から足す: undefined を渡した条件は無視される
+const filters = [q ? like(users.name, `%${q}%`) : undefined, eq(users.role, 'member')];
+await db.select().from(users).where(and(...filters));</code></pre>
+  </div>
+  <div class="panel card" id="q-insert" hidden>
+    <pre><code>await db.insert(users).values({ name: 'Ann', email: 'ann@example.com' });
+
+// 複数行 + 挿入した行を返す（PostgreSQL・SQLite）
+const [ann, bob] = await db.insert(users).values([a, b]).returning();
+const ids = await db.insert(users).values(a).returning({ id: users.id });
+
+// MySQL は RETURNING がない
+const [{ id }] = await db.insert(users).values(a).$returningId();
+
+// 重複したとき（upsert）
+await db.insert(users).values(a).onConflictDoNothing();
+await db.insert(users).values(a).onConflictDoUpdate({
+  target: users.email,
+  set: { name: a.name },
+});
+// MySQL: .onDuplicateKeyUpdate({ set: { name: a.name } })</code></pre>
+  </div>
+  <div class="panel card" id="q-update" hidden>
+    <pre><code>await db.update(users)
+  .set({ name: 'Bob' })
+  .where(eq(users.id, 1))
+  .returning();
+
+await db.delete(users).where(eq(users.id, 1));
+
+// 列の値を使って更新（posts に views 列があるとき）
+await db.update(posts).set({ views: sql`${posts.views} + 1` }).where(eq(posts.id, id));</code></pre>
+    <p class="note"><code>where</code> を書かない <code>update</code>・<code>delete</code> は全行が対象になる。</p>
+  </div>
+  <div class="panel card" id="q-join" hidden>
+    <pre><code>import { count, eq, gt } from 'drizzle-orm';
+
+// leftJoin なので author は string | null になる（innerJoin なら string）
+const rows = await db
+  .select({ title: posts.title, author: users.name })
+  .from(posts)
+  .leftJoin(users, eq(posts.authorId, users.id));
+
+// 件数だけ
+const n = await db.$count(users, eq(users.role, 'admin'));
+
+// グループ化
+const byAuthor = await db
+  .select({ authorId: posts.authorId, n: count() })
+  .from(posts)
+  .groupBy(posts.authorId)
+  .having(({ n }) =&gt; gt(n, 5));
+
+// サブクエリ
+const sq = db.select().from(posts).where(gt(posts.id, 100)).as('sq');
+await db.select().from(sq);</code></pre>
+  </div>
+  <div class="panel card" id="q-tx" hidden>
+    <pre><code>await db.transaction(async (tx) =&gt; {
+  const [u] = await tx.insert(users).values(a).returning();
+  await tx.insert(posts).values({ title: 'hello', authorId: u.id });
+  if (!ok) tx.rollback();      // 例外を投げて全体を戻す
+});
+
+// D1・libSQL・Neon HTTP: まとめて 1 回で送る（全部成功か全部失敗）
+await db.batch([
+  db.insert(users).values(a),
+  db.update(users).set({ role: 'admin' }).where(eq(users.id, 1)),
+]);
+
+// 生の SQL（値は自動でパラメータになる）
+import { sql } from 'drizzle-orm';
+await db.select({ lower: sql&lt;string&gt;`lower(${users.name})` }).from(users);
+await db.execute(sql`select * from ${users} where ${users.id} = ${id}`); // PG・MySQL
+// SQLite は db.run(sql`…`)・db.all(sql`…`)</code></pre>
+    <p class="note">D1 は対話的なトランザクション（BEGIN … COMMIT）を使えないので、まとめたい書き込みは <code>db.batch()</code> にする。</p>
+  </div>
+
+  <h3>条件の演算子（<code>drizzle-orm</code> から import）</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>関数</th><th>SQL</th></tr></thead>
+      <tbody>
+        <tr><td><code>eq</code>・<code>ne</code></td><td><code>=</code>・<code>&lt;&gt;</code></td></tr>
+        <tr><td><code>gt</code>・<code>gte</code>・<code>lt</code>・<code>lte</code></td><td><code>&gt;</code>・<code>&gt;=</code>・<code>&lt;</code>・<code>&lt;=</code></td></tr>
+        <tr><td><code>inArray</code>・<code>notInArray</code></td><td><code>IN (…)</code>・<code>NOT IN (…)</code>（空配列も渡せる）</td></tr>
+        <tr><td><code>isNull</code>・<code>isNotNull</code></td><td><code>IS NULL</code>・<code>IS NOT NULL</code></td></tr>
+        <tr><td><code>like</code>・<code>notLike</code>・<code>ilike</code></td><td><code>LIKE</code>（<code>ilike</code> は PostgreSQL の大文字小文字無視）</td></tr>
+        <tr><td><code>between</code>・<code>notBetween</code></td><td><code>BETWEEN a AND b</code></td></tr>
+        <tr><td><code>and</code>・<code>or</code>・<code>not</code></td><td>条件の組み合わせ</td></tr>
+        <tr><td><code>exists</code>・<code>notExists</code></td><td>サブクエリの有無</td></tr>
+        <tr><td><code>asc</code>・<code>desc</code></td><td><code>orderBy</code> の並び順</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="relations">リレーショナルクエリ（<code>db.query</code>）</h2>
+  <p>JOIN を自分で書かずに、ネストしたオブジェクトで関連データを取る API。0.x と v1 で定義も絞り込みも書き方が違う。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="rq-v0">0.x（relations）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="rq-v1">v1 RC（defineRelations）</button>
+  </div>
+  <div class="panel card" id="rq-v0">
+    <pre><code>// schema.ts に一緒に書く
+import { relations } from 'drizzle-orm';
+
+export const usersRelations = relations(users, ({ many }) =&gt; ({
+  posts: many(posts),
+}));
+export const postsRelations = relations(posts, ({ one }) =&gt; ({
+  author: one(users, { fields: [posts.authorId], references: [users.id] }),
+}));
+
+// db を作るとき schema（relations を含む）を渡す
+const db = drizzle(url, { schema });
+
+const list = await db.query.users.findMany({
+  columns: { id: true, name: true },
+  where: (u, { eq }) =&gt; eq(u.role, 'admin'),
+  orderBy: (u, { desc }) =&gt; [desc(u.createdAt)],
+  with: { posts: { columns: { title: true }, limit: 5 } },
+});
+const one = await db.query.users.findFirst({ where: (u, { eq }) =&gt; eq(u.id, 1) });</code></pre>
+  </div>
+  <div class="panel card" id="rq-v1" hidden>
+    <pre><code>// relations.ts: 全テーブルの関係を 1 か所で定義
+import { defineRelations } from 'drizzle-orm';
+import * as schema from './schema';
+
+export const relations = defineRelations(schema, (r) =&gt; ({
+  users: { posts: r.many.posts() },
+  posts: {
+    author: r.one.users({ from: r.posts.authorId, to: r.users.id }),
+  },
+}));
+
+// schema ではなく relations を渡す
+const db = drizzle(url, { relations });
+
+// where・orderBy はオブジェクトで書く
+const list = await db.query.users.findMany({
+  where: {
+    role: 'admin',
+    id: { gt: 10 },
+    OR: [{ name: { like: 'A%' } }, { name: { ilike: 'b%' } }],
+    posts: true,                       // 投稿が 1 件以上ある人（false なら 0 件）
+  },
+  orderBy: { createdAt: 'desc' },
+  with: { posts: { limit: 5 } },
+});</code></pre>
+    <p class="note">v1 では絞り込みに <code>undefined</code> を明示すると例外になる。省くか、関連の条件なら <code>{}</code> を渡す。</p>
+  </div>
+
+  <h2 id="kit">drizzle-kit コマンド</h2>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td><code>drizzle-kit generate</code></td><td data-l="意味">スキーマと前回のスナップショットの差分から SQL を作る。<code>--name=add_posts</code> で名前、<code>--custom</code> で空の SQL（データ移行用）</td></tr>
+        <tr><td><code>drizzle-kit migrate</code></td><td data-l="意味">まだ適用していない SQL を DB に適用する</td></tr>
+        <tr><td><code>drizzle-kit push</code></td><td data-l="意味">SQL ファイルを作らず、スキーマを DB に直接反映する（試作・ローカル向け）</td></tr>
+        <tr><td><code>drizzle-kit pull</code></td><td data-l="意味">既存の DB を読んで <code>schema.ts</code> を作る</td></tr>
+        <tr><td><code>drizzle-kit check</code></td><td data-l="意味">生成済みのマイグレーションの食い違い（ブランチの衝突など）を調べる</td></tr>
+        <tr><td><code>drizzle-kit up</code></td><td data-l="意味">古い形式のスナップショットを今の形式に上げる（v1 への移行でも使う）</td></tr>
+        <tr><td><code>drizzle-kit studio</code></td><td data-l="意味">ブラウザで DB を見る・編集する Drizzle Studio を起動</td></tr>
+        <tr><td><code>drizzle-kit export</code></td><td data-l="意味">スキーマを DDL の SQL にして出力する</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>設定ファイルを分けるときは <code>--config=drizzle.prod.config.ts</code>。アプリの起動時に適用するなら、ドライバーごとの <code>migrate</code> を呼ぶ。</p>
+  <pre><code>import { migrate } from 'drizzle-orm/node-postgres/migrator';
+await migrate(db, { migrationsFolder: './drizzle' });</code></pre>
+
+  <h3>generate と push の使い分け</h3>
+  <ol class="steps">
+    <li><b>試作・ローカル</b><code>push</code> でスキーマをすぐ反映する。履歴が残らないので、列名の変更などはデータが消える形になることがある（確認が出る）</li>
+    <li><b>チーム開発・本番</b><code>generate</code> で SQL を作ってレビュー・コミットし、<code>migrate</code>（または wrangler など各サービスの仕組み）で適用する</li>
+    <li><b>元に戻すとき</b>自動のダウンマイグレーションはない。戻す変更を新しいマイグレーションとして作る</li>
+  </ol>
+
+  <h2 id="validate">検証スキーマを作る（Zod）</h2>
+  <pre><code>// 0.x: drizzle-zod パッケージ（v1 では drizzle-orm/zod に入った）
+import { z } from 'zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+
+// 自動採番（generatedAlwaysAsIdentity）の id は最初から入らない
+export const insertUserSchema = createInsertSchema(users, {
+  name: z.string().min(1).max(50),      // 列ごとに差し替え
+}).omit({ createdAt: true });
+
+export const updateUserSchema = createUpdateSchema(users);   // 全項目が省略可</code></pre>
+  <p class="note">Zod 自体の書き方は <a href="zod.html">Zod 使い方</a>。valibot・TypeBox・ArkType 向けもある。</p>
+
+  <h2 id="v1">v1 RC での主な変更</h2>
+  <p>v1 は <code>npm i drizzle-orm@rc</code>・<code>npm i -D drizzle-kit@rc</code> で入り、最初に <code>npx drizzle-kit up</code> で既存のマイグレーションを新しい形式に変える。RC の間も破壊的変更が入るので、上げるたびに変更点を読む。</p>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>項目</th><th>0.x</th><th>v1</th></tr></thead>
+      <tbody>
+        <tr><td>リレーション</td><td data-l="0.x">テーブルごとの <code>relations()</code></td><td data-l="v1"><code>defineRelations(schema, r =&gt; …)</code> を 1 か所に。<code>where</code>・<code>orderBy</code> はオブジェクト</td></tr>
+        <tr><td><code>drizzle()</code> の引数</td><td data-l="0.x"><code>{ schema }</code></td><td data-l="v1"><code>{ relations }</code></td></tr>
+        <tr><td>casing</td><td data-l="0.x"><code>drizzle({ casing: 'snake_case' })</code></td><td data-l="v1">廃止。<code>snakeCase.table('users', …)</code> のようにテーブル側で指定</td></tr>
+        <tr><td>マイグレーションの形</td><td data-l="0.x"><code>meta/_journal.json</code> と連番の SQL</td><td data-l="v1">journal を廃止し、マイグレーションごとのフォルダに SQL とスナップショット</td></tr>
+        <tr><td>適用の順番</td><td data-l="0.x">最後に適用したものより新しいものだけ</td><td data-l="v1">未適用のものを全部（フォルダ名で照合）</td></tr>
+        <tr><td><code>push</code></td><td data-l="0.x"><code>--strict</code> で確認</td><td data-l="v1">データが消える文は既定で確認（<code>--force</code> で省く）。<code>--explain</code> で SQL を見るだけ</td></tr>
+        <tr><td>検証ライブラリ</td><td data-l="0.x"><code>drizzle-zod</code> など別パッケージ</td><td data-l="v1"><code>drizzle-orm/zod</code>・<code>drizzle-orm/valibot</code> など本体に同梱</td></tr>
+        <tr><td>列の一覧</td><td data-l="0.x"><code>getTableColumns(t)</code></td><td data-l="v1"><code>getColumns(t)</code></td></tr>
+        <tr><td>リードレプリカ</td><td data-l="0.x">読み取りは自動でレプリカへ</td><td data-l="v1">既定はプライマリ。レプリカは <code>db.$replica</code> で明示</td></tr>
+        <tr><td>クエリのエラー</td><td data-l="0.x">パラメータの値を含む</td><td data-l="v1">含めない（<code>paramsInErrors: true</code> で戻せる）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>relations を書けば外部キー制約も作られる</summary><p><code>relations()</code>・<code>defineRelations()</code> は <code>db.query</code> のための情報で、DB には何も作らない。外部キー制約は列の <code>.references()</code> で書く（両方書くのが普通）。</p></details>
+  <details class="myth"><summary>push と generate はどちらを使っても同じ</summary><p><code>push</code> は差分を直接当てて履歴を残さないので、ほかの環境で同じ変更を再現できない。本番やチームでは <code>generate</code> した SQL をコミットして <code>migrate</code> する。</p></details>
+  <details class="myth"><summary>$defaultFn で書いた値は DB の既定値になる</summary><p><code>$defaultFn</code>・<code>$onUpdate</code> は Drizzle 経由の INSERT・UPDATE のときにアプリ側で値を入れるだけで、DDL には出ない。SQL を直接流したときにも効かせたいなら <code>.default(sql`…`)</code> を使う。</p></details>
+  <details class="myth"><summary>drizzle-kit はマイグレーションを自動で巻き戻せる</summary><p>ダウンマイグレーションの仕組みはない。戻すときは、逆向きの変更を新しいマイグレーションとして作って適用する。</p></details>
+  <p>関連: <a href="void.html">Void</a>（<code>void/db</code> が Drizzle）・<a href="better-auth.html">Better Auth</a>（<code>drizzleAdapter</code>）</p>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://orm.drizzle.team/docs/overview">Drizzle ORM – Overview</a>・<a href="https://orm.drizzle.team/docs/sql-schema-declaration">Schema</a>・<a href="https://orm.drizzle.team/docs/select">Select</a>・<a href="https://orm.drizzle.team/docs/operators">Filters</a></li>
+    <li><a href="https://orm.drizzle.team/docs/kit-overview">Migrations with Drizzle Kit</a>・<a href="https://orm.drizzle.team/docs/connect-cloudflare-d1">Cloudflare D1</a></li>
+    <li><a href="https://orm.drizzle.team/docs/v0-v1-changes">Changes in v1</a>・<a href="https://orm.drizzle.team/docs/relations-v1-v2">Relational Queries v1 to v2</a>・<a href="https://orm.drizzle.team/docs/upgrade-v1">Upgrading to Drizzle v1</a></li>
+    <li><a href="https://orm.drizzle.team/docs/latest-releases">Latest Releases</a>（npm の latest: drizzle-orm 0.45.4・drizzle-kit 0.31.11、rc: 1.0.0-rc.5）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-20</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

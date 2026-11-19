@@ -1,5 +1,15 @@
 [
  {
+  "file": "drizzle.html",
+  "title": "Drizzle ORM 使い方",
+  "desc": "Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート",
+  "tags": [
+   "API・バックエンド"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
   "file": "colima.html",
   "title": "Colima 使い方",
   "desc": "macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。",

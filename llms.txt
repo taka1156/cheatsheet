@@ -4,6 +4,7 @@
 
 ## Memos
 
+- [Drizzle ORM 使い方](https://cs.taka1156.site/md/drizzle.md): Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート（API・バックエンド / 2026-11-20）
 - [Colima 使い方](https://cs.taka1156.site/md/colima.md): macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。（開発ツール / 2026-11-20）
 - [Zod 使い方](https://cs.taka1156.site/md/zod.md): Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート（TypeScript / 2026-11-19）
 - [vi / Vim チートシート](https://cs.taka1156.site/md/vi.md): vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート（Linux / 2026-11-19）

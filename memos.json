@@ -1,5 +1,15 @@
 [
  {
+  "file": "colima.html",
+  "title": "Colima 使い方",
+  "desc": "macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
   "file": "zod.html",
   "title": "Zod 使い方",
   "desc": "Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート",

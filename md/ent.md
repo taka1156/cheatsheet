@@ -5,7 +5,7 @@
 > ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート
 
 - URL: https://cs.taka1156.site/ent.html
-- タグ: データベース
+- タグ: Go, データベース
 - 日付: 2026-11-20
 
 ---

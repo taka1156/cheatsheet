@@ -1,9 +1,21 @@
 [
  {
+  "file": "zap.html",
+  "title": "zap 使い方",
+  "desc": "Go の構造化ロガー zap の Logger と SugaredLogger、フィールド、Config、zapcore、レベル変更、テストをまとめたチートシート",
+  "tags": [
+   "Go",
+   "API・バックエンド"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
   "file": "sqlc.html",
   "title": "sqlc 使い方",
   "desc": "sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート",
   "tags": [
+   "Go",
    "データベース"
   ],
   "date": "2026-11-20",
@@ -24,6 +36,7 @@
   "title": "Gin 使い方",
   "desc": "Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート",
   "tags": [
+   "Go",
    "API・バックエンド"
   ],
   "date": "2026-11-20",
@@ -34,6 +47,7 @@
   "title": "ent 使い方",
   "desc": "ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート",
   "tags": [
+   "Go",
    "データベース"
   ],
   "date": "2026-11-20",

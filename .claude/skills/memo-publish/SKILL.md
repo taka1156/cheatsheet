@@ -74,7 +74,13 @@ python3 scripts/memo.py meta NAME \
 
 - **title**: 日本語で短く（〜20 字）。既存の `<title>` が適切ならそのまま（`--title` を省略）。
 - **desc**: 何がわかるページかを 1 文（40〜60 字）。
-- **tags**: 1〜3 個。表記ゆれを防ぐため、`memo.py list` に出ている既存タグに合うものがあれば再利用する（例: `Docker` と `docker` を混在させない）。
+- **tags**: 1〜2 個。**分野を表すタグだけ**を付け、ツール・ライブラリ名（`Hono`・`Zod` など）はタグにしない（タイトルと重複し、1 本しか使わないタグが増えるため）。次の既存タグから選ぶ:
+  - `Cloudflare` … Cloudflare 上で動かすもの・その設定
+  - `API・バックエンド` … サーバー・API 定義・認証など
+  - `開発ツール` … ビルド・Lint・フォーマット・テストなどのツール
+  - `TypeScript` … 型や TS の設定そのものが主題のもの
+  - `Linux` … コマンド・エディタなど Linux 環境の操作
+  - どれにも当てはまらないときだけ新しい分野タグを作り、ユーザーに一言伝える。新しいタグは今後 2 本以上に使える粒度にし、作ったらこの一覧に追記する。表記は既存タグに合わせる（`Docker` と `docker` を混在させない）。
 - **date**: `--date` を値なしで渡すと今日（`memo.config.json` のタイムゾーン。実行環境の時計が UTC でもずれない）。登録後は `memo.py list` で日付を確認する。
 - OGP タグ（og:title / og:description）は、build が title / description から `dist/` のページに作る。`meta` は原本の title / description / タグ / 日付を書くだけで、`<!-- memo:head -->` ブロックは原本に書かない。
 

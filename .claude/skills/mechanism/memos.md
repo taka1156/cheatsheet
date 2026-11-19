@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | タイトル | `<meta name="memo:title">` > `<title>` > ファイル名 | |
 | 説明 | `<meta name="description">` | OGP にも使う |
-| タグ | `<meta name="memo:tags">` | カンマ区切り。既存のタグ（`memo.py list`）を使い回す |
+| タグ | `<meta name="memo:tags">` | カンマ区切り。分野タグだけを 1〜2 個（一覧は memo-publish の手順 5） |
 | 日付 | `<meta name="memo:date">` | `YYYY-MM-DD`。無ければ git でファイルが最初に追加された日 |
 
 - `meta --date` を値なしで実行すると、`utc_offset_hours` のタイムゾーンでの今日が入る（`config.today`）。

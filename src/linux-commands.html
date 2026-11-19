@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux よく使うコマンド</title>
+<meta name="description" content="ファイル操作・検索・プロセス・ネットワーク・サービス管理・タイムゾーン確認など、Linux の日常でよく使うコマンドを用途別にまとめたチートシート">
+<meta name="memo:tags" content="Linux, シェル, コマンド">
+<meta name="memo:date" content="2026-11-19">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.92rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { font-size: 0.8rem; color: var(--fg-2); }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.cheat tr.grp td {
+  font: 700 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--fg-2); background: var(--chip); border-bottom: none; padding: 5px 8px;
+}
+.panel.card { padding: 6px 10px; overflow-x: auto; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.danger { font-size: 0.7rem; font-weight: 700; color: var(--c-ng); border: 1px solid var(--c-ng); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+@media (max-width: 520px) { .cheat td:first-child { white-space: normal; word-break: break-all; } }
+
+/* 図：パイプとリダイレクト */
+.flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.box {
+  background: var(--chip); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 10px; font: 600 0.8rem 'JetBrains Mono', ui-monospace, monospace;
+}
+.op { font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); }
+.redir { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 10px; }
+.redir td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.redir td:first-child { white-space: nowrap; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+/* 図：chmod */
+.perm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0; }
+.perm .grpbox { border: 1px solid var(--line); border-radius: 8px; padding: 8px; text-align: center; background: var(--surface); }
+.perm .who { font-size: 0.75rem; color: var(--fg-2); }
+.perm .bits { display: flex; justify-content: center; gap: 4px; margin: 4px 0; }
+.perm .bit { width: 30px; border-radius: 4px; background: var(--chip); font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; padding: 2px 0; }
+.perm .bit small { display: block; font-size: 0.68rem; font-weight: 500; color: var(--fg-2); }
+.perm .sum { font: 700 1rem 'JetBrains Mono', ui-monospace, monospace; }
+
+/* 図：crontab */
+.cron { display: grid; grid-template-columns: repeat(5, 1fr) 2fr; gap: 6px; margin: 8px 0; text-align: center; }
+.cron div { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 6px 2px; font-size: 0.72rem; color: var(--fg-2); }
+.cron b { display: block; font: 700 1rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg); }
+@media (max-width: 520px) {
+  .perm { grid-template-columns: 1fr; }
+  .cron { grid-template-columns: repeat(3, 1fr); }
+  .cron div:last-child { grid-column: span 3; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Linux よく使うコマンド</h1>
+  <p class="subtitle">ファイル・検索・プロセス・ネットワーク・サービス管理を用途別に引くチートシート</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>日常の作業は「移動・ファイル操作・閲覧・検索・権限・プロセス・ネットワーク・圧縮・システム」の 9 種類でほぼ足りる。</li>
+      <li>小さなコマンドを <code>|</code>（パイプ）でつなぎ、<code>&gt;</code> でファイルに書き出すのが Linux の基本の組み立て方。</li>
+      <li><code>rm</code> はゴミ箱を通らず即削除、<code>kill -9</code> は後片付けなしで止めるので、使う前に一度確認する。</li>
+    </ul>
+  </div>
+
+  <h2 id="cheatsheet">コマンド チートシート</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: ポート, -r, 圧縮）… 全タブから探す" aria-label="コマンドを絞り込む">
+  <p class="note">オプションは GNU coreutils など一般的な Linux ディストリビューションのもの。macOS（BSD 系）では一部違う。<span class="danger">危険</span> は取り消せない・影響が大きい操作。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-nav">移動・確認</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-file">ファイル操作</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-view">閲覧</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-search">検索・テキスト処理</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-perm">権限・ユーザー</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-proc">プロセス</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-net">ネットワーク</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-arc">圧縮・アーカイブ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-sys">システム・サービス</button>
+  </div>
+
+  <div class="panel card" id="t-nav">
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">pwd / cd</td></tr>
+<tr><td><code>pwd</code></td><td>今いるディレクトリ（カレントディレクトリ）の絶対パスを表示</td></tr>
+<tr><td><code>cd /var/log</code></td><td>指定したディレクトリへ移動</td></tr>
+<tr><td><code>cd</code> / <code>cd ~</code></td><td>ホームディレクトリへ戻る</td></tr>
+<tr><td><code>cd ..</code></td><td>1 つ上の階層へ</td></tr>
+<tr><td><code>cd -</code></td><td>直前にいたディレクトリへ戻る（2 か所を行き来するとき便利）</td></tr>
+<tr class="grp"><td colspan="2">ls</td></tr>
+<tr><td><code>ls</code></td><td>ファイル・ディレクトリの一覧</td></tr>
+<tr><td><code>ls -l</code></td><td>詳細表示（権限・所有者・サイズ・更新日時）</td></tr>
+<tr><td><code>ls -la</code></td><td><code>.</code> で始まる隠しファイルも含めて詳細表示</td></tr>
+<tr><td><code>ls -lh</code></td><td>サイズを K / M / G の読みやすい単位で</td></tr>
+<tr><td><code>ls -lt</code></td><td>更新日時の新しい順（<code>-ltr</code> で古い順＝最新が一番下）</td></tr>
+<tr><td><code>ls -lS</code></td><td>サイズの大きい順</td></tr>
+<tr><td><code>ls -d */</code></td><td>ディレクトリだけを表示</td></tr>
+<tr class="grp"><td colspan="2">その他</td></tr>
+<tr><td><code>tree -L 2</code></td><td>2 階層までをツリー表示（別途インストールが必要なことが多い）</td></tr>
+<tr><td><code>clear</code></td><td>画面をクリア（<code>Ctrl + L</code> でも同じ）</td></tr>
+<tr><td><code>history</code></td><td>実行したコマンドの履歴。<code>!番号</code> で再実行、<code>Ctrl + R</code> で履歴を検索</td></tr>
+<tr><td><code>!!</code></td><td>直前のコマンドを再実行（<code>sudo !!</code> で直前のコマンドを sudo 付きで）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-file" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">作る：mkdir / touch</td></tr>
+<tr><td><code>mkdir dir</code></td><td>ディレクトリを作る</td></tr>
+<tr><td><code>mkdir -p a/b/c</code></td><td>途中の階層もまとめて作る。すでにあってもエラーにしない</td></tr>
+<tr><td><code>touch file.txt</code></td><td>空のファイルを作る。既にあれば更新日時だけ今にする</td></tr>
+<tr class="grp"><td colspan="2">コピー・移動：cp / mv</td></tr>
+<tr><td><code>cp a.txt b.txt</code></td><td>ファイルをコピー</td></tr>
+<tr><td><code>cp -r src/ dst/</code></td><td>ディレクトリごと再帰的にコピー</td></tr>
+<tr><td><code>cp -a src/ dst/</code></td><td>権限・所有者・日時も保ったままコピー（バックアップ向き）</td></tr>
+<tr><td><code>cp -i a b</code></td><td>上書きする前に確認する</td></tr>
+<tr><td><code>mv old.txt new.txt</code></td><td>名前を変える（同じディレクトリ内での移動）</td></tr>
+<tr><td><code>mv file dir/</code></td><td>ディレクトリへ移動</td></tr>
+<tr><td><code>mv -i a b</code></td><td>上書きする前に確認する（<code>-n</code> は上書きしない）</td></tr>
+<tr class="grp"><td colspan="2">消す：rm</td></tr>
+<tr><td><code>rm file</code></td><td>ファイルを削除（ゴミ箱を通らない）</td></tr>
+<tr><td><code>rm -i file</code></td><td>1 つずつ確認してから削除</td></tr>
+<tr><td><code>rm -r dir</code></td><td>ディレクトリを中身ごと削除</td></tr>
+<tr><td><code>rm -rf dir</code> <span class="danger">危険</span></td><td>確認なしで中身ごと削除（存在しないファイルのエラーは出さない）。<code>rm -rf "$DIR"/*</code> のように書くと、変数が空のとき <code>/</code> 以下が消える事故になるので注意（GNU rm は <code>rm -rf /</code> 自体は既定で拒否する）</td></tr>
+<tr><td><code>rmdir dir</code></td><td>空のディレクトリだけを削除（中身があると失敗するので安全）</td></tr>
+<tr class="grp"><td colspan="2">リンク</td></tr>
+<tr><td><code>ln -s 実体 リンク名</code></td><td>シンボリックリンク（ショートカット）を作る。引数の順番に注意</td></tr>
+<tr><td><code>readlink -f リンク</code></td><td>リンクの最終的な実体のパスを表示</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-view" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">cat / less</td></tr>
+<tr><td><code>cat file</code></td><td>ファイルの中身を全部表示</td></tr>
+<tr><td><code>cat -n file</code></td><td>行番号を付けて表示</td></tr>
+<tr><td><code>cat a b &gt; c</code></td><td>複数のファイルをつなげて 1 つにする（本来の用途は concatenate）</td></tr>
+<tr><td><code>less file</code></td><td>長いファイルをページ送りで読む。<code>/語</code> で検索、<code>n</code> で次、<code>G</code> で末尾、<code>q</code> で終了</td></tr>
+<tr class="grp"><td colspan="2">head / tail</td></tr>
+<tr><td><code>head file</code></td><td>先頭 10 行を表示</td></tr>
+<tr><td><code>head -n 50 file</code></td><td>先頭 50 行</td></tr>
+<tr><td><code>tail file</code></td><td>末尾 10 行を表示</td></tr>
+<tr><td><code>tail -n 100 file</code></td><td>末尾 100 行</td></tr>
+<tr><td><code>tail -f app.log</code></td><td>追記をリアルタイムで表示し続ける（ログ監視の定番。<code>Ctrl + C</code> で終了）</td></tr>
+<tr><td><code>tail -F app.log</code></td><td><code>-f</code> に加え、ログがローテーションで作り直されても追いかける</td></tr>
+<tr class="grp"><td colspan="2">数える・比べる</td></tr>
+<tr><td><code>wc -l file</code></td><td>行数を数える（<code>-w</code> 単語数、<code>-c</code> バイト数）</td></tr>
+<tr><td><code>diff a b</code></td><td>2 つのファイルの差分（<code>diff -u</code> で git と同じ形式）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-search" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">grep（中身を探す）</td></tr>
+<tr><td><code>grep 'error' app.log</code></td><td>文字列を含む行を表示</td></tr>
+<tr><td><code>grep -i 'error' file</code></td><td>大文字・小文字を区別しない</td></tr>
+<tr><td><code>grep -r 'TODO' src/</code></td><td>ディレクトリ以下を再帰的に検索</td></tr>
+<tr><td><code>grep -n 'word' file</code></td><td>行番号付きで表示</td></tr>
+<tr><td><code>grep -v 'debug' file</code></td><td>含ま<b>ない</b>行を表示（除外）</td></tr>
+<tr><td><code>grep -l 'word' *.txt</code></td><td>一致したファイル名だけ表示</td></tr>
+<tr><td><code>grep -c 'word' file</code></td><td>一致した行数を表示</td></tr>
+<tr><td><code>grep -w 'id' file</code></td><td>単語として一致するものだけ（<code>uid</code> などは除く）</td></tr>
+<tr><td><code>grep -E 'warn|error' file</code></td><td>拡張正規表現（<code>|</code> で OR など）</td></tr>
+<tr><td><code>grep -A 3 -B 1 'error' file</code></td><td>一致行の後 3 行・前 1 行も表示（<code>-C 2</code> で前後 2 行）</td></tr>
+<tr><td><code>ps aux | grep nginx</code></td><td>他のコマンドの出力から探す（パイプと組み合わせる定番）</td></tr>
+<tr class="grp"><td colspan="2">find（ファイルを探す）</td></tr>
+<tr><td><code>find . -name '*.log'</code></td><td>名前で探す（<code>-iname</code> で大文字小文字を無視）。パターンは引用符で囲む</td></tr>
+<tr><td><code>find . -type f</code> / <code>-type d</code></td><td>ファイルだけ／ディレクトリだけ</td></tr>
+<tr><td><code>find . -mtime -7</code></td><td>7 日以内に更新されたもの（<code>+7</code> は端数を切り捨てて数えるため 8 日以上前。分単位なら <code>-mmin</code>）</td></tr>
+<tr><td><code>find . -size +100M</code></td><td>100MB より大きいもの</td></tr>
+<tr><td><code>find . -maxdepth 2 -name x</code></td><td>2 階層までに限って探す</td></tr>
+<tr><td><code>find . -name '*.tmp' -delete</code> <span class="danger">危険</span></td><td>見つけたものを削除。まず <code>-delete</code> なしで対象を確かめる</td></tr>
+<tr><td><code>find . -name '*.sh' -exec chmod +x {} +</code></td><td>見つけたもの全部にコマンドを実行</td></tr>
+<tr class="grp"><td colspan="2">コマンドの場所</td></tr>
+<tr><td><code>which python3</code></td><td>PATH 上でどの実行ファイルが使われるかを表示</td></tr>
+<tr><td><code>type ll</code></td><td>エイリアス・シェル組み込み・関数も含めて正体を表示</td></tr>
+<tr class="grp"><td colspan="2">テキストの加工</td></tr>
+<tr><td><code>sort file</code></td><td>並べ替え（<code>-n</code> 数値順、<code>-r</code> 逆順、<code>-h</code> 1K・2M などの単位付き）</td></tr>
+<tr><td><code>sort | uniq -c | sort -rn</code></td><td>重複を数えて多い順に（集計の定番）</td></tr>
+<tr><td><code>cut -d ',' -f 1,3 file.csv</code></td><td>区切り文字で列を取り出す</td></tr>
+<tr><td><code>awk '{print $1}' file</code></td><td>空白区切りの 1 列目を取り出す</td></tr>
+<tr><td><code>sed 's/old/new/g' file</code></td><td>置換して表示（<code>-i</code> でファイルを直接書き換え）</td></tr>
+<tr><td><code>... | xargs rm</code></td><td>前のコマンドの出力を引数にして実行</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-perm" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">chmod（権限を変える）</td></tr>
+<tr><td><code>chmod +x script.sh</code></td><td>実行権限を付ける</td></tr>
+<tr><td><code>chmod 755 file</code></td><td>所有者は全部、グループ・他人は読み＋実行（スクリプト・ディレクトリ向き）</td></tr>
+<tr><td><code>chmod 644 file</code></td><td>所有者は読み書き、他は読みだけ（普通のファイル）</td></tr>
+<tr><td><code>chmod 600 ~/.ssh/id_ed25519</code></td><td>所有者だけ読み書き（グループや他人が読める秘密鍵は ssh が無視する。400 でもよい）</td></tr>
+<tr><td><code>chmod u+w,g-w file</code></td><td>記号で指定（u 所有者・g グループ・o 他人・a 全員）</td></tr>
+<tr><td><code>chmod -R 755 dir</code></td><td>ディレクトリ以下にまとめて適用</td></tr>
+<tr><td><code>chmod 777 file</code> <span class="danger">危険</span></td><td>誰でも書き換え可能になる。動かないときの回避策として使わない</td></tr>
+<tr class="grp"><td colspan="2">所有者・ユーザー</td></tr>
+<tr><td><code>chown user:group file</code></td><td>所有者とグループを変える（<code>-R</code> で再帰）</td></tr>
+<tr><td><code>sudo コマンド</code></td><td>管理者（root）権限で実行</td></tr>
+<tr><td><code>whoami</code> / <code>id</code></td><td>今のユーザー名／UID・所属グループ</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-proc" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">見る</td></tr>
+<tr><td><code>ps aux</code></td><td>全プロセスの一覧（PID・CPU・メモリ・コマンド）</td></tr>
+<tr><td><code>ps aux | grep node</code></td><td>名前でプロセスを探す（<code>pgrep -a node</code> でも同じ）</td></tr>
+<tr><td><code>top</code> / <code>htop</code></td><td>CPU・メモリを使っている順にリアルタイム表示（<code>q</code> で終了）</td></tr>
+<tr class="grp"><td colspan="2">lsof（開いているファイル・ポート）</td></tr>
+<tr><td><code>lsof -i :3000</code></td><td>ポート 3000 を使っているプロセスを表示（「ポートが使用中」の調査の定番）</td></tr>
+<tr><td><code>lsof -i -P -n</code></td><td>通信中の全プロセス（<code>-P -n</code> でポート番号・IP を名前に変換せず速く）</td></tr>
+<tr><td><code>lsof -p 1234</code></td><td>PID 1234 が開いているファイル</td></tr>
+<tr><td><code>lsof +D /path</code></td><td>そのディレクトリ以下を開いているプロセス（アンマウントできないときの調査）</td></tr>
+<tr><td><code>lsof -t -i :3000</code></td><td>PID だけを出す（<code>kill $(lsof -t -i :3000)</code> のように組み合わせる）</td></tr>
+<tr class="grp"><td colspan="2">kill（止める）</td></tr>
+<tr><td><code>kill 1234</code></td><td>PID 1234 に終了を依頼（SIGTERM。プロセスは後片付けしてから終われる）</td></tr>
+<tr><td><code>kill -9 1234</code> <span class="danger">危険</span></td><td>強制終了（SIGKILL）。後片付けされないので、普通の kill で止まらないときだけ</td></tr>
+<tr><td><code>kill -HUP 1234</code></td><td>SIGHUP を送る（設定の再読み込みに使うデーモンが多い）</td></tr>
+<tr><td><code>pkill -f 'node server'</code></td><td>コマンドラインの一部で一致したプロセスを止める</td></tr>
+<tr><td><code>killall nginx</code></td><td>名前が一致するプロセスを全部止める</td></tr>
+<tr><td><code>kill -l</code></td><td>シグナルの一覧</td></tr>
+<tr class="grp"><td colspan="2">ジョブ（今のシェルで動かしているもの）</td></tr>
+<tr><td><code>コマンド &amp;</code></td><td>バックグラウンドで実行</td></tr>
+<tr><td><code>Ctrl + Z</code> → <code>bg</code></td><td>実行中のものを一時停止 → バックグラウンドで再開</td></tr>
+<tr><td><code>jobs</code> / <code>fg %1</code></td><td>ジョブの一覧／1 番をフォアグラウンドに戻す</td></tr>
+<tr><td><code>nohup コマンド &amp;</code></td><td>ログアウトしても止まらないように実行（出力は <code>nohup.out</code>）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-net" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">ping（届くか）</td></tr>
+<tr><td><code>ping example.com</code></td><td>相手に届くか・応答時間を確かめる（Linux は止めるまで続く。<code>Ctrl + C</code>）</td></tr>
+<tr><td><code>ping -c 4 example.com</code></td><td>4 回だけ送って終わる</td></tr>
+<tr class="grp"><td colspan="2">curl（HTTP）</td></tr>
+<tr><td><code>curl https://example.com</code></td><td>GET してレスポンスの本文を表示</td></tr>
+<tr><td><code>curl -I URL</code></td><td>ヘッダーだけ取得（HEAD リクエスト）</td></tr>
+<tr><td><code>curl -i URL</code></td><td>ヘッダーと本文の両方を表示</td></tr>
+<tr><td><code>curl -L URL</code></td><td>リダイレクトを追いかける</td></tr>
+<tr><td><code>curl -o out.zip URL</code></td><td>ファイルに保存（<code>-O</code> で URL のファイル名のまま保存）</td></tr>
+<tr><td><code>curl -X POST -H 'Content-Type: application/json' -d '{"a":1}' URL</code></td><td>JSON を POST</td></tr>
+<tr><td><code>curl -H 'Authorization: Bearer TOKEN' URL</code></td><td>ヘッダーを付けて送る</td></tr>
+<tr><td><code>curl -v URL</code></td><td>通信の詳細（TLS・送受信ヘッダー）を表示してデバッグ</td></tr>
+<tr><td><code>curl -fsSL URL</code></td><td>エラー時は失敗扱い・進捗を出さない・リダイレクト追従（スクリプトでの定番）</td></tr>
+<tr class="grp"><td colspan="2">その他</td></tr>
+<tr><td><code>ss -tlnp</code></td><td>待ち受け（LISTEN）中の TCP ポートとプロセス（古い <code>netstat -tlnp</code> の後継）</td></tr>
+<tr><td><code>ip a</code></td><td>自分の IP アドレス・ネットワークインターフェース（古い <code>ifconfig</code> の後継）</td></tr>
+<tr><td><code>dig example.com</code></td><td>DNS の名前解決を確かめる（<code>+short</code> で結果だけ）</td></tr>
+<tr><td><code>ssh user@host</code></td><td>リモートにログイン（<code>-i 鍵</code>、<code>-p ポート</code>）</td></tr>
+<tr><td><code>scp file user@host:/path</code></td><td>ssh 経由でファイルをコピー（<code>rsync -avz</code> は差分だけ送れる）</td></tr>
+<tr><td><code>wget URL</code></td><td>ファイルをダウンロード</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-arc" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">tar（c 作る・x 展開・t 一覧、z gzip・f ファイル指定・v 詳細）</td></tr>
+<tr><td><code>tar -czvf out.tar.gz dir/</code></td><td>ディレクトリを gzip 圧縮でまとめる</td></tr>
+<tr><td><code>tar -xzvf in.tar.gz</code></td><td>tar.gz を今のディレクトリに展開</td></tr>
+<tr><td><code>tar -xzf in.tar.gz -C /opt</code></td><td>展開先を指定</td></tr>
+<tr><td><code>tar -tzf in.tar.gz</code></td><td>展開せずに中身の一覧を見る</td></tr>
+<tr><td><code>tar -xf in.tar.xz</code></td><td>GNU tar は展開時に圧縮形式を自動で判定するので <code>-xf</code> だけでよい</td></tr>
+<tr><td><code>tar -cJf out.tar.xz dir/</code></td><td>xz で圧縮（gzip より小さく、遅い）</td></tr>
+<tr class="grp"><td colspan="2">zip / gzip</td></tr>
+<tr><td><code>zip -r out.zip dir/</code></td><td>zip で圧縮（Windows と受け渡すとき）</td></tr>
+<tr><td><code>unzip in.zip -d dir/</code></td><td>zip を展開（<code>-l</code> で一覧だけ）</td></tr>
+<tr><td><code>gzip file</code> / <code>gunzip file.gz</code></td><td>単体ファイルを圧縮／展開（元ファイルは置き換わる）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-sys" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr class="grp"><td colspan="2">systemctl（サービス管理・systemd）</td></tr>
+<tr><td><code>systemctl status nginx</code></td><td>状態（動いているか・直近のログ）を表示</td></tr>
+<tr><td><code>sudo systemctl start nginx</code></td><td>起動（<code>stop</code> で停止）</td></tr>
+<tr><td><code>sudo systemctl restart nginx</code></td><td>再起動</td></tr>
+<tr><td><code>sudo systemctl reload nginx</code></td><td>止めずに設定だけ再読み込み（対応しているサービスのみ）</td></tr>
+<tr><td><code>sudo systemctl enable --now nginx</code></td><td>OS 起動時に自動で起動する設定＋今すぐ起動（<code>disable</code> で自動起動をやめる）</td></tr>
+<tr><td><code>systemctl is-enabled nginx</code></td><td>自動起動が有効か</td></tr>
+<tr><td><code>systemctl list-units --type=service</code></td><td>読み込まれているサービスの一覧（<code>--failed</code> で失敗したものだけ）</td></tr>
+<tr><td><code>sudo systemctl daemon-reload</code></td><td>unit ファイルを書き換えたあとに読み直す</td></tr>
+<tr><td><code>journalctl -u nginx -f</code></td><td>サービスのログを追いかける（<code>-n 100</code> 直近 100 行、<code>--since "1 hour ago"</code>）</td></tr>
+<tr class="grp"><td colspan="2">crontab（定期実行）</td></tr>
+<tr><td><code>crontab -l</code></td><td>自分の定期実行の設定を表示</td></tr>
+<tr><td><code>crontab -e</code></td><td>設定を編集（書式は下の図）</td></tr>
+<tr><td><code>crontab -r</code> <span class="danger">危険</span></td><td>確認なしで設定を全部消す。<code>-e</code> と打ち間違えやすい</td></tr>
+<tr><td><code>sudo crontab -u user -l</code></td><td>他のユーザーの設定を見る</td></tr>
+<tr class="grp"><td colspan="2">日時・タイムゾーン</td></tr>
+<tr><td><code>timedatectl</code></td><td>現在時刻（ローカル・UTC）・タイムゾーン・NTP 同期の状態をまとめて表示（systemd）</td></tr>
+<tr><td><code>date</code></td><td>現在の日時をタイムゾーンの略号付きで表示（例: JST、UTC）</td></tr>
+<tr><td><code>date +%Z%z</code></td><td>タイムゾーンの略号と UTC からのずれだけを表示（例: <code>JST+0900</code>）</td></tr>
+<tr><td><code>date -u</code></td><td>UTC で現在時刻を表示</td></tr>
+<tr><td><code>TZ=Asia/Tokyo date</code></td><td>設定を変えずに、指定したタイムゾーンで時刻を表示</td></tr>
+<tr><td><code>ls -l /etc/localtime</code></td><td>システムのタイムゾーン設定の実体（リンク先が <code>/usr/share/zoneinfo/Asia/Tokyo</code> など）</td></tr>
+<tr><td><code>cat /etc/timezone</code></td><td>タイムゾーン名を表示（古い Debian / Ubuntu 系のみ。Debian の tzdata 2024b-5 以降は新しく作られないので、<code>timedatectl</code> か <code>/etc/localtime</code> のリンク先で確かめる）</td></tr>
+<tr><td><code>timedatectl list-timezones | grep Tokyo</code></td><td>指定できるタイムゾーン名を探す</td></tr>
+<tr><td><code>sudo timedatectl set-timezone Asia/Tokyo</code></td><td>システムのタイムゾーンを変更する</td></tr>
+<tr class="grp"><td colspan="2">ディスク・メモリ・OS</td></tr>
+<tr><td><code>df -h</code></td><td>ディスクの空き容量（ファイルシステムごと）</td></tr>
+<tr><td><code>du -sh dir</code></td><td>ディレクトリの合計サイズ</td></tr>
+<tr><td><code>du -h --max-depth=1 | sort -h</code></td><td>直下のどれが大きいかを小さい順に（容量不足の調査）</td></tr>
+<tr><td><code>free -h</code></td><td>メモリの使用量</td></tr>
+<tr><td><code>uname -a</code> / <code>cat /etc/os-release</code></td><td>カーネルの版／ディストリビューションと版</td></tr>
+<tr><td><code>uptime</code></td><td>起動からの時間と負荷（load average）</td></tr>
+<tr class="grp"><td colspan="2">環境変数</td></tr>
+<tr><td><code>env</code> / <code>echo $PATH</code></td><td>環境変数の一覧／PATH の中身</td></tr>
+<tr><td><code>export KEY=value</code></td><td>環境変数を設定（そのシェルと子プロセスだけ。永続化は <code>~/.bashrc</code> などに書く）</td></tr>
+<tr><td><code>source ~/.bashrc</code></td><td>設定ファイルを今のシェルに読み込み直す</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="pipe">つなぐ：パイプとリダイレクト</h2>
+  <div class="card">
+    <p>コマンドの出力は、標準出力（stdout・番号 1）と標準エラー出力（stderr・番号 2）の 2 本に分かれている。<code>|</code> は stdout を次のコマンドの入力へ、<code>&gt;</code> はファイルへ流す。</p>
+    <div class="flow" aria-label="パイプの例">
+      <span class="box">cat access.log</span><span class="op">|</span>
+      <span class="box">grep 404</span><span class="op">|</span>
+      <span class="box">wc -l</span>
+    </div>
+    <p class="note">アクセスログから 404 の行を取り出して数える。左の出力が右の入力になる。</p>
+    <table class="redir"><tbody>
+      <tr><td>cmd &gt; out.txt</td><td>stdout をファイルに書き出す（上書き）</td></tr>
+      <tr><td>cmd &gt;&gt; out.txt</td><td>stdout をファイルの末尾に追記</td></tr>
+      <tr><td>cmd 2&gt; err.txt</td><td>stderr だけをファイルへ</td></tr>
+      <tr><td>cmd &gt; all.log 2&gt;&amp;1</td><td>stdout と stderr をまとめて同じファイルへ（順番が大事。<code>2&gt;&amp;1</code> は後ろ）</td></tr>
+      <tr><td>cmd &gt; /dev/null 2&gt;&amp;1</td><td>出力を全部捨てる（cron でよく使う）</td></tr>
+      <tr><td>cmd | tee out.txt</td><td>画面に出しつつファイルにも保存</td></tr>
+      <tr><td>cmd1 &amp;&amp; cmd2</td><td>cmd1 が成功したときだけ cmd2 を実行（<code>||</code> は失敗したときだけ）</td></tr>
+    </tbody></table>
+  </div>
+
+  <h2 id="chmod">chmod の数字の読み方</h2>
+  <div class="card">
+    <p><code>ls -l</code> の <code>-rwxr-xr-x</code> は、先頭 1 文字が種類（<code>-</code> ファイル・<code>d</code> ディレクトリ・<code>l</code> リンク）、残り 9 文字が 3 文字ずつ「所有者・グループ・他人」の権限。r=4・w=2・x=1 を足した数字 3 桁で表す。</p>
+    <div class="perm" aria-label="755 の内訳">
+      <div class="grpbox"><div class="who">所有者 (u)</div><div class="bits"><span class="bit">r<small>4</small></span><span class="bit">w<small>2</small></span><span class="bit">x<small>1</small></span></div><div class="sum">7</div></div>
+      <div class="grpbox"><div class="who">グループ (g)</div><div class="bits"><span class="bit">r<small>4</small></span><span class="bit">-<small>0</small></span><span class="bit">x<small>1</small></span></div><div class="sum">5</div></div>
+      <div class="grpbox"><div class="who">他人 (o)</div><div class="bits"><span class="bit">r<small>4</small></span><span class="bit">-<small>0</small></span><span class="bit">x<small>1</small></span></div><div class="sum">5</div></div>
+    </div>
+    <p class="note">例: <code>rwxr-xr-x</code> = 755。ディレクトリでは x が「中に入れる（cd できる）」、r が「中身を一覧できる」の意味になる。</p>
+  </div>
+
+  <h2 id="cron">crontab の書式</h2>
+  <div class="card">
+    <p>1 行に「いつ（5 つの欄）」と「何を」を書く。<code>*</code> は毎回、<code>*/5</code> は 5 ごと、<code>1-5</code> は範囲、<code>1,15</code> は列挙。</p>
+    <div class="cron" aria-label="crontab の 5 つの欄">
+      <div><b>0</b>分<br>0-59</div>
+      <div><b>3</b>時<br>0-23</div>
+      <div><b>*</b>日<br>1-31</div>
+      <div><b>*</b>月<br>1-12</div>
+      <div><b>1-5</b>曜日<br>0-7 (0,7=日)</div>
+      <div><b>/opt/backup.sh</b>実行するコマンド</div>
+    </div>
+<pre># 平日の 3:00 にバックアップ（出力はログへ）
+0 3 * * 1-5 /opt/backup.sh &gt;&gt; /var/log/backup.log 2&gt;&amp;1
+
+# 5 分ごと
+*/5 * * * * /usr/bin/curl -fsS https://example.com/health &gt; /dev/null
+
+# 毎月 1 日の 0:00
+0 0 1 * * /opt/monthly.sh</pre>
+    <p class="note">cron は最小限の環境変数（PATH も短い）で動くので、コマンドはフルパスで書く。<code>%</code> は改行の意味になるので <code>\%</code> とエスケープする。</p>
+    <h3>時刻はどのタイムゾーン基準か</h3>
+    <p>crontab の時刻はサーバーのシステムのタイムゾーンで解釈される。クラウドの VM やコンテナは UTC のことが多く、そのまま <code>0 3 * * *</code> と書くと日本時間の 12:00 に動く。書く前に <code>timedatectl</code> か <code>date</code> で確かめる。</p>
+    <ul>
+      <li>タイムゾーンを変えたら、cron を再起動しないと古い設定のまま動くことがある（<code>sudo systemctl restart cron</code>。RHEL 系は <code>crond</code>）</li>
+      <li>cronie（RHEL・Fedora 系の cron）は crontab の先頭に <code>CRON_TZ=Asia/Tokyo</code> と書くと、その crontab だけ別のタイムゾーンで解釈できる。Debian / Ubuntu の cron では使えない</li>
+      <li>systemd のタイマー（<code>OnCalendar=</code>）なら、<code>OnCalendar=*-*-* 03:00 Asia/Tokyo</code> のように時刻にタイムゾーンを書ける</li>
+    </ul>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>rm で消したファイルはゴミ箱から戻せる</summary><p><code>rm</code> はゴミ箱を通さずにすぐ削除する。復元ツールで戻せることもあるが期待できない。不安なら <code>rm -i</code> を使うか、<code>trash-cli</code> の <code>trash</code> コマンドでゴミ箱に送る。</p></details>
+  <details class="myth"><summary>kill はプロセスを強制的に止めるコマンドだ</summary><p>シグナルを指定しない <code>kill</code> は SIGTERM（終了してほしいという依頼）を送るだけで、プロセスは後片付けしてから終わる。無視されることもあり、そのときに初めて <code>kill -9</code>（SIGKILL）を使う。</p></details>
+  <details class="myth"><summary>ターミナルで動いたコマンドは cron でもそのまま動く</summary><p>cron はログインシェルの設定（<code>~/.bashrc</code> など）を読まず、PATH も短い。コマンドはフルパスで書き、必要な環境変数は crontab の先頭か、スクリプトの中で設定する。</p></details>
+  <details class="myth"><summary>systemctl enable するとサービスがすぐ起動する</summary><p><code>enable</code> は「OS の起動時に自動で起動する」設定だけで、今は起動しない。今すぐ起動もするなら <code>enable --now</code> か、別に <code>start</code> を実行する。</p></details>
+  <details class="myth"><summary>Permission denied が出たら chmod 777 にすればよい</summary><p>誰でも書き換えられる状態になり危険。原因は所有者の違いであることが多いので、<code>ls -l</code> で所有者と権限を確かめ、<code>chown</code> や必要な権限だけの付与（<code>chmod u+x</code> など）で直す。</p></details>
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card"><ul>
+    <li><a href="https://man7.org/linux/man-pages/">Linux man pages online (man7.org)</a></li>
+    <li><a href="https://www.gnu.org/software/coreutils/manual/">GNU Coreutils マニュアル</a>（ls・cp・mv・rm・chmod・head・tail など）</li>
+    <li><a href="https://www.gnu.org/software/grep/manual/">GNU grep マニュアル</a> / <a href="https://www.gnu.org/software/findutils/manual/html_mono/find.html">GNU findutils</a> / <a href="https://www.gnu.org/software/tar/manual/">GNU tar</a></li>
+    <li><a href="https://www.freedesktop.org/software/systemd/man/latest/systemctl.html">systemctl (freedesktop.org)</a></li>
+    <li><a href="https://www.freedesktop.org/software/systemd/man/latest/timedatectl.html">timedatectl (freedesktop.org)</a> / <a href="https://www.freedesktop.org/software/systemd/man/latest/systemd.time.html">systemd.time（OnCalendar の書式）</a></li>
+    <li><a href="https://curl.se/docs/manpage.html">curl man page</a></li>
+    <li><a href="https://man7.org/linux/man-pages/man5/crontab.5.html">crontab(5)</a> / <a href="https://man7.org/linux/man-pages/man8/lsof.8.html">lsof(8)</a> / <a href="https://man7.org/linux/man-pages/man7/signal.7.html">signal(7)</a></li>
+  </ul><p>確認日: 2026-11-19</p></div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 絞り込み：入力があれば全タブの行から探し、該当する行だけ出す（見出し行はその下に該当があれば残す）
+const filter = document.getElementById('filter');
+const panels = [...document.querySelectorAll('.panel')];
+const tabs = [...document.querySelectorAll('.tab')];
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelector('.tabs').style.display = q ? 'none' : '';
+  panels.forEach(p => {
+    let hit = 0;
+    let grp = null, grpHit = 0;
+    const closeGrp = () => { if (grp) grp.hidden = q ? grpHit === 0 : false; };
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      if (tr.classList.contains('grp')) { closeGrp(); grp = tr; grpHit = 0; return; }
+      const ok = !q || (tr.textContent + ' ' + (grp ? grp.textContent : '')).toLowerCase().includes(q);
+      tr.hidden = !ok;
+      if (ok) { hit++; grpHit++; }
+    });
+    closeGrp();
+    const selected = tabs.find(t => t.dataset.panel === p.id).getAttribute('aria-selected') === 'true';
+    p.hidden = q ? hit === 0 : !selected;
+  });
+});
+</script>
+
+</body>
+</html>

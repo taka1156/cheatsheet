@@ -5,7 +5,7 @@
 > Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート
 
 - URL: https://cs.taka1156.site/zod.html
-- タグ: Zod, TypeScript, バリデーション
+- タグ: TypeScript
 - 日付: 2026-11-19
 
 ---

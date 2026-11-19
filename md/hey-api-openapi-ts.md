@@ -5,7 +5,7 @@
 > @hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート
 
 - URL: https://cs.taka1156.site/hey-api-openapi-ts.html
-- タグ: Hey API, OpenAPI, TypeScript
+- タグ: API・バックエンド, TypeScript
 - 日付: 2026-11-19
 
 ---

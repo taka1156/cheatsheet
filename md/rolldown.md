@@ -5,7 +5,7 @@
 > Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解
 
 - URL: https://cs.taka1156.site/rolldown.html
-- タグ: Rolldown, Vite
+- タグ: 開発ツール
 - 日付: 2026-11-16
 
 ---

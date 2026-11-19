@@ -5,7 +5,7 @@
 > Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート
 
 - URL: https://cs.taka1156.site/better-auth.html
-- タグ: Better Auth, 認証, TypeScript
+- タグ: API・バックエンド
 - 日付: 2026-11-19
 
 ---

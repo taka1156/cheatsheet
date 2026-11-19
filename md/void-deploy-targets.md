@@ -5,7 +5,7 @@
 > Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。
 
 - URL: https://cs.taka1156.site/void-deploy-targets.html
-- タグ: Void, Cloudflare
+- タグ: Cloudflare
 - 日付: 2026-11-13
 
 ---

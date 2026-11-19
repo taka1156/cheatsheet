@@ -5,7 +5,7 @@
 > Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。
 
 - URL: https://cs.taka1156.site/vite-plus.html
-- タグ: Vite, JavaScript, ツール
+- タグ: 開発ツール
 - 日付: 2026-11-07
 
 ---

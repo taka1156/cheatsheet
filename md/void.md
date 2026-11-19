@@ -5,7 +5,7 @@
 > VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。
 
 - URL: https://cs.taka1156.site/void.html
-- タグ: Void, Cloudflare, Vite
+- タグ: Cloudflare
 - 日付: 2026-11-13
 
 ---

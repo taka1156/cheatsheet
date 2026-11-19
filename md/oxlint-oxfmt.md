@@ -5,7 +5,7 @@
 > ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧
 
 - URL: https://cs.taka1156.site/oxlint-oxfmt.html
-- タグ: oxlint, oxfmt, JavaScript
+- タグ: 開発ツール
 - 日付: 2026-11-16
 
 ---

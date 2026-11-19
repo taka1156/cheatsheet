@@ -5,7 +5,7 @@
 > 会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。
 
 - URL: https://cs.taka1156.site/void-platform.html
-- タグ: Void, Cloudflare
+- タグ: Cloudflare
 - 日付: 2026-11-13
 
 ---

@@ -5,7 +5,7 @@
 > Hono のルーティング・Context・ミドルウェア・バリデーション・RPC・エラー処理をまとめたチートシート
 
 - URL: https://cs.taka1156.site/hono.html
-- タグ: Hono, TypeScript, Cloudflare
+- タグ: API・バックエンド, Cloudflare
 - 日付: 2026-11-19
 
 ---

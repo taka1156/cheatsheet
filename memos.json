@@ -4,9 +4,7 @@
   "title": "Zod 使い方",
   "desc": "Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート",
   "tags": [
-   "Zod",
-   "TypeScript",
-   "バリデーション"
+   "TypeScript"
   ],
   "date": "2026-11-19",
   "quizzes": 0
@@ -16,9 +14,7 @@
   "title": "vi / Vim チートシート",
   "desc": "vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート",
   "tags": [
-   "Vim",
-   "Linux",
-   "エディタ"
+   "Linux"
   ],
   "date": "2026-11-19",
   "quizzes": 0
@@ -28,9 +24,7 @@
   "title": "Swagger 使い方",
   "desc": "OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート",
   "tags": [
-   "Swagger",
-   "OpenAPI",
-   "API"
+   "API・バックエンド"
   ],
   "date": "2026-11-19",
   "quizzes": 0
@@ -40,9 +34,7 @@
   "title": "Linux よく使うコマンド",
   "desc": "ファイル操作・検索・プロセス・ネットワーク・サービス管理・タイムゾーン確認など、Linux の日常でよく使うコマンドを用途別にまとめたチートシート",
   "tags": [
-   "Linux",
-   "シェル",
-   "コマンド"
+   "Linux"
   ],
   "date": "2026-11-19",
   "quizzes": 0
@@ -52,8 +44,7 @@
   "title": "Hono 使い方",
   "desc": "Hono のルーティング・Context・ミドルウェア・バリデーション・RPC・エラー処理をまとめたチートシート",
   "tags": [
-   "Hono",
-   "TypeScript",
+   "API・バックエンド",
    "Cloudflare"
   ],
   "date": "2026-11-19",
@@ -64,8 +55,7 @@
   "title": "Hey API openapi-ts 使い方",
   "desc": "@hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート",
   "tags": [
-   "Hey API",
-   "OpenAPI",
+   "API・バックエンド",
    "TypeScript"
   ],
   "date": "2026-11-19",
@@ -76,9 +66,7 @@
   "title": "Better Auth 使い方",
   "desc": "Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート",
   "tags": [
-   "Better Auth",
-   "認証",
-   "TypeScript"
+   "API・バックエンド"
   ],
   "date": "2026-11-19",
   "quizzes": 0
@@ -88,9 +76,7 @@
   "title": "Vitest 使い方",
   "desc": "Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法",
   "tags": [
-   "Vitest",
-   "テスト",
-   "Vite"
+   "開発ツール"
   ],
   "date": "2026-11-16",
   "quizzes": 0
@@ -100,8 +86,7 @@
   "title": "tsconfig 設定例",
   "desc": "TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で",
   "tags": [
-   "TypeScript",
-   "tsconfig"
+   "TypeScript"
   ],
   "date": "2026-11-16",
   "quizzes": 0
@@ -111,8 +96,7 @@
   "title": "Rolldown 使い方",
   "desc": "Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解",
   "tags": [
-   "Rolldown",
-   "Vite"
+   "開発ツール"
   ],
   "date": "2026-11-16",
   "quizzes": 0
@@ -122,9 +106,7 @@
   "title": "oxlint・oxfmt 使い方",
   "desc": "ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧",
   "tags": [
-   "oxlint",
-   "oxfmt",
-   "JavaScript"
+   "開発ツール"
   ],
   "date": "2026-11-16",
   "quizzes": 0
@@ -134,9 +116,7 @@
   "title": "Void チートシート",
   "desc": "VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。",
   "tags": [
-   "Void",
-   "Cloudflare",
-   "Vite"
+   "Cloudflare"
   ],
   "date": "2026-11-13",
   "quizzes": 0
@@ -146,7 +126,6 @@
   "title": "Void Platform チートシート",
   "desc": "会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。",
   "tags": [
-   "Void",
    "Cloudflare"
   ],
   "date": "2026-11-13",
@@ -157,7 +136,6 @@
   "title": "Void のデプロイ先：直接 Cloudflare vs Void Platform",
   "desc": "Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。",
   "tags": [
-   "Void",
    "Cloudflare"
   ],
   "date": "2026-11-13",
@@ -168,9 +146,7 @@
   "title": "cf/config チートシート",
   "desc": "Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。",
   "tags": [
-   "Cloudflare",
-   "Workers",
-   "TypeScript"
+   "Cloudflare"
   ],
   "date": "2026-11-13",
   "quizzes": 0
@@ -180,9 +156,7 @@
   "title": "Vite+ と vp コマンド チートシート",
   "desc": "Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。",
   "tags": [
-   "Vite",
-   "JavaScript",
-   "ツール"
+   "開発ツール"
   ],
   "date": "2026-11-07",
   "quizzes": 0

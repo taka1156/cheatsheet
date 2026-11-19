@@ -5,7 +5,7 @@
 > Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法
 
 - URL: https://cs.taka1156.site/vitest.html
-- タグ: Vitest, テスト, Vite
+- タグ: 開発ツール
 - 日付: 2026-11-16
 
 ---

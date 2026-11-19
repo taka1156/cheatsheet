@@ -5,7 +5,7 @@
 > OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート
 
 - URL: https://cs.taka1156.site/swagger.html
-- タグ: Swagger, OpenAPI, API
+- タグ: API・バックエンド
 - 日付: 2026-11-19
 
 ---

@@ -5,7 +5,7 @@
 > Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。
 
 - URL: https://cs.taka1156.site/cf-config.html
-- タグ: Cloudflare, Workers, TypeScript
+- タグ: Cloudflare
 - 日付: 2026-11-13
 
 ---

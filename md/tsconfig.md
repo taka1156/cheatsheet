@@ -5,7 +5,7 @@
 > TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で
 
 - URL: https://cs.taka1156.site/tsconfig.html
-- タグ: TypeScript, tsconfig
+- タグ: TypeScript
 - 日付: 2026-11-16
 
 ---

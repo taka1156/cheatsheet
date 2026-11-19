@@ -96,7 +96,7 @@ td code, th code { word-break: break-word; }
   .stack thead { display: none; }
   .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
   .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
-  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
   .stack td:first-child code { font-weight: 700; }
 }
 
@@ -245,17 +245,16 @@ Deno.serve(app.fetch);</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="cx-var">変数・環境</button>
   </div>
   <div class="panel" id="cx-req">
-    <div class="tbl">
-      <table>
+    <div class="tbl stack"><table>
         <thead><tr><th>メソッド</th><th>返すもの</th></tr></thead>
         <tbody>
-          <tr><td><code>c.req.param('id')</code></td><td>パスパラメータ（引数なしで全部）</td></tr>
-          <tr><td><code>c.req.query('q')</code>・<code>c.req.queries('tag')</code></td><td>クエリ文字列（同名が複数なら <code>queries</code> で配列）</td></tr>
-          <tr><td><code>c.req.header('Authorization')</code></td><td>リクエストヘッダー</td></tr>
-          <tr><td><code>await c.req.json()</code></td><td>JSON のボディ</td></tr>
-          <tr><td><code>await c.req.parseBody()</code></td><td>フォーム（<code>multipart/form-data</code>・<code>x-www-form-urlencoded</code>）。ファイルは <code>File</code></td></tr>
-          <tr><td><code>c.req.valid('json')</code></td><td>バリデーターを通った値（型付き）</td></tr>
-          <tr><td><code>c.req.raw</code></td><td>元の <code>Request</code>（他のライブラリに渡すとき）</td></tr>
+          <tr><td data-l="メソッド"><code>c.req.param('id')</code></td><td data-l="返すもの">パスパラメータ（引数なしで全部）</td></tr>
+          <tr><td data-l="メソッド"><code>c.req.query('q')</code>・<code>c.req.queries('tag')</code></td><td data-l="返すもの">クエリ文字列（同名が複数なら <code>queries</code> で配列）</td></tr>
+          <tr><td data-l="メソッド"><code>c.req.header('Authorization')</code></td><td data-l="返すもの">リクエストヘッダー</td></tr>
+          <tr><td data-l="メソッド"><code>await c.req.json()</code></td><td data-l="返すもの">JSON のボディ</td></tr>
+          <tr><td data-l="メソッド"><code>await c.req.parseBody()</code></td><td data-l="返すもの">フォーム（<code>multipart/form-data</code>・<code>x-www-form-urlencoded</code>）。ファイルは <code>File</code></td></tr>
+          <tr><td data-l="メソッド"><code>c.req.valid('json')</code></td><td data-l="返すもの">バリデーターを通った値（型付き）</td></tr>
+          <tr><td data-l="メソッド"><code>c.req.raw</code></td><td data-l="返すもの">元の <code>Request</code>（他のライブラリに渡すとき）</td></tr>
         </tbody>
       </table>
     </div>
@@ -315,17 +314,17 @@ const timing = createMiddleware(async (c, next) =&gt; {
 });
 app.use(timing);</code></pre>
   <h3>組み込みミドルウェア（<code>hono/〜</code> から import）</h3>
-  <div class="tbl">
+  <div class="tbl stack">
     <table>
       <thead><tr><th>import 元</th><th>用途</th></tr></thead>
       <tbody>
-        <tr><td><code>hono/cors</code></td><td>CORS ヘッダー</td></tr>
-        <tr><td><code>hono/logger</code>・<code>hono/request-id</code>・<code>hono/timing</code></td><td>アクセスログ・リクエスト ID・Server-Timing</td></tr>
-        <tr><td><code>hono/secure-headers</code>・<code>hono/csrf</code></td><td>セキュリティ系ヘッダー・CSRF 対策（<code>Origin</code>・<code>Sec-Fetch-Site</code> の確認）</td></tr>
-        <tr><td><code>hono/basic-auth</code>・<code>hono/bearer-auth</code>・<code>hono/jwt</code>・<code>hono/jwk</code></td><td>認証</td></tr>
-        <tr><td><code>hono/body-limit</code>・<code>hono/timeout</code>・<code>hono/ip-restriction</code></td><td>ボディサイズ・時間・IP の制限</td></tr>
-        <tr><td><code>hono/etag</code>・<code>hono/cache</code>・<code>hono/compress</code></td><td>キャッシュ・圧縮</td></tr>
-        <tr><td><code>hono/combine</code></td><td><code>some</code>・<code>every</code>・<code>except</code> でミドルウェアを組み合わせる</td></tr>
+        <tr><td data-l="import 元"><code>hono/cors</code></td><td data-l="用途">CORS ヘッダー</td></tr>
+        <tr><td data-l="import 元"><code>hono/logger</code>・<code>hono/request-id</code>・<code>hono/timing</code></td><td data-l="用途">アクセスログ・リクエスト ID・Server-Timing</td></tr>
+        <tr><td data-l="import 元"><code>hono/secure-headers</code>・<code>hono/csrf</code></td><td data-l="用途">セキュリティ系ヘッダー・CSRF 対策（<code>Origin</code>・<code>Sec-Fetch-Site</code> の確認）</td></tr>
+        <tr><td data-l="import 元"><code>hono/basic-auth</code>・<code>hono/bearer-auth</code>・<code>hono/jwt</code>・<code>hono/jwk</code></td><td data-l="用途">認証</td></tr>
+        <tr><td data-l="import 元"><code>hono/body-limit</code>・<code>hono/timeout</code>・<code>hono/ip-restriction</code></td><td data-l="用途">ボディサイズ・時間・IP の制限</td></tr>
+        <tr><td data-l="import 元"><code>hono/etag</code>・<code>hono/cache</code>・<code>hono/compress</code></td><td data-l="用途">キャッシュ・圧縮</td></tr>
+        <tr><td data-l="import 元"><code>hono/combine</code></td><td data-l="用途"><code>some</code>・<code>every</code>・<code>except</code> でミドルウェアを組み合わせる</td></tr>
       </tbody>
     </table>
   </div>

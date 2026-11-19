@@ -96,7 +96,7 @@ td code, th code { word-break: break-word; }
   .stack thead { display: none; }
   .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
   .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
-  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
   .stack td:first-child code { font-weight: 700; }
 }
 
@@ -253,37 +253,35 @@ type Out = z.output&lt;typeof Len&gt;;   // number</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="s-mod">修飾子</button>
   </div>
   <div class="panel" id="s-prim">
-    <div class="tbl">
-      <table>
+    <div class="tbl stack"><table>
         <thead><tr><th>書き方</th><th>意味</th></tr></thead>
         <tbody>
-          <tr><td><code>z.string()</code></td><td><code>.min(n)</code>・<code>.max(n)</code>・<code>.length(n)</code>・<code>.regex(re)</code>・<code>.trim()</code>・<code>.toLowerCase()</code></td></tr>
-          <tr><td><code>z.number()</code></td><td><code>.int()</code>・<code>.positive()</code>・<code>.min(n)</code>・<code>.max(n)</code>・<code>.multipleOf(n)</code>（<code>NaN</code>・<code>Infinity</code> は通らない）</td></tr>
-          <tr><td><code>z.int()</code></td><td>安全な整数の範囲の整数（<code>z.int32()</code> なども）</td></tr>
-          <tr><td><code>z.boolean()</code>・<code>z.bigint()</code>・<code>z.date()</code></td><td>それぞれの型</td></tr>
-          <tr><td><code>z.literal('a')</code></td><td>決まった値。<code>z.literal(['a', 'b'])</code> で複数</td></tr>
-          <tr><td><code>z.enum(['a', 'b'])</code></td><td>文字列の列挙。TypeScript の enum もそのまま渡せる（<code>z.nativeEnum</code> は非推奨）</td></tr>
-          <tr><td><code>z.coerce.number()</code></td><td>入力を <code>Number(x)</code> で変換してから検証（クエリ文字列向け）</td></tr>
-          <tr><td><code>z.stringbool()</code></td><td><code>"true"</code>・<code>"yes"</code>・<code>"1"</code> などを真偽値に（環境変数向け）</td></tr>
-          <tr><td><code>z.unknown()</code>・<code>z.any()</code>・<code>z.never()</code></td><td>何でも通す（型は unknown / any）・何も通さない</td></tr>
+          <tr><td data-l="書き方"><code>z.string()</code></td><td data-l="意味"><code>.min(n)</code>・<code>.max(n)</code>・<code>.length(n)</code>・<code>.regex(re)</code>・<code>.trim()</code>・<code>.toLowerCase()</code></td></tr>
+          <tr><td data-l="書き方"><code>z.number()</code></td><td data-l="意味"><code>.int()</code>・<code>.positive()</code>・<code>.min(n)</code>・<code>.max(n)</code>・<code>.multipleOf(n)</code>（<code>NaN</code>・<code>Infinity</code> は通らない）</td></tr>
+          <tr><td data-l="書き方"><code>z.int()</code></td><td data-l="意味">安全な整数の範囲の整数（<code>z.int32()</code> なども）</td></tr>
+          <tr><td data-l="書き方"><code>z.boolean()</code>・<code>z.bigint()</code>・<code>z.date()</code></td><td data-l="意味">それぞれの型</td></tr>
+          <tr><td data-l="書き方"><code>z.literal('a')</code></td><td data-l="意味">決まった値。<code>z.literal(['a', 'b'])</code> で複数</td></tr>
+          <tr><td data-l="書き方"><code>z.enum(['a', 'b'])</code></td><td data-l="意味">文字列の列挙。TypeScript の enum もそのまま渡せる（<code>z.nativeEnum</code> は非推奨）</td></tr>
+          <tr><td data-l="書き方"><code>z.coerce.number()</code></td><td data-l="意味">入力を <code>Number(x)</code> で変換してから検証（クエリ文字列向け）</td></tr>
+          <tr><td data-l="書き方"><code>z.stringbool()</code></td><td data-l="意味"><code>"true"</code>・<code>"yes"</code>・<code>"1"</code> などを真偽値に（環境変数向け）</td></tr>
+          <tr><td data-l="書き方"><code>z.unknown()</code>・<code>z.any()</code>・<code>z.never()</code></td><td data-l="意味">何でも通す（型は unknown / any）・何も通さない</td></tr>
         </tbody>
       </table>
     </div>
   </div>
   <div class="panel" id="s-fmt" hidden>
     <p>v4 では形式チェックはトップレベルの関数。<code>z.string().email()</code> の形は動くが非推奨。</p>
-    <div class="tbl">
-      <table>
+    <div class="tbl stack"><table>
         <thead><tr><th>書き方</th><th>意味</th></tr></thead>
         <tbody>
-          <tr><td><code>z.email()</code></td><td>メールアドレス</td></tr>
-          <tr><td><code>z.url()</code>・<code>z.httpUrl()</code></td><td>URL・http(s) の URL だけ</td></tr>
-          <tr><td><code>z.uuid()</code>・<code>z.uuidv4()</code>・<code>z.uuidv7()</code></td><td>UUID（RFC 9562 に厳密）。緩くするなら <code>z.guid()</code></td></tr>
-          <tr><td><code>z.iso.datetime()</code>・<code>z.iso.date()</code>・<code>z.iso.time()</code></td><td>ISO 8601 の日時・日付・時刻の文字列（4.5〜 datetime は秒が必須）</td></tr>
-          <tr><td><code>z.ipv4()</code>・<code>z.ipv6()</code>・<code>z.cidrv4()</code></td><td>IP アドレス・CIDR</td></tr>
-          <tr><td><code>z.jwt()</code>・<code>z.base64()</code>・<code>z.hex()</code></td><td>JWT・Base64・16 進</td></tr>
-          <tr><td><code>z.e164()</code>・<code>z.creditCard()</code>・<code>z.iban()</code></td><td>電話番号・カード番号・IBAN（後ろ 2 つは 4.5・4.6〜）</td></tr>
-          <tr><td><code>z.templateLiteral([...])</code></td><td>テンプレートリテラル型（例 <code>`${number}px`</code>）</td></tr>
+          <tr><td data-l="書き方"><code>z.email()</code></td><td data-l="意味">メールアドレス</td></tr>
+          <tr><td data-l="書き方"><code>z.url()</code>・<code>z.httpUrl()</code></td><td data-l="意味">URL・http(s) の URL だけ</td></tr>
+          <tr><td data-l="書き方"><code>z.uuid()</code>・<code>z.uuidv4()</code>・<code>z.uuidv7()</code></td><td data-l="意味">UUID（RFC 9562 に厳密）。緩くするなら <code>z.guid()</code></td></tr>
+          <tr><td data-l="書き方"><code>z.iso.datetime()</code>・<code>z.iso.date()</code>・<code>z.iso.time()</code></td><td data-l="意味">ISO 8601 の日時・日付・時刻の文字列（4.5〜 datetime は秒が必須）</td></tr>
+          <tr><td data-l="書き方"><code>z.ipv4()</code>・<code>z.ipv6()</code>・<code>z.cidrv4()</code></td><td data-l="意味">IP アドレス・CIDR</td></tr>
+          <tr><td data-l="書き方"><code>z.jwt()</code>・<code>z.base64()</code>・<code>z.hex()</code></td><td data-l="意味">JWT・Base64・16 進</td></tr>
+          <tr><td data-l="書き方"><code>z.e164()</code>・<code>z.creditCard()</code>・<code>z.iban()</code></td><td data-l="意味">電話番号・カード番号・IBAN（後ろ 2 つは 4.5・4.6〜）</td></tr>
+          <tr><td data-l="書き方"><code>z.templateLiteral([...])</code></td><td data-l="意味">テンプレートリテラル型（例 <code>`${number}px`</code>）</td></tr>
         </tbody>
       </table>
     </div>
@@ -381,29 +379,27 @@ z.string({ error: (iss) =&gt; iss.input === undefined ? '必須です' : '形式
 // 日本語の既定メッセージ
 import { ja } from 'zod/locales';
 z.config(ja());</code></pre>
-  <div class="tbl">
-    <table>
+  <div class="tbl stack"><table>
       <thead><tr><th>関数</th><th>形</th><th>向いている用途</th></tr></thead>
       <tbody>
-        <tr><td><code>err.issues</code></td><td><code>[{ code, path, message, ... }]</code></td><td>元データ。自分で整形する</td></tr>
-        <tr><td><code>z.prettifyError(err)</code></td><td>複数行の文字列</td><td>ログ・CLI の出力</td></tr>
-        <tr><td><code>z.flattenError(err)</code></td><td><code>{ formErrors, fieldErrors }</code></td><td>1 階層のフォーム</td></tr>
-        <tr><td><code>z.treeifyError(err)</code></td><td>入れ子のオブジェクト</td><td>入れ子のフォーム（v3 の <code>.format()</code> の代わり）</td></tr>
+        <tr><td data-l="関数"><code>err.issues</code></td><td data-l="形"><code>[{ code, path, message, ... }]</code></td><td data-l="向いている用途">元データ。自分で整形する</td></tr>
+        <tr><td data-l="関数"><code>z.prettifyError(err)</code></td><td data-l="形">複数行の文字列</td><td data-l="向いている用途">ログ・CLI の出力</td></tr>
+        <tr><td data-l="関数"><code>z.flattenError(err)</code></td><td data-l="形"><code>{ formErrors, fieldErrors }</code></td><td data-l="向いている用途">1 階層のフォーム</td></tr>
+        <tr><td data-l="関数"><code>z.treeifyError(err)</code></td><td data-l="形">入れ子のオブジェクト</td><td data-l="向いている用途">入れ子のフォーム（v3 の <code>.format()</code> の代わり）</td></tr>
       </tbody>
     </table>
   </div>
 
   <h2 id="more">そのほかの機能</h2>
-  <div class="tbl">
-    <table>
+  <div class="tbl stack"><table>
       <thead><tr><th>機能</th><th>書き方</th><th>メモ</th></tr></thead>
       <tbody>
-        <tr><td>JSON Schema へ</td><td><code>z.toJSONSchema(schema)</code></td><td><code>.meta({ title, description })</code> の情報も出る。逆向きの <code>z.fromJSONSchema()</code> は実験的</td></tr>
-        <tr><td>事前コンパイル</td><td><code>z.compile(schema)</code></td><td>4.5〜。結果は同じで数倍速い。<code>new Function</code> を使うので CSP で eval 禁止の環境では効かない</td></tr>
-        <tr><td>全体をコンパイル</td><td><code>import 'zod/compile'</code></td><td>エントリーの先頭で 1 回。<code>node --import zod/compile app.js</code> でもよい</td></tr>
-        <tr><td>小さい版</td><td><code>import * as z from 'zod/mini'</code></td><td>メソッドチェーンの代わりに関数で書く（<code>z.optional(z.string())</code>）。フロントエンドのバンドルを小さくしたいとき</td></tr>
-        <tr><td>関数の検証</td><td><code>z.function({ input, output })</code></td><td><code>.implement(fn)</code> で引数と戻り値を検証する関数を作る</td></tr>
-        <tr><td>Standard Schema</td><td>そのまま渡す</td><td>Zod のスキーマは Standard Schema 対応。<a href="hono.html">Hono</a> の <code>sValidator</code> などにそのまま使える</td></tr>
+        <tr><td data-l="機能">JSON Schema へ</td><td data-l="書き方"><code>z.toJSONSchema(schema)</code></td><td data-l="メモ"><code>.meta({ title, description })</code> の情報も出る。逆向きの <code>z.fromJSONSchema()</code> は実験的</td></tr>
+        <tr><td data-l="機能">事前コンパイル</td><td data-l="書き方"><code>z.compile(schema)</code></td><td data-l="メモ">4.5〜。結果は同じで数倍速い。<code>new Function</code> を使うので CSP で eval 禁止の環境では効かない</td></tr>
+        <tr><td data-l="機能">全体をコンパイル</td><td data-l="書き方"><code>import 'zod/compile'</code></td><td data-l="メモ">エントリーの先頭で 1 回。<code>node --import zod/compile app.js</code> でもよい</td></tr>
+        <tr><td data-l="機能">小さい版</td><td data-l="書き方"><code>import * as z from 'zod/mini'</code></td><td data-l="メモ">メソッドチェーンの代わりに関数で書く（<code>z.optional(z.string())</code>）。フロントエンドのバンドルを小さくしたいとき</td></tr>
+        <tr><td data-l="機能">関数の検証</td><td data-l="書き方"><code>z.function({ input, output })</code></td><td data-l="メモ"><code>.implement(fn)</code> で引数と戻り値を検証する関数を作る</td></tr>
+        <tr><td data-l="機能">Standard Schema</td><td data-l="書き方">そのまま渡す</td><td data-l="メモ">Zod のスキーマは Standard Schema 対応。<a href="hono.html">Hono</a> の <code>sValidator</code> などにそのまま使える</td></tr>
       </tbody>
     </table>
   </div>

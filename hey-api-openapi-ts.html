@@ -91,6 +91,14 @@ th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; ver
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
 td:first-child { white-space: nowrap; }
 td code, th code { word-break: break-word; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child code { font-weight: 700; }
+}
 
 /* 生成の流れ */
 .pipe { display: flex; align-items: stretch; gap: 8px; }
@@ -428,16 +436,15 @@ client.interceptors.request.eject(id);   // 外す（ID か関数の参照で）
     </div>
   </div>
   <div class="panel" id="pl-client" hidden>
-    <div class="tbl">
-      <table>
+    <div class="tbl stack"><table>
         <thead><tr><th>プラグイン</th><th>使う場面</th></tr></thead>
         <tbody>
-          <tr><td><code>@hey-api/client-fetch</code></td><td>既定。Fetch API の薄いラッパー</td></tr>
-          <tr><td><code>@hey-api/client-axios</code></td><td>Axios を使っている（<code>axios</code> が別途必要）</td></tr>
-          <tr><td><code>@hey-api/client-next</code></td><td>Next.js の fetch 拡張（キャッシュ・revalidate）を使う</td></tr>
-          <tr><td><code>@hey-api/client-nuxt</code></td><td>Nuxt の <code>$fetch</code>・<code>useFetch</code> を使う</td></tr>
-          <tr><td><code>@hey-api/client-ofetch</code> / <code>@hey-api/client-ky</code></td><td>ofetch / ky を使う</td></tr>
-          <tr><td><code>@hey-api/client-angular</code></td><td>Angular の <code>HttpClient</code> を使う</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-fetch</code></td><td data-l="使う場面">既定。Fetch API の薄いラッパー</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-axios</code></td><td data-l="使う場面">Axios を使っている（<code>axios</code> が別途必要）</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-next</code></td><td data-l="使う場面">Next.js の fetch 拡張（キャッシュ・revalidate）を使う</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-nuxt</code></td><td data-l="使う場面">Nuxt の <code>$fetch</code>・<code>useFetch</code> を使う</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-ofetch</code> / <code>@hey-api/client-ky</code></td><td data-l="使う場面">ofetch / ky を使う</td></tr>
+          <tr><td data-l="プラグイン"><code>@hey-api/client-angular</code></td><td data-l="使う場面">Angular の <code>HttpClient</code> を使う</td></tr>
         </tbody>
       </table>
     </div>

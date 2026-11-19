@@ -92,6 +92,16 @@ th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--lin
 th { background: var(--chip); font-weight: 700; font-size: 0.8rem; }
 tr:last-child td { border-bottom: none; }
 td:first-child { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child code { font-weight: 700; }
+  .stack table { border: none; background: none; }
+  .stack tr:has(> th) { display: none; }
+}
 .req { display: inline-block; font-size: 0.7rem; padding: 0 6px; border-radius: 999px; border: 1px solid var(--c-warn); color: var(--c-warn); margin-left: 4px; }
 
 /* 絞り込み */
@@ -196,13 +206,13 @@ footer#memo-backlink a:hover { color: var(--accent); }
   <p class="note">cf 自体は dev サーバーもバンドラーも持たず、Vite（など）か Wrangler に処理を渡す。<code>package.json</code> の scripts も実行しないので、追加のビルド手順は自分の <code>build</code> スクリプトにつなげる。</p>
 
   <h2 id="requirements">動かす前提</h2>
-  <div class="tbl-wrap"><table>
+  <div class="tbl-wrap stack"><table>
     <tr><th>項目</th><th>内容</th><th>守らないと</th></tr>
-    <tr><td>Node.js 22.18 以上</td><td>Bun は非対応</td><td><code>cloudflare.config.ts loading is not supported on Bun</code></td></tr>
-    <tr><td><code>"type": "module"</code></td><td><code>package.json</code> に書く</td><td>未指定だと毎回警告。<code>"commonjs"</code> だと <code>Cannot use import statement outside a module</code></td></tr>
-    <tr><td><code>cf</code> を devDependency に</td><td><code>npm i -D cf</code>（<code>cf init</code> で作ったプロジェクトには入っている）</td><td><code>cf/config</code> が解決できない</td></tr>
-    <tr><td>import に <code>.ts</code> 拡張子</td><td>別ファイルの設定を import するとき（Node は拡張子を補わない）</td><td><code>ERR_MODULE_NOT_FOUND</code></td></tr>
-    <tr><td><code>tsconfig.json</code></td><td><code>allowImportingTsExtensions</code> を有効にし、<code>.cloudflare/types</code> を <code>include</code> に明示</td><td>型が効かない（ワイルドカードはドットで始まるフォルダを拾わない）</td></tr>
+    <tr><td data-l="項目">Node.js 22.18 以上</td><td data-l="内容">Bun は非対応</td><td data-l="守らないと"><code>cloudflare.config.ts loading is not supported on Bun</code></td></tr>
+    <tr><td data-l="項目"><code>"type": "module"</code></td><td data-l="内容"><code>package.json</code> に書く</td><td data-l="守らないと">未指定だと毎回警告。<code>"commonjs"</code> だと <code>Cannot use import statement outside a module</code></td></tr>
+    <tr><td data-l="項目"><code>cf</code> を devDependency に</td><td data-l="内容"><code>npm i -D cf</code>（<code>cf init</code> で作ったプロジェクトには入っている）</td><td data-l="守らないと"><code>cf/config</code> が解決できない</td></tr>
+    <tr><td data-l="項目">import に <code>.ts</code> 拡張子</td><td data-l="内容">別ファイルの設定を import するとき（Node は拡張子を補わない）</td><td data-l="守らないと"><code>ERR_MODULE_NOT_FOUND</code></td></tr>
+    <tr><td data-l="項目"><code>tsconfig.json</code></td><td data-l="内容"><code>allowImportingTsExtensions</code> を有効にし、<code>.cloudflare/types</code> を <code>include</code> に明示</td><td data-l="守らないと">型が効かない（ワイルドカードはドットで始まるフォルダを拾わない）</td></tr>
   </table></div>
 <pre><code>// tsconfig.json
 {
@@ -327,11 +337,11 @@ export default defineConfig({
   <p class="note">triggers は「起動するきっかけ」だけを決め、<code>env</code> のバインディングは作らない。Queue に送る側にもなるなら <code>bindings.queue</code> も別に書く。</p>
 
   <h2 id="do">exports と Durable Object のライフサイクル</h2>
-  <div class="tbl-wrap"><table>
+  <div class="tbl-wrap stack"><table>
     <tr><th>ビルダー</th><th>説明</th></tr>
-    <tr><td><code>exports.worker({ cache })</code></td><td>WorkerEntrypoint の export</td></tr>
-    <tr><td><code>exports.durableObject({ storage, container? })</code></td><td><code>storage</code> は <code>"sqlite"</code>（推奨）か <code>"legacy-kv"</code>。Container を付けられるのは sqlite のクラスだけ</td></tr>
-    <tr><td><code>exports.workflow({ name, ... })</code></td><td><code>name</code> はアカウント内で一意。<code>jurisdiction</code> は作成後に変えられない</td></tr>
+    <tr><td data-l="ビルダー"><code>exports.worker({ cache })</code></td><td data-l="説明">WorkerEntrypoint の export</td></tr>
+    <tr><td data-l="ビルダー"><code>exports.durableObject({ storage, container? })</code></td><td data-l="説明"><code>storage</code> は <code>"sqlite"</code>（推奨）か <code>"legacy-kv"</code>。Container を付けられるのは sqlite のクラスだけ</td></tr>
+    <tr><td data-l="ビルダー"><code>exports.workflow({ name, ... })</code></td><td data-l="説明"><code>name</code> はアカウント内で一意。<code>jurisdiction</code> は作成後に変えられない</td></tr>
   </table></div>
   <p>Durable Object は <code>state</code> でクラスの移り変わりを宣言する（移行用の migration ブロックの代わり）。</p>
   <div class="tbl-wrap"><table>
@@ -363,12 +373,12 @@ export default defineConfig(({ mode, isPreview }) =&gt; {
     },
   };
 });</code></pre>
-  <div class="tbl-wrap"><table>
+  <div class="tbl-wrap stack"><table>
     <tr><th>状況</th><th><code>mode</code> の値</th></tr>
-    <tr><td><code>--mode</code> / <code>-m</code> を付けた</td><td>指定した値</td></tr>
-    <tr><td>Vite プラグインで <code>cf dev</code></td><td><code>development</code></td></tr>
-    <tr><td>Vite プラグインでビルド（<code>cf build</code> / <code>cf deploy</code>）</td><td><code>production</code></td></tr>
-    <tr><td>Wrangler でのビルド・API コマンド</td><td><code>undefined</code></td></tr>
+    <tr><td data-l="状況"><code>--mode</code> / <code>-m</code> を付けた</td><td data-l="mode の値">指定した値</td></tr>
+    <tr><td data-l="状況">Vite プラグインで <code>cf dev</code></td><td data-l="mode の値"><code>development</code></td></tr>
+    <tr><td data-l="状況">Vite プラグインでビルド（<code>cf build</code> / <code>cf deploy</code>）</td><td data-l="mode の値"><code>production</code></td></tr>
+    <tr><td data-l="状況">Wrangler でのビルド・API コマンド</td><td data-l="mode の値"><code>undefined</code></td></tr>
   </table></div>
   <ul class="note" style="margin-left:1.2em">
     <li><code>isPreview</code> は <code>cf previews deploy</code> のとき <code>true</code></li>
@@ -377,17 +387,17 @@ export default defineConfig(({ mode, isPreview }) =&gt; {
   </ul>
 
   <h2 id="commands">関連コマンド</h2>
-  <div class="tbl-wrap"><table>
+  <div class="tbl-wrap stack"><table>
     <tr><th>コマンド</th><th>内容</th></tr>
-    <tr><td><code>cf init my-worker</code> / <code>cf init .</code></td><td><code>cloudflare.config.ts</code> 付きのプロジェクトを作る／既存アプリに追加</td></tr>
-    <tr><td><code>cf dev</code> / <code>cf dev --mode staging</code></td><td>ローカル開発</td></tr>
-    <tr><td><code>cf build</code> / <code>cf build -m staging</code></td><td>ビルド</td></tr>
-    <tr><td><code>cf deploy --dry-run</code></td><td>デプロイ内容の確認だけ</td></tr>
-    <tr><td><code>cf deploy --mode staging</code></td><td>mode を指定してデプロイ</td></tr>
-    <tr><td><code>cf deploy --prebuilt --mode production</code></td><td>ビルド済みをデプロイ。ビルド時に記録された mode と一致させる</td></tr>
-    <tr><td><code>cf previews deploy [--preview-name x]</code></td><td>Preview を作る（名前の既定はブランチ名、<code>--dry-run</code> なし）</td></tr>
-    <tr><td><code>cf workers types</code></td><td><code>Env</code> 型を生成</td></tr>
-    <tr><td><code>cf migrate --dry-run</code></td><td>wrangler の設定を <code>cloudflare.config.ts</code> に変換（試行）</td></tr>
+    <tr><td data-l="コマンド"><code>cf init my-worker</code> / <code>cf init .</code></td><td data-l="内容"><code>cloudflare.config.ts</code> 付きのプロジェクトを作る／既存アプリに追加</td></tr>
+    <tr><td data-l="コマンド"><code>cf dev</code> / <code>cf dev --mode staging</code></td><td data-l="内容">ローカル開発</td></tr>
+    <tr><td data-l="コマンド"><code>cf build</code> / <code>cf build -m staging</code></td><td data-l="内容">ビルド</td></tr>
+    <tr><td data-l="コマンド"><code>cf deploy --dry-run</code></td><td data-l="内容">デプロイ内容の確認だけ</td></tr>
+    <tr><td data-l="コマンド"><code>cf deploy --mode staging</code></td><td data-l="内容">mode を指定してデプロイ</td></tr>
+    <tr><td data-l="コマンド"><code>cf deploy --prebuilt --mode production</code></td><td data-l="内容">ビルド済みをデプロイ。ビルド時に記録された mode と一致させる</td></tr>
+    <tr><td data-l="コマンド"><code>cf previews deploy [--preview-name x]</code></td><td data-l="内容">Preview を作る（名前の既定はブランチ名、<code>--dry-run</code> なし）</td></tr>
+    <tr><td data-l="コマンド"><code>cf workers types</code></td><td data-l="内容"><code>Env</code> 型を生成</td></tr>
+    <tr><td data-l="コマンド"><code>cf migrate --dry-run</code></td><td data-l="内容">wrangler の設定を <code>cloudflare.config.ts</code> に変換（試行）</td></tr>
   </table></div>
 
   <h2 id="examples">設定ファイルの例</h2>

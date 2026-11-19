@@ -96,7 +96,7 @@ td code, th code { word-break: break-word; }
   .stack thead { display: none; }
   .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
   .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
-  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
   .stack td:first-child code { font-weight: 700; }
 }
 
@@ -373,15 +373,14 @@ await authClient.twoFactor.enable({ password });</code></pre>
   <p class="note">表のうち <code>passkey()</code>・<code>apiKey()</code> 以外は <code>better-auth/plugins</code> から import し、クライアント側は <code>〜Client()</code>（<code>better-auth/client/plugins</code>）を使う。</p>
 
   <h2 id="cli">CLI</h2>
-  <div class="tbl">
-    <table>
+  <div class="tbl stack"><table>
       <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
       <tbody>
-        <tr><td><code>npx auth@latest generate</code></td><td>Prisma・Drizzle のスキーマや SQL を生成。<code>--adapter prisma --dialect postgresql</code> で DB に接続せずに生成</td></tr>
-        <tr><td><code>npx auth@latest migrate</code></td><td>組み込みの Kysely アダプターのとき、DB にテーブルを直接作る</td></tr>
-        <tr><td><code>npx auth@latest check</code></td><td>設定を確認する（<code>check schema</code> でスキーマだけ）</td></tr>
-        <tr><td><code>npx auth@latest create-admin --email …</code></td><td>管理者ユーザーを作る</td></tr>
-        <tr><td><code>--config ./src/auth.ts</code></td><td>設定ファイルが既定の場所にないとき</td></tr>
+        <tr><td data-l="コマンド"><code>npx auth@latest generate</code></td><td data-l="意味">Prisma・Drizzle のスキーマや SQL を生成。<code>--adapter prisma --dialect postgresql</code> で DB に接続せずに生成</td></tr>
+        <tr><td data-l="コマンド"><code>npx auth@latest migrate</code></td><td data-l="意味">組み込みの Kysely アダプターのとき、DB にテーブルを直接作る</td></tr>
+        <tr><td data-l="コマンド"><code>npx auth@latest check</code></td><td data-l="意味">設定を確認する（<code>check schema</code> でスキーマだけ）</td></tr>
+        <tr><td data-l="コマンド"><code>npx auth@latest create-admin --email …</code></td><td data-l="意味">管理者ユーザーを作る</td></tr>
+        <tr><td data-l="コマンド"><code>--config ./src/auth.ts</code></td><td data-l="意味">設定ファイルが既定の場所にないとき</td></tr>
       </tbody>
     </table>
   </div>

@@ -96,7 +96,7 @@ td code, th code { word-break: break-word; }
   .stack thead { display: none; }
   .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
   .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
-  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
   .stack td:first-child code { font-weight: 700; }
 }
 

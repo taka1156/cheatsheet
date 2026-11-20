@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storybook 使い方</title>
+<meta name="description" content="Storybook 10 のストーリーの書き方・設定・CLI・play テスト・モックをまとめた早見表">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+.panel > pre:first-child { margin-top: 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td code { overflow-wrap: anywhere; }
+table.q td:first-child code { white-space: nowrap; }
+@media (min-width: 601px) { td:first-child { white-space: nowrap; } }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 全体像の図 */
+.flow { display: flex; align-items: stretch; gap: 6px; }
+.flow .node {
+  flex: 1 1 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.flow .node b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; word-break: break-all; }
+.flow .node span { display: block; color: var(--fg-2); font-size: 0.8rem; line-height: 1.5; margin-top: 4px; }
+.flow .arrow { display: flex; align-items: center; justify-content: center; color: var(--fg-2); font-size: 1.1rem; flex: 0 0 auto; }
+.flow .arrow::before { content: '→'; }
+.outs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+.outs .node { background: var(--chip); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+.outs .node b { font-size: 0.82rem; display: block; }
+.outs .node span { color: var(--fg-2); font-size: 0.78rem; display: block; line-height: 1.5; }
+.outs-label { color: var(--fg-2); font-size: 0.8rem; margin-top: 10px; }
+@media (max-width: 600px) {
+  .flow { flex-direction: column; }
+  .flow .arrow::before { content: '↓'; }
+  .outs { grid-template-columns: 1fr; }
+}
+
+/* 優先順位の段 */
+.layers { display: grid; gap: 6px; }
+.layers > div {
+  display: grid;
+  grid-template-columns: 9.5em 1fr;
+  gap: 10px;
+  align-items: baseline;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+}
+.layers > div > b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; }
+.layers > div > span { color: var(--fg-2); }
+.layers-cap { display: flex; justify-content: space-between; color: var(--fg-2); font-size: 0.78rem; margin: 2px 2px 6px; }
+@media (max-width: 600px) {
+  .layers > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Storybook 使い方</h1>
+  <p class="subtitle">UI コンポーネントをアプリから切り離して表示・文書化・テストする開発環境（Storybook 10 前提）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>コンポーネントの「状態」ごとに 1 つずつストーリー (story) を書き、ブラウザ上のカタログとして並べるツール</li>
+      <li><code>*.stories.tsx</code> の default export がコンポーネントの設定、named export が各ストーリーになる</li>
+      <li>Vite 系なら <code>addon-vitest</code> でストーリーをそのままテストにでき、<code>play</code> で操作も検証できる</li>
+    </ul>
+  </div>
+
+  <h2 id="overview">全体像</h2>
+  <p>設定は <code>.storybook/</code> フォルダの 2 ファイルと、コンポーネントの隣に置くストーリーファイルの 3 つで成り立つ。</p>
+  <div class="flow" role="img" aria-label="main.ts から preview.ts、stories ファイルを経て、Storybook UI・Docs・Vitest に使われる流れ">
+    <div class="node"><b>.storybook/main.ts</b><span>どのファイルを読むか・フレームワーク・アドオン（Node 側で動く）</span></div>
+    <div class="arrow"></div>
+    <div class="node"><b>.storybook/preview.ts</b><span>全ストーリー共通の decorators・parameters・モック（ブラウザ側で動く）</span></div>
+    <div class="arrow"></div>
+    <div class="node"><b>Button.stories.tsx</b><span>コンポーネントごとの meta と、状態ごとのストーリー</span></div>
+  </div>
+  <p class="outs-label">同じストーリーが次の 3 か所で使い回される:</p>
+  <div class="outs">
+    <div class="node"><b>Canvas</b><span>サイドバーで選んで表示。Controls で args を変えて試す</span></div>
+    <div class="node"><b>Docs</b><span><code>autodocs</code> タグで props 表付きのページを自動生成</span></div>
+    <div class="node"><b>テスト</b><span>Vitest がストーリーを描画し、<code>play</code> の検証を流す</span></div>
+  </div>
+
+  <h2 id="cli">セットアップと CLI</h2>
+  <p>Storybook 10 は ESM のみで配布され、Node.js 20.16+ / 22.19+ / 24+ が必要。<code>npm run storybook -- -p 9009</code> のように、npm 経由でオプションを渡すときは <code>--</code> を挟む。</p>
+  <div class="tbl"><table>
+    <tr><th>やりたいこと</th><th>コマンド</th><th>補足</th></tr>
+    <tr><td>導入する</td><td><code>npm create storybook@latest</code></td><td>フレームワークを自動判別し、<code>.storybook/</code>・サンプル・npm スクリプトを作る</td></tr>
+    <tr><td>開発サーバー</td><td><code>storybook dev -p 6006</code></td><td><code>--no-open</code>（ブラウザを開かない）、<code>--ci</code>（対話なし）、<code>--docs</code>（Docs だけのモード）</td></tr>
+    <tr><td>静的ビルド</td><td><code>storybook build</code></td><td>出力は <code>storybook-static/</code>。<code>-o dir</code> で変更。<code>--test</code> はテスト用に UI 機能を省いた軽いビルド</td></tr>
+    <tr><td>アドオン追加</td><td><code>npx storybook add @storybook/addon-a11y</code></td><td>インストールと <code>main.ts</code> への登録を同時に行う。外すときは <code>remove</code></td></tr>
+    <tr><td>バージョンを上げる</td><td><code>npx storybook@latest upgrade</code></td><td>関連パッケージをまとめて更新し、自動移行 (automigrate) を流す</td></tr>
+    <tr><td>移行だけ流す</td><td><code>npx storybook automigrate</code></td><td>例: <code>automigrate csf-factories</code> で CSF Next へ書き換え</td></tr>
+    <tr><td>環境を診断</td><td><code>npx storybook doctor</code></td><td>版の食い違い・重複パッケージを探す</td></tr>
+  </table></div>
+
+  <h2 id="story">ストーリーの書き方</h2>
+  <p>CSF (Component Story Format) で書く。今の標準は CSF 3。型安全な CSF Next（CSF Factories）は Preview 段階で、Storybook 11 で標準になる予定。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="csf3">CSF 3</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="csfnext">CSF Next (Preview)</button>
+  </div>
+  <div class="panel" id="csf3">
+<pre><code>// Button.stories.tsx
+// '@storybook/react-vite' は使うフレームワークに合わせる（nextjs-vite・vue3-vite など）
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { Button } from './Button';
+
+const meta = {
+  title: 'Components/Button',   // 省略するとファイルの場所から自動で決まる
+  component: Button,
+  tags: ['autodocs'],           // Docs ページを自動生成
+  args: { onClick: fn() },      // 全ストーリー共通の props。fn() は呼ばれると Actions に出る
+  argTypes: {
+    variant: { control: 'select', options: ['primary', 'secondary'] },
+  },
+  parameters: { layout: 'centered' },
+} satisfies Meta&lt;typeof Button&gt;;
+export default meta;
+
+type Story = StoryObj&lt;typeof meta&gt;;
+
+// named export 1 つ = ストーリー 1 つ（UpperCamelCase）
+export const Primary: Story = {
+  args: { variant: 'primary', label: 'Button' },
+};
+
+export const Disabled: Story = {
+  args: { ...Primary.args, disabled: true },   // 別ストーリーの args を流用
+};</code></pre>
+    <p class="note"><code>const meta: Meta = …</code> ではなく <code>satisfies</code> を使うと、meta で渡した必須 props をストーリー側で省いても型エラーにならない。</p>
+  </div>
+  <div class="panel" id="csfnext" hidden>
+<pre><code>// .storybook/main.ts
+import { defineMain } from '@storybook/react-vite/node';
+export default defineMain({
+  framework: '@storybook/react-vite',
+  stories: ['../src/**/*.stories.@(ts|tsx)'],
+  addons: ['@storybook/addon-a11y'],
+});
+
+// .storybook/preview.ts
+import { definePreview } from '@storybook/react-vite';
+import addonA11y from '@storybook/addon-a11y';
+export default definePreview({
+  addons: [addonA11y()],
+  parameters: { layout: 'centered' },   // ここも型が効く
+});
+
+// Button.stories.tsx
+import preview from '#.storybook/preview';   // package.json の imports で設定
+import { Button } from './Button';
+
+const meta = preview.meta({ component: Button });
+export default meta;
+
+export const Primary = meta.story({
+  args: { variant: 'primary', label: 'Button' },
+});</code></pre>
+    <p class="note">型注釈が要らなくなり、<code>Primary</code> をそのまま Vitest などから import して再利用できる。対応は React・Vue・Angular・Web Components（10.3 時点）。既存のファイルは <code>npx storybook automigrate csf-factories</code> で書き換えられる。</p>
+  </div>
+
+  <h3>meta とストーリーに書けるキー</h3>
+  <div class="tbl"><table>
+    <tr><th>キー</th><th>置き場所</th><th>役割</th></tr>
+    <tr><td><code>component</code></td><td>meta</td><td>対象コンポーネント。props 表や Controls の型推論に使う</td></tr>
+    <tr><td><code>title</code></td><td>meta</td><td>サイドバーの階層（<code>/</code> 区切り）。静的に読める文字列で書く</td></tr>
+    <tr><td><code>name</code></td><td>story</td><td>サイドバーの表示名だけを変える（export 名はそのまま）</td></tr>
+    <tr><td><code>args</code></td><td>両方・preview</td><td>コンポーネントに渡す props。Controls で画面から変えられる</td></tr>
+    <tr><td><code>argTypes</code></td><td>両方・preview</td><td>Controls の種類や説明。<code>control: 'text' | 'boolean' | 'number' | 'range' | 'color' | 'date' | 'select' | 'radio' | 'object'</code> など。<code>table: { disable: true }</code> で非表示</td></tr>
+    <tr><td><code>parameters</code></td><td>両方・preview</td><td>アドオン向けの静的な設定（<code>layout</code>・<code>backgrounds</code>・<code>a11y</code> など）</td></tr>
+    <tr><td><code>decorators</code></td><td>両方・preview</td><td>ストーリーを包む関数。Provider・テーマ・余白などを足す</td></tr>
+    <tr><td><code>tags</code></td><td>両方・preview</td><td>Docs 生成やテスト対象の切り替え（下の表）</td></tr>
+    <tr><td><code>render</code></td><td>両方</td><td>args の渡し方を変える描画関数。複数コンポーネントを組み合わせるとき</td></tr>
+    <tr><td><code>play</code></td><td>story・meta</td><td>描画後に動く操作と検証（下の「操作のテスト」）</td></tr>
+    <tr><td><code>beforeEach</code></td><td>両方・preview</td><td>描画前の準備。戻り値の関数が後片付けになる</td></tr>
+    <tr><td><code>loaders</code></td><td>両方・preview</td><td>描画前に非同期でデータを取り、<code>render</code> の第 2 引数の <code>loaded</code> に渡す</td></tr>
+  </table></div>
+
+  <h3>args・parameters・decorators の効き方</h3>
+  <p><code>args</code> と <code>parameters</code> は下の段ほど優先して上書きされる。<code>parameters</code> はオブジェクトを深くマージするが、<code>args</code> はキー単位の浅いマージで、オブジェクトの arg は丸ごと置き換わる。<code>decorators</code> は上書きではなく重なり、ストーリーのものがいちばん内側、preview のものがいちばん外側に来る。</p>
+  <div class="layers-cap"><span>弱い（先に適用）</span></div>
+  <div class="layers">
+    <div><b>preview.ts</b><span>全ストーリー共通（グローバル）</span></div>
+    <div><b>meta（default export）</b><span>そのファイルのストーリー全部</span></div>
+    <div><b>story（named export）</b><span>そのストーリーだけ</span></div>
+    <div><b>Controls・URL の args</b><span>画面で変えた値（args のみ。保存はされない）</span></div>
+  </div>
+  <div class="layers-cap"><span>強い（最後に勝つ）</span></div>
+
+  <h3>よく使う tags と parameters</h3>
+  <div class="tbl"><table>
+    <tr><th>書き方</th><th>効果</th></tr>
+    <tr><td><code>tags: ['autodocs']</code></td><td>そのコンポーネントの Docs ページを自動生成（<code>@storybook/addon-docs</code> が必要）。preview に書けば全部に付く</td></tr>
+    <tr><td><code>tags: ['!autodocs']</code></td><td>preview で付けた <code>autodocs</code> を、そのファイル・ストーリーだけ外す。<code>!</code> は打ち消し</td></tr>
+    <tr><td><code>tags: ['!dev']</code></td><td>サイドバーに出さない（Docs やテストには残る）</td></tr>
+    <tr><td><code>tags: ['!test']</code></td><td>テスト対象から外す（標準では全ストーリーに <code>test</code> が付いている）</td></tr>
+    <tr><td><code>parameters.layout</code></td><td><code>'padded'</code>（既定）・<code>'centered'</code>・<code>'fullscreen'</code></td></tr>
+    <tr><td><code>parameters.docs.description.component</code></td><td>Docs ページの説明文。JSDoc のコメントからも自動で拾う</td></tr>
+  </table></div>
+
+  <h2 id="config">設定ファイルの例</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cfg-main">main.ts</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cfg-preview">preview.ts</button>
+  </div>
+  <div class="panel" id="cfg-main">
+<pre><code>// .storybook/main.ts
+import type { StorybookConfig } from '@storybook/react-vite';
+
+const config: StorybookConfig = {
+  framework: '@storybook/react-vite',        // 必須
+  stories: [                                  // 必須。main.ts からの相対 glob
+    '../src/**/*.mdx',
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+  ],
+  addons: [
+    '@storybook/addon-docs',
+    '@storybook/addon-a11y',
+    '@storybook/addon-vitest',
+  ],
+  staticDirs: ['../public'],                  // 画像などをそのまま配信
+};
+export default config;</code></pre>
+    <p class="note">Controls・Actions・Viewport・Backgrounds・Toolbars などは Storybook 9 から本体に入った。<code>@storybook/addon-essentials</code> はもう入れない（Docs だけは <code>addon-docs</code> を別に入れる）。Vite の設定は <code>viteFinal</code>、webpack は <code>webpackFinal</code> で足す。</p>
+  </div>
+  <div class="panel" id="cfg-preview" hidden>
+<pre><code>// .storybook/preview.tsx
+import type { Preview } from '@storybook/react-vite';
+import { sb } from 'storybook/test';
+import '../src/index.css';                      // グローバル CSS
+
+sb.mock(import('../src/lib/session.ts'));      // モジュールのモック（下で説明）
+
+const preview: Preview = {
+  parameters: {
+    controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
+  },
+  decorators: [
+    (Story) =&gt; (
+      &lt;ThemeProvider theme={theme}&gt;
+        &lt;Story /&gt;
+      &lt;/ThemeProvider&gt;
+    ),
+  ],
+  tags: ['autodocs'],
+};
+export default preview;</code></pre>
+  </div>
+
+  <h2 id="play">操作のテスト（play 関数）</h2>
+  <p>ストーリーを描画したあとに <code>play</code> が動き、Testing Library と Vitest の API で操作・検証する。結果はアドオンパネルの Interactions に 1 手ずつ出て、巻き戻して確かめられる。import 元は <code>storybook/test</code>（Storybook 9 で <code>@storybook/test</code> から変わった）。</p>
+<pre><code>import { expect, fn } from 'storybook/test';
+
+const meta = {
+  component: LoginForm,
+  args: { onSubmit: fn() },     // 呼ばれたかを検証できるスパイ
+} satisfies Meta&lt;typeof LoginForm&gt;;
+export default meta;
+type Story = StoryObj&lt;typeof meta&gt;;
+
+export const Submitted: Story = {
+  play: async ({ canvas, userEvent, args, step }) =&gt; {
+    await step('入力する', async () =&gt; {
+      await userEvent.type(canvas.getByLabelText('Email'), 'a@example.com');
+      await userEvent.type(canvas.getByLabelText('Password'), 'secret');
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Log in' }));
+    await expect(args.onSubmit).toHaveBeenCalled();          // expect は await する
+    await expect(await canvas.findByText('Welcome back')).toBeInTheDocument();
+  },
+};</code></pre>
+
+  <h3>要素の探し方（canvas のクエリ）</h3>
+  <div class="tbl"><table class="q">
+    <tr><th>形</th><th>見つからない</th><th>2 つ以上</th><th>使いどころ</th></tr>
+    <tr><td><code>getBy…</code></td><td>例外</td><td>例外</td><td>すでに表示されているはずの要素</td></tr>
+    <tr><td><code>queryBy…</code></td><td><code>null</code></td><td>例外</td><td>「無いこと」を確かめる</td></tr>
+    <tr><td><code>findBy…</code></td><td>例外（待ってから）</td><td>例外</td><td>非同期で出てくる要素。<code>await</code> する</td></tr>
+    <tr><td><code>getAllBy…</code> など</td><td>例外（<code>queryAll</code> は <code>[]</code>）</td><td>配列</td><td>複数ある要素</td></tr>
+  </table></div>
+  <p class="note">… には <code>Role</code>（推奨）・<code>LabelText</code>・<code>Text</code>・<code>PlaceholderText</code>・<code>TestId</code> などが入る。描画前に日付などを固定したいときは、<code>play</code> の引数から <code>mount</code> を受け取り、準備のあとで <code>await mount()</code> を呼ぶ。</p>
+
+  <h2 id="vitest">ストーリーを Vitest で流す</h2>
+  <p><code>@storybook/addon-vitest</code> は、ストーリーを Vitest のテストに変換し、ブラウザモード（Playwright の Chromium）で描画する。<code>play</code> が無いストーリーも「描画でエラーが出ないか」のテストになる。Vitest そのものの使い方は <a href="vitest.html">Vitest 使い方</a> を参照。</p>
+  <ol class="steps">
+    <li><b>アドオンを入れる</b><code>npx storybook add @storybook/addon-vitest</code>。Vite 系のフレームワーク（<code>react-vite</code>・<code>vue3-vite</code>・<code>nextjs-vite</code> など）が前提で、Vitest が無ければ一緒に入る</li>
+    <li><b>設定を確かめる</b><code>vitest.config.ts</code> に <code>storybook</code> という名前のプロジェクトが足される（下の例）</li>
+    <li><b>実行する</b>UI ではサイドバー下のテストウィジェットの Run、ターミナルでは <code>npm run test-storybook</code>（中身は <code>vitest --project=storybook</code>）。CI では <code>vitest run --project=storybook</code></li>
+  </ol>
+<pre><code>// vitest.config.ts（Vitest 4 の例）
+import { defineConfig } from 'vitest/config';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
+
+export default defineConfig({
+  test: {
+    projects: [{
+      extends: true,
+      plugins: [storybookTest({ configDir: '.storybook' })],
+      test: {
+        name: 'storybook',
+        browser: {
+          enabled: true,
+          provider: playwright(),        // Vitest 3 では provider: 'playwright'
+          headless: true,
+          instances: [{ browser: 'chromium' }],
+        },
+      },
+    }],
+  },
+});</code></pre>
+  <p class="note"><code>storybookTest({ tags: { include, exclude, skip } })</code> で対象を絞れる（既定は <code>include: ['test']</code>）。webpack 系のフレームワークでは代わりに <code>@storybook/test-runner</code> を使う。</p>
+
+  <h2 id="mock">モジュールのモック（sb.mock）</h2>
+  <p>Storybook 9.1 から、コンポーネントが import する関数を <code>preview.ts</code> で差し替えられる（10 でも同じ）。Vite と webpack の両方で、開発サーバーにもビルドにも効く。</p>
+  <div class="tbl"><table>
+    <tr><th>書き方</th><th>動き</th></tr>
+    <tr><td><code>sb.mock(import('../lib/session.ts'), { spy: true })</code></td><td>本物の処理はそのまま動かし、呼び出しだけ記録する</td></tr>
+    <tr><td><code>sb.mock(import('../lib/session.ts'))</code></td><td>すべての export を何もしないモック関数に置き換える</td></tr>
+    <tr><td><code>sb.mock(import('uuid'))</code></td><td><code>node_modules</code> のパッケージも同じように置き換えられる</td></tr>
+    <tr><td><code>lib/__mocks__/session.js</code> を置く</td><td>そのファイルの実装がモックとして使われる（凝った振る舞いを使い回すとき）。パッケージならプロジェクト直下の <code>__mocks__/</code>。中身は TypeScript ではなく ES モジュールの JS で書く</td></tr>
+  </table></div>
+<pre><code>// 個々のストーリーで戻り値を決める
+import { mocked } from 'storybook/test';
+import { getUser } from '../lib/session';
+
+export const LoggedIn: Story = {
+  beforeEach: () =&gt; { mocked(getUser).mockReturnValue({ name: 'Alice' }); },
+};</code></pre>
+  <p class="note">登録できるのは <code>preview.ts</code> だけ。パスは preview からの相対で拡張子まで書き、<code>@/</code> のような別名は使えない。API 通信ごと差し替えたいときは <code>msw-storybook-addon</code>（MSW）が向く。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>ストーリーファイルは本番のバンドルにも入ってしまう</summary><p>ストーリーは開発用で、アプリのビルドには含まれない。Storybook 自体は <code>storybook build</code> で別のサイトとして書き出す。</p></details>
+  <details class="myth"><summary>Storybook 9 以降も addon-essentials と addon-interactions を入れる必要がある</summary><p>Controls・Actions・Interactions などは本体に統合された。古い記事のとおりに入れると版が合わずにエラーになることがある。Docs だけは <code>@storybook/addon-docs</code> を入れる。</p></details>
+  <details class="myth"><summary>テストは play 関数を書いたストーリーだけが対象になる</summary><p>addon-vitest では、<code>test</code> タグの付いたストーリー（標準では全部）が描画のスモークテストになる。外したいストーリーには <code>tags: ['!test']</code> を付ける。</p></details>
+  <details class="myth"><summary>Controls で変えた値はストーリーに保存される</summary><p>画面で変えた args は URL に一時的に載るだけで、ファイルは変わらない。残したい状態は新しいストーリーとして書く（Storybook の UI から保存する機能もあるが、それもファイルに書き出す形）。</p></details>
+
+  <h2 id="sources">出典と確認日</h2>
+  <div class="card">
+    <ul>
+      <li><a href="https://storybook.js.org/docs/writing-stories">How to write stories</a></li>
+      <li><a href="https://storybook.js.org/docs/writing-stories/typescript">Writing stories in TypeScript</a></li>
+      <li><a href="https://storybook.js.org/docs/api/csf/csf-factories">CSF Factories</a></li>
+      <li><a href="https://storybook.js.org/docs/configure">Configure Storybook</a></li>
+      <li><a href="https://storybook.js.org/docs/api/cli-options">CLI options</a></li>
+      <li><a href="https://storybook.js.org/docs/writing-tests/interaction-testing">Interaction tests</a></li>
+      <li><a href="https://storybook.js.org/docs/writing-tests/integrations/vitest-addon">Vitest addon</a></li>
+      <li><a href="https://storybook.js.org/docs/writing-stories/mocking-data-and-modules/mocking-modules">Mocking modules</a></li>
+      <li><a href="https://storybook.js.org/blog/storybook-10/">Storybook 10 リリース記事</a></li>
+    </ul>
+    <p>確認日: 2026-11-20。公式ドキュメントの最新は 10.6、Storybook 11 は beta。11 では CSF Next が標準になる予定なので、上げるときは移行ガイドを確かめる。</p>
+  </div>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

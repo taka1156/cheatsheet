@@ -5,6 +5,7 @@
 ## Memos
 
 - [zap 使い方](https://cs.taka1156.site/md/zap.md): Go の構造化ロガー zap の Logger と SugaredLogger、フィールド、Config、zapcore、レベル変更、テストをまとめたチートシート（Go, API・バックエンド / 2026-11-20）
+- [Storybook 使い方](https://cs.taka1156.site/md/storybook.md): Storybook 10 のストーリーの書き方・設定・CLI・play テスト・モックをまとめた早見表（開発ツール / 2026-11-20）
 - [sqlc 使い方](https://cs.taka1156.site/md/sqlc.md): sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート（Go, データベース / 2026-11-20）
 - [Skeema 使い方](https://cs.taka1156.site/md/skeema.md): Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート（データベース / 2026-11-20）
 - [Gin 使い方](https://cs.taka1156.site/md/gin.md): Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート（Go, API・バックエンド / 2026-11-20）

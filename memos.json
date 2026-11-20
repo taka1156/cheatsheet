@@ -11,6 +11,16 @@
   "quizzes": 0
  },
  {
+  "file": "storybook.html",
+  "title": "Storybook 使い方",
+  "desc": "Storybook 10 のストーリーの書き方・設定・CLI・play テスト・モックをまとめた早見表",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-20",
+  "quizzes": 0
+ },
+ {
   "file": "sqlc.html",
   "title": "sqlc 使い方",
   "desc": "sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート",

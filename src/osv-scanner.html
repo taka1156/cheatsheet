@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSV-Scanner 使い方</title>
+<meta name="description" content="OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート">
+<meta name="memo:tags" content="セキュリティ, 開発ツール">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <h1>OSV-Scanner 使い方</h1>
+  <p class="subtitle">Google の OSS 脆弱性スキャナー。ロックファイル・SBOM・コンテナイメージの依存を OSV.dev のデータベースと照らし合わせる（v2 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>OSV-Scanner は依存の一覧を取り出し、OSV.dev の脆弱性データと照合する無料の CLI（Apache-2.0）。</li>
+      <li>ロックファイルの正確な版で照合し、Go などではコール解析で「呼んでいない脆弱な関数」も見分ける。</li>
+      <li>終了コード 1 は検出あり、128 は依存が 1 つも見つからない。CI では両者を分けて扱う。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">動き方</h2>
+  <div class="pipe">
+    <div class="st"><b>取り出す</b><span>OSV-SCALIBR がロックファイル・SBOM・イメージの層から、パッケージ名と版を集める</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>照合する</b><span>OSV.dev（GitHub Advisory・PyPI・Go・RustSec・各 Linux ディストリ…）と突き合わせる</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>絞る</b><span>コール解析・<code>osv-scanner.toml</code> の除外を当てる</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>出力する</b><span>表・JSON・SARIF・HTML など。終了コードで結果を返す</span></div>
+  </div>
+  <p class="note">OSV は「どの版からどの版までが影響を受けるか」を機械で読める形で書く共通形式。各エコシステムの一次情報を同じ形にそろえてあるので、版の範囲での照合が正確になる。</p>
+
+  <h2 id="install">インストール</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="in-bin">バイナリ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-brew">Homebrew</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-go">go install</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-docker">Docker</button>
+  </div>
+  <div class="panel" id="in-bin">
+    <p>GitHub Releases のビルド済みバイナリは SLSA3 準拠で、来歴（provenance）ファイルが付く。<code>slsa-verifier</code> で取得元を確かめてから使える。</p>
+  </div>
+  <div class="panel" id="in-brew" hidden>
+<pre><code>brew install osv-scanner</code></pre>
+  </div>
+  <div class="panel" id="in-go" hidden>
+<pre><code>go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest   # v2 はパスに /v2 が入る</code></pre>
+  </div>
+  <div class="panel" id="in-docker" hidden>
+<pre><code>docker run --rm -v "$PWD":/src ghcr.io/google/osv-scanner scan source -r /src</code></pre>
+    <p class="note">CI では <code>latest</code> ではなく版を固定したタグ（できればダイジェスト）を使う。</p>
+  </div>
+
+  <h2 id="commands">コマンド早見表</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cm-src">ソース</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-img">イメージ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-out">出力・その他</button>
+  </div>
+  <div class="panel" id="cm-src">
+    <div class="tbl stack"><table>
+      <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="コマンド"><code>osv-scanner scan source -r .</code></td><td data-l="意味">ディレクトリを再帰的にたどり、ロックファイルなどを見つけて照合（<code>scan source</code> は省略でき、<code>osv-scanner -r .</code> と書いても同じ。<code>-r</code> がないとサブディレクトリに入らない）</td></tr>
+        <tr><td data-l="コマンド"><code>-L package-lock.json -L go.mod</code></td><td data-l="意味">ファイルを直接指定（複数可）。SBOM（<code>*.spdx.json</code>・<code>*.cdx.json</code>）もこれで渡す</td></tr>
+        <tr><td data-l="コマンド"><code>-L 'requirements.txt:./deps/extra.txt'</code></td><td data-l="意味">決まった名前でないファイルは <code>形式:パス</code> で渡す</td></tr>
+        <tr><td data-l="コマンド"><code>--no-ignore</code></td><td data-l="意味"><code>.gitignore</code> されたファイルも調べる（既定では除く）</td></tr>
+        <tr><td data-l="コマンド"><code>--include-git-root</code></td><td data-l="意味">ルートの git リポジトリも対象にする（既定では飛ばす）</td></tr>
+        <tr><td data-l="コマンド"><code>--x-exclude=test</code></td><td data-l="意味">ディレクトリを除く（実験的）。<code>g:**/test/**</code>（glob）や <code>r:</code>（正規表現）も使える。旧名 <code>--experimental-exclude</code> は非推奨</td></tr>
+        <tr><td data-l="コマンド"><code>--call-analysis=all</code></td><td data-l="意味">全言語でコール解析（Go は既定で有効、Rust・JAR は実験的）。止めるなら <code>--no-call-analysis=go</code></td></tr>
+        <tr><td data-l="コマンド"><code>--licenses="MIT,Apache-2.0"</code></td><td data-l="意味">許可したライセンス以外を検出にする。値なしの <code>--licenses</code> は一覧だけ（deps.dev のデータ）</td></tr>
+        <tr><td data-l="コマンド"><code>--offline --download-offline-databases</code></td><td data-l="意味">DB を手元に落として照合。以後はネットなしで動く</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="cm-img" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="コマンド"><code>osv-scanner scan image my-app:1.2.3</code></td><td data-l="意味">ローカルになければ pull し、<code>docker save</code> した中身を調べる。コンテナは起動しない</td></tr>
+        <tr><td data-l="コマンド"><code>osv-scanner scan image --archive ./app.tar</code></td><td data-l="意味">保存済みの Docker 形式の tar を調べる。Docker が入っていなくてよい</td></tr>
+        <tr><td data-l="コマンド"><code>--format html --serve</code></td><td data-l="意味">層・ベースイメージごとに絞り込める HTML レポートをローカルで開く（ポート 8000）</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">層を意識して調べ、OS パッケージ（Alpine・Debian・Ubuntu など）と言語の依存（Go・Java・Node・Python など）を見る。ソースのディレクトリと同時には指定できない。</p>
+  </div>
+  <div class="panel" id="cm-out" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="コマンド"><code>--format json --output-file result.json</code></td><td data-l="意味">形式を選んでファイルへ（旧名 <code>--output</code> は非推奨）。JSON のときは結果だけが標準出力に出る</td></tr>
+        <tr><td data-l="コマンド"><code>--all-packages</code></td><td data-l="意味">検出のないパッケージも含め、取り出した全部を JSON に出す（取りこぼしの確認に）</td></tr>
+        <tr><td data-l="コマンド"><code>--config ./osv.toml</code></td><td data-l="意味">各ディレクトリの <code>osv-scanner.toml</code> の代わりに、このファイルを全体に当てる</td></tr>
+        <tr><td data-l="コマンド"><code>osv-scanner fix ...</code></td><td data-l="意味">ガイド付き修正（実験的）。下の「fix」を参照</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <h2 id="output">出力形式と終了コード</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th><code>--format</code></th><th>使いどころ</th></tr></thead>
+    <tbody>
+      <tr><td data-l="形式"><code>table</code>（既定）・<code>vertical</code></td><td data-l="使いどころ">端末で読む</td></tr>
+      <tr><td data-l="形式"><code>markdown</code></td><td data-l="使いどころ">PR のコメントや issue に貼る</td></tr>
+      <tr><td data-l="形式"><code>json</code></td><td data-l="使いどころ">スクリプトで処理する</td></tr>
+      <tr><td data-l="形式"><code>sarif</code>・<code>gh-annotations</code></td><td data-l="使いどころ">GitHub の Code Scanning、Actions の注釈</td></tr>
+      <tr><td data-l="形式"><code>html</code></td><td data-l="使いどころ">ブラウザで絞り込みながら読む</td></tr>
+      <tr><td data-l="形式"><code>cyclonedx-1-4</code>〜<code>1-7</code>・<code>spdx-2-3</code></td><td data-l="使いどころ">SBOM として出す</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl stack"><table>
+    <thead><tr><th>終了コード</th><th>意味</th><th>CI での扱い</th></tr></thead>
+    <tbody>
+      <tr><td data-l="コード"><code>0</code></td><td data-l="意味">依存は見つかり、検出なし</td><td data-l="扱い">通す</td></tr>
+      <tr><td data-l="コード"><code>1</code></td><td data-l="意味">脆弱性かライセンス違反を検出</td><td data-l="扱い">止めて、依存の担当がトリアージ</td></tr>
+      <tr><td data-l="コード"><code>127</code></td><td data-l="意味">一般的なエラー</td><td data-l="扱い">止めて、スキャンの仕組みを直す</td></tr>
+      <tr><td data-l="コード"><code>128</code></td><td data-l="意味">パッケージが 1 つも見つからない</td><td data-l="扱い">止める。対象のパスやロックファイルの有無を確かめる</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">「1 以外なら成功」と書くと、128（何も調べていない）が緑になる。129〜255 は結果以外のエラー用に予約されている。</p>
+
+  <h2 id="config">osv-scanner.toml（除外の設定）</h2>
+  <p>調べるファイルと同じディレクトリに置く。子ディレクトリには効かない（子にも置くか、<code>--config</code> で 1 つを全体に当てる）。</p>
+<pre><code># 1 件の脆弱性を期限付きで除外（別名の CVE / GHSA もまとめて外れる）
+[[IgnoredVulns]]
+id = "GO-2022-0968"
+effectiveUntil = 2027-03-31
+reason = "SSH を使わないサービス。2027Q1 の移行で解消。SEC-1842"
+
+# 開発用の依存グループを丸ごと対象外に
+[[PackageOverrides]]
+group = "dev"
+ignore = true
+
+# 特定パッケージ・版だけ対象外に
+[[PackageOverrides]]
+name = "internal-example"
+version = "1.2.3"
+ecosystem = "Go"
+ignore = true</code></pre>
+  <p class="note"><code>effectiveUntil</code> を過ぎると再び検出される（旧名 <code>ignoreUntil</code> は非推奨）。期限と理由を必ず書き、git の履歴で誰がいつ認めたか追えるようにする。</p>
+
+  <h2 id="ci">CI（GitHub Actions）</h2>
+  <p>公式の再利用ワークフローが 2 つある。PR 用は「その PR で新しく入った脆弱性」だけを報告し、定期用は全体を調べて SARIF を Security タブに上げる。</p>
+<pre><code># .github/workflows/osv-scanner.yml
+on:
+  pull_request:
+  schedule:
+    - cron: "30 12 * * 1"   # 毎週。データは毎日増えるので、コードが変わらなくても回す
+permissions:
+  actions: read
+  contents: read
+  security-events: write    # SARIF のアップロードに必要
+jobs:
+  scan-pr:
+    if: github.event_name == 'pull_request'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@&lt;コミット SHA&gt;  # v2.x
+  scan-scheduled:
+    if: github.event_name == 'schedule'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@&lt;コミット SHA&gt;
+    with:
+      scan-args: |-
+        -r
+        ./
+        --config=osv-scanner.toml</code></pre>
+  <p class="note">タグは書き換えられることがある（2026 年 3 月の Trivy の侵害はこの手口。<a href="trivy.html">Trivy 使い方</a>を参照）ので、外部の Action はコミット SHA で固定し、Dependabot などで更新する。</p>
+
+  <h2 id="fix">fix（ガイド付き修正・実験的）</h2>
+  <p>脆弱性を消すための版上げを、依存の深さ・深刻度・修正方法で選んで提案・適用する。対応は npm の <code>package-lock.json</code>（その場で書き換え）・<code>package.json</code>（再ロック）と Maven の <code>pom.xml</code>（override）。</p>
+<pre><code># 対話式（npm のみ）
+osv-scanner fix --interactive -M package.json -L package-lock.json
+
+# 非対話（既定。CI 向け）: 深さ 3 まで、CVSS 5 以上、dev 依存は除く
+osv-scanner fix --max-depth=3 --min-severity=5 --ignore-dev --strategy=in-place -L package-lock.json</code></pre>
+  <p class="note">パッケージマネージャーのスクリプトを実行することがあるので、信頼できないプロジェクトでは使わない。</p>
+
+  <h2 id="vs">Trivy との使い分け</h2>
+  <div class="vs">
+    <div><b>OSV-Scanner が向く</b>言語の依存（ロックファイル）が中心のリポジトリ。コール解析で検出を絞りたい、PR で「新しく入った分」だけ見たい、npm / Maven の版上げを提案させたいとき。</div>
+    <div><b>Trivy が向く</b>コンテナイメージ・Kubernetes・IaC（Terraform・Dockerfile）・シークレットまで 1 つの道具でまとめて見たいとき。詳しくは <a href="trivy.html">Trivy 使い方</a>。</div>
+  </div>
+  <p class="note">データの出どころが違うので、同じ依存でも検出がずれることがある。重要なリポジトリでは両方を回して突き合わせるのも手。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>package.json だけあれば正確に調べられる</summary><p>範囲指定（<code>^1.2.0</code> など）だけでは実際に入る版が決まらない。<code>package-lock.json</code> などのロックファイルで、推移的な依存まで版を固定した状態を調べる。</p></details>
+  <details class="myth"><summary>終了コードが 0 なら依存は安全だ</summary><p>0 は「今の OSV.dev のデータで一致がない」だけ。対象のファイルを取りこぼしていれば何も調べていないし、データは毎日増える。<code>--all-packages</code> で取り出した中身を確かめ、定期スキャンも回す。</p></details>
+  <details class="myth"><summary>コール解析で unexecuted になった脆弱性は無視してよい</summary><p>解析は勧告に書かれた関数名と静的な呼び出しの経路に頼るので、リフレクションや動的な呼び出しは見落とす。優先度を下げる材料にとどめ、除外するなら理由と期限を書く。</p></details>
+  <details class="myth"><summary>scan image はコンテナを起動して中を調べる</summary><p>v2 の <code>scan image</code> はイメージを tar に書き出して静的に調べ、コンテナは起動しない（v1 の <code>--docker</code> は起動していた）。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://github.com/google/osv-scanner">google/osv-scanner</a>・<a href="https://github.com/google/osv-scanner/releases">Releases</a></li>
+    <li><a href="https://google.github.io/osv-scanner/usage/">Usage</a>・<a href="https://google.github.io/osv-scanner/usage/scan-source">Source scanning</a>・<a href="https://google.github.io/osv-scanner/usage/scan-image">Container image scanning</a></li>
+    <li><a href="https://google.github.io/osv-scanner/configuration/">Configuration</a>・<a href="https://google.github.io/osv-scanner/output">Output</a>・<a href="https://google.github.io/osv-scanner/github-action">GitHub Action</a>・<a href="https://google.github.io/osv-scanner/migration-guide.html">v1→v2 移行ガイド</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

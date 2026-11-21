@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloudflare Radar 使い方</title>
+<meta name="description" content="Cloudflare Radar の画面ごとの見どころ、URL Scanner、Radar API、通知、AI からの使い方をセキュリティ調査の目線でまとめたチートシート">
+<meta name="memo:tags" content="Cloudflare, セキュリティ">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (min-width: 601px) { td[data-l="URL"] code { white-space: nowrap; } }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* Radar の全体図 */
+.map { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+.map .src, .map .out { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.82rem; }
+.map b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; margin-bottom: 2px; }
+.map span { color: var(--fg-2); }
+.map .mid { grid-column: 1 / -1; text-align: center; border: 1px dashed var(--line); border-radius: 8px; padding: 8px; font-size: 0.85rem; }
+.map .mid b { display: inline; }
+.map .down { grid-column: 1 / -1; text-align: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; line-height: 1; }
+@media (max-width: 600px) { .map { grid-template-columns: 1fr; } }
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cloudflare Radar 使い方</h1>
+  <p class="subtitle">インターネット全体のトラフィック・攻撃・経路・脆弱性を Cloudflare の観測データで見る無料のハブ。画面・CVE ページ・URL Scanner・API・通知・AI 連携をまとめる（2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Radar は Cloudflare のネットワークと 1.1.1.1 の集計データで、ネット全体の通信・攻撃・経路を見せる無料サイト。</li>
+      <li>画面で見る・URL Scanner で怪しい URL を調べる・API で取り出す・通知で受け取る、の 4 通りで使う。</li>
+      <li>見えるのは Cloudflare から観測した割合や傾向で、絶対量や自社サイトの状況ではない点に注意する。</li>
+    </ul>
+  </div>
+
+  <h2 id="overview">全体像</h2>
+  <div class="map">
+    <div class="src"><b>Cloudflare のネットワーク</b><span>HTTP リクエスト・NetFlows・攻撃の緩和・メール</span></div>
+    <div class="src"><b>1.1.1.1（DNS）</b><span>匿名化・集計した問い合わせ。ドメインランキングの元</span></div>
+    <div class="src"><b>外部データ</b><span>RouteViews・RIPE RIS（BGP）、CT ログ、CVE・CISA KEV など</span></div>
+    <div class="down">↓</div>
+    <div class="mid"><b>Cloudflare Radar</b>（radar.cloudflare.com）</div>
+    <div class="down">↓</div>
+    <div class="out"><b>画面・URL Scanner</b><span>ブラウザで見る・URL を調べる。ログイン不要</span></div>
+    <div class="out"><b>Radar API</b><span>同じデータを JSON / CSV で。トークンが要る</span></div>
+    <div class="out"><b>通知・AI</b><span>Notifications、Radar Researcher、MCP サーバー</span></div>
+  </div>
+
+  <h2 id="pages">画面の見どころ</h2>
+  <p>上部の検索バー（<code>Cmd</code> / <code>Ctrl</code> + <code>K</code>）に国名・ASN・IP・ドメイン・CVE を入れると、その詳細ページへ飛べる。各グラフのメニューから PNG 保存・埋め込み・引用（BibTeX など）・Data Explorer で開く、ができる。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="pg-sec">セキュリティ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pg-route">経路・障害</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pg-traffic">トラフィック・AI</button>
+  </div>
+  <div class="panel" id="pg-sec">
+    <div class="tbl stack"><table>
+      <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
+      <tbody>
+        <tr><td data-l="画面">Zero Wire</td><td data-l="URL"><code>/security/zero-wire</code></td><td data-l="内容">重大な脆弱性・脅威のブリーフィング。「Needs attention」（今見るべき）と「Reference」（落ち着いたもの）に分かれ、対処手順・Cloudflare での観測・出典が載る。RSS あり</td></tr>
+        <tr><td data-l="画面">CVE ページ</td><td data-l="URL"><code>/zero-wire/cves</code></td><td data-l="内容">CVE ごとに CVSS・CISA KEV（悪用確認済み）・EPSS（悪用確率）・影響製品・対処・CWE を 1 ページに集約。<code>/zero-wire/cves/CVE-2021-44228</code> のように開く</td></tr>
+        <tr><td data-l="画面">Security</td><td data-l="URL"><code>/security</code></td><td data-l="内容">L7（HTTP）・L3/4（DDoS）攻撃の傾向、攻撃元・攻撃先の国、緩和に使われた製品、悪性メールの割合など</td></tr>
+        <tr><td data-l="画面">Certificate Transparency</td><td data-l="URL"><code>/certificate-transparency</code></td><td data-l="内容">CT ログから見た証明書発行の傾向（CA・CT ログごとの割合、有効期間、ワイルドカードの割合など）</td></tr>
+        <tr><td data-l="画面">Post-Quantum</td><td data-l="URL"><code>/post-quantum</code></td><td data-l="内容">ポスト量子暗号（X25519MLKEM768）の普及率。指定したサイトのポスト量子対応と TLS 実装の不具合を調べるツールもある</td></tr>
+        <tr><td data-l="画面">Adoption &amp; Usage</td><td data-l="URL"><code>/adoption-and-usage</code></td><td data-l="内容">HTTP/3・IPv6 などの採用状況</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="pg-route" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
+      <tbody>
+        <tr><td data-l="画面">Routing</td><td data-l="URL"><code>/routing</code></td><td data-l="内容">BGP の統計、IP アドレス空間の推移、Top 100 AS（顧客コーン・アドレス数）</td></tr>
+        <tr><td data-l="画面">RPKI</td><td data-l="URL"><code>/routing/rpki</code></td><td data-l="内容">RPKI（ROA）の検証状況と ASPA の導入状況。AS ごとの ASPA プロバイダも見られる</td></tr>
+        <tr><td data-l="画面">Anomalies</td><td data-l="URL"><code>/routing/anomalies</code></td><td data-l="内容">BGP ハイジャック（経路の乗っ取り）と経路リークの検知結果。自社の ASN が巻き込まれていないか確かめる</td></tr>
+        <tr><td data-l="画面">ASPA 検証</td><td data-l="URL"><code>/routing/aspa-validation</code></td><td data-l="内容">AS パスを入れると ASPA で Valid / Invalid / Unknown を判定する</td></tr>
+        <tr><td data-l="画面">MRT Explorer</td><td data-l="URL"><code>/routing/mrt-explorer</code></td><td data-l="内容">BGP のダンプ（MRT ファイル）をブラウザ内だけで解析する。ファイルはアップロードされない</td></tr>
+        <tr><td data-l="画面">Outage Center</td><td data-l="URL"><code>/outage-center</code></td><td data-l="内容">国・AS 単位のネット障害と通信の異常。原因（停電・ケーブル切断・政府による遮断など）・範囲・期間の記録</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="pg-traffic" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
+      <tbody>
+        <tr><td data-l="画面">Traffic</td><td data-l="URL"><code>/traffic</code>・<code>/traffic/jp</code></td><td data-l="内容">国・地域・AS ごとの通信量の推移、人とボットの割合、デバイス・プロトコル、API 通信の割合など</td></tr>
+        <tr><td data-l="画面">Domains</td><td data-l="URL"><code>/domains</code></td><td data-l="内容">1.1.1.1 の問い合わせに基づくドメインランキング（上位 100、急上昇、100 万件までの区切り）</td></tr>
+        <tr><td data-l="画面">AI Insights</td><td data-l="URL"><code>/ai-insights</code></td><td data-l="内容">AI クローラー・AI ボットの通信、robots.txt での扱い、Workers AI のモデル・タスクの人気</td></tr>
+        <tr><td data-l="画面">Bots Directory</td><td data-l="URL"><code>/bots/directory</code></td><td data-l="内容">BotBase を元にしたボット・AI エージェントのディレクトリ。運営者・カテゴリ・アクセスの性質・Web Bot Auth での検証状況を調べられる</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <p class="note">URL は <code>https://radar.cloudflare.com</code> からの相対パス。国のページは ISO 3166 の 2 文字コード（日本は <code>jp</code>）。</p>
+
+  <h2 id="usecase">やりたいこと別の逆引き</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>やりたいこと</th><th>どこを見るか</th></tr></thead>
+    <tbody>
+      <tr><td data-l="やりたいこと">届いたリンクが安全か調べたい</td><td data-l="どこ">URL Scanner（<code>/scan</code>）。Unlisted で調べる（下の「URL Scanner」）</td></tr>
+      <tr><td data-l="やりたいこと">今どの脆弱性に急いで対処すべきか知りたい</td><td data-l="どこ">Zero Wire の「Needs attention」と、CVE ページの KEV・EPSS（下の「CVE ページ」）</td></tr>
+      <tr><td data-l="やりたいこと">使っている製品の新しい CVE を追いたい</td><td data-l="どこ">CVE 一覧を製品名で検索、または CVE フィードを <code>?severity=critical</code> 付きで購読</td></tr>
+      <tr><td data-l="やりたいこと">つながらないのが自分だけか、地域全体か知りたい</td><td data-l="どこ">Outage Center と、その国・AS の Traffic</td></tr>
+      <tr><td data-l="やりたいこと">自社の IP 範囲が乗っ取られていないか見張りたい</td><td data-l="どこ">Routing の Anomalies ＋ 通知（route hijack / route leak）</td></tr>
+      <tr><td data-l="やりたいこと">知らない証明書が発行されていないか確かめたい</td><td data-l="どこ">Radar の Certificate Transparency は発行の傾向まで。自分のドメインの証明書を個別に調べるなら crt.sh などの CT 検索サービスを使う</td></tr>
+      <tr><td data-l="やりたいこと">怪しい IP・AS がどこの何者か知りたい</td><td data-l="どこ">検索バーに IP / ASN を入れる（所属 AS・国・AS の種類・上流プロバイダ）</td></tr>
+      <tr><td data-l="やりたいこと">レポートに使う数字やグラフがほしい</td><td data-l="どこ">グラフのメニューから PNG・埋め込み・引用。数値は API で（ライセンスは下を参照）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cves">CVE ページ（Zero Wire）</h2>
+  <p>公開済みのすべての CVE に 1 ページずつあり、深刻度・悪用状況・影響製品・対処を NVD・CISA・FIRST などの情報からまとめて見られる（2026-11-20 追加）。Zero Wire のブリーフィングが引用した CVE は CVE ページへリンクし、CVE ページからもそのブリーフィングへ戻れる。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cv-open">開き方・追い方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cv-read">ページの読み方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cv-triage">優先度の付け方</button>
+  </div>
+  <div class="panel" id="cv-open">
+    <div class="tbl stack"><table>
+      <thead><tr><th>やること</th><th>URL・操作</th></tr></thead>
+      <tbody>
+        <tr><td data-l="やること">1 件を開く</td><td data-l="URL・操作"><code>/zero-wire/cves/CVE-2021-44228</code>（Log4Shell の例）。検索バー・<code>Cmd</code> / <code>Ctrl</code> + <code>K</code> に CVE ID や語を入れてもよい</td></tr>
+        <tr><td data-l="やること">一覧で探す</td><td data-l="URL・操作"><code>/zero-wire/cves</code>。日付・CVSS で並べ替え、CVE ID や製品名・ベンダー名で検索、深刻度・年で絞り込み。行には KEV 掲載と修正の有無が印で出る</td></tr>
+        <tr><td data-l="やること">新しい CVE を購読する</td><td data-l="URL・操作">RSS <code>/zero-wire/cves/feed</code>・Atom <code>?format=atom</code>・JSON <code>?format=json</code></td></tr>
+        <tr><td data-l="やること">重大なものだけ購読する</td><td data-l="URL・操作">フィードに <code>?severity=critical</code> を付ける（<code>?format=json&amp;severity=critical</code> のように併用）</td></tr>
+        <tr><td data-l="やること">解説つきのまとめを追う</td><td data-l="URL・操作">Zero Wire の RSS <code>/security/zero-wire/rss</code>（CVE フィードより件数が少なく、重大なものに絞られる）</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">CVE ページ用の API は公開されていない（2026-11 時点）。プログラムで扱うなら JSON フィードを使う。</p>
+  </div>
+  <div class="panel" id="cv-read" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>ブロック</th><th>載っているもの</th><th>読み方</th></tr></thead>
+      <tbody>
+        <tr><td data-l="ブロック">ヘッダー</td><td data-l="載っているもの">CVSS スコア・説明・公開日などの日付</td><td data-l="読み方">まず何の製品の何の脆弱性かを把握する</td></tr>
+        <tr><td data-l="ブロック">Exploitation</td><td data-l="載っているもの">CISA KEV の掲載（ランサムウェアでの利用も）・CISA SSVC・FIRST EPSS</td><td data-l="読み方">「実際に悪用されているか・されそうか」。優先度はここで決まる（次のタブ）</td></tr>
+        <tr><td data-l="ブロック">Affected products</td><td data-l="載っているもの">ベンダー・製品・バージョン（CVE を出した組織と NVD の両方）</td><td data-l="読み方">自分の使っている版が範囲に入るかを確かめる。両者が食い違うことがあるので、ベンダーの勧告で最終確認する</td></tr>
+        <tr><td data-l="ブロック">Recommended actions</td><td data-l="載っているもの">修正版、または当面のリスク低減策。KEV 掲載なら CISA の指示</td><td data-l="読み方">すぐ更新できないときの回避策もここで探す</td></tr>
+        <tr><td data-l="ブロック">Severity</td><td data-l="載っているもの">すべての CVSS スコアと各指標の説明</td><td data-l="読み方">攻撃元区分（ネットワーク越しか）・認証の要否・利用者の操作の要否を見ると、自分の環境での危なさが分かる</td></tr>
+        <tr><td data-l="ブロック">Weaknesses</td><td data-l="載っているもの">CWE（弱点の種類）と CAPEC（攻撃パターン）</td><td data-l="読み方">同じ種類の弱点がほかにないか探す手がかり</td></tr>
+        <tr><td data-l="ブロック">References</td><td data-l="載っているもの">勧告・パッチ・その他の出典</td><td data-l="読み方">一次情報（ベンダーの勧告）にたどる</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="cv-triage" hidden>
+    <p>CVSS は「起きたらどれだけ深刻か」で、「狙われているか」は表さない。Exploitation の 3 つで実際の危なさを足して判断する。</p>
+    <div class="tbl stack"><table>
+      <thead><tr><th>指標</th><th>出しているところ</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="指標">KEV</td><td data-l="出しているところ">CISA</td><td data-l="意味">実際に悪用が確認された脆弱性の一覧。載っていれば「もう狙われている」</td></tr>
+        <tr><td data-l="指標">SSVC</td><td data-l="出しているところ">CISA</td><td data-l="意味">悪用状況・技術的な影響・自動化できるか・組織での使われ方・公共への影響の 5 つから、対応の判断を Track・Track*・Attend・Act（右ほど急ぐ）で出す枠組み</td></tr>
+        <tr><td data-l="指標">EPSS</td><td data-l="出しているところ">FIRST</td><td data-l="意味">今後 30 日以内に悪用される確率の推定（0〜1）</td></tr>
+        <tr><td data-l="指標">CVSS</td><td data-l="出しているところ">CVE を出した組織・NVD など</td><td data-l="意味">脆弱性そのものの深刻度（0〜10）。出す組織によって値が違うことがある</td></tr>
+      </tbody>
+    </table></div>
+    <ol class="steps">
+      <li><b>使っているか確かめる</b>Affected products に自分の製品・版が入っていなければ、ほかの指標が高くても対象外。</li>
+      <li><b>KEV に載っているか</b>載っていれば最優先。ランサムウェアでの利用ありなら、なおさら急ぐ。</li>
+      <li><b>SSVC と EPSS を見る</b>Act / Attend や EPSS が高いものを、KEV 未掲載の中で先にする。</li>
+      <li><b>CVSS の指標で自分の環境に当てはめる</b>ネットワーク越しに認証なしで突けるか、外に公開しているか、で順番を調整する。</li>
+      <li><b>Recommended actions で直す</b>修正版に上げる。すぐ上げられなければ回避策と、WAF などでの防御（Zero Wire の Cloudflare coverage）を確かめる。</li>
+    </ol>
+  </div>
+
+  <h2 id="scanner">URL Scanner</h2>
+  <p>URL をサンドボックスのブラウザで開き、スクリーンショット・通信の記録（HAR）・読み込んだ外部資源・使っている技術・悪性判定（<code>verdicts.malicious</code>）をレポートにする。Radar の <code>/scan</code>、ダッシュボードの Security Center、API のどれからでも使える。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="sc-web">画面で使う</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="sc-api">API で使う</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="sc-search">検索の書き方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="sc-limit">上限</button>
+  </div>
+  <div class="panel" id="sc-web">
+    <ol class="steps">
+      <li><b>URL を入れる</b><code>radar.cloudflare.com/scan</code> に URL を貼る。社内の URL や個人情報を含む URL なら、公開範囲を Unlisted にする。</li>
+      <li><b>レポートを読む</b>Summary（判定・最終的な URL・IP・AS）、Security、Network（リクエスト一覧）、Behavior、Indicators のタブを見る。</li>
+      <li><b>保存・共有する</b>Save as PDF で全タブを 1 つの PDF に、JSON でも保存できる。「Explain with AI」でレポートの読み方を AI に聞ける。</li>
+    </ol>
+  </div>
+  <div class="panel" id="sc-api" hidden>
+    <div class="pipe">
+      <div class="st"><b>POST v2/scan</b><span>URL を送る。<code>uuid</code> が返る</span></div>
+      <div class="ar"></div>
+      <div class="st"><b>GET v2/result/{uuid}</b><span>終わるまで 404。10〜30 秒おきに確かめる</span></div>
+      <div class="ar"></div>
+      <div class="st"><b>200 で完了</b><span>レポートの JSON。スクリーンショット・HAR は別のエンドポイント</span></div>
+    </div>
+<pre><code># トークン: Account &gt; URL Scanner を Edit で作る
+curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/scan" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "visibility": "Unlisted",
+    "screenshotsResolutions": ["desktop", "mobile"],
+    "customagent": "my-scanner",
+    "referer": "https://mail.example.com"
+  }'</code></pre>
+    <div class="tbl stack"><table>
+      <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="オプション"><code>visibility</code></td><td data-l="意味"><code>Public</code>（既定。最近のスキャン一覧と検索に載る）か <code>Unlisted</code>（ID を知る人だけが見られる）</td></tr>
+        <tr><td data-l="オプション"><code>screenshotsResolutions</code></td><td data-l="意味"><code>desktop</code>・<code>mobile</code>・<code>tablet</code> から複数</td></tr>
+        <tr><td data-l="オプション"><code>customagent</code>・<code>referer</code></td><td data-l="意味">User-Agent と Referer を変える（スマホ向けや、メール経由のときだけ出るページを見る）</td></tr>
+        <tr><td data-l="オプション"><code>customHeaders</code></td><td data-l="意味">任意のヘッダー（<code>Authorization</code> など）を付ける</td></tr>
+        <tr><td data-l="オプション"><code>v2/bulk</code></td><td data-l="意味">最大 100 件をまとめて送る。優先度が低く、終わるのが遅くなることがある</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="sc-search" hidden>
+    <p><code>GET v2/search?q=...</code>（画面の検索も同じ書き方）。フィッシングの同類探しに使える。</p>
+    <div class="tbl stack"><table>
+      <thead><tr><th>クエリ</th><th>見つかるもの</th></tr></thead>
+      <tbody>
+        <tr><td data-l="クエリ"><code>page.domain:"example.com"</code></td><td data-l="見つかるもの">そのドメインのページのスキャン</td></tr>
+        <tr><td data-l="クエリ"><code>domain:cdnjs.cloudflare.com</code></td><td data-l="見つかるもの">そのホストに通信したスキャン</td></tr>
+        <tr><td data-l="クエリ"><code>page.url:"https://example.com" AND NOT task.url:"https://example.com"</code></td><td data-l="見つかるもの">別の URL から example.com へリダイレクトしたもの</td></tr>
+        <tr><td data-l="クエリ"><code>date:&gt;now-7d AND path:okta-sign-in.min.js</code></td><td data-l="見つかるもの">直近 7 日で、そのパスの資源を読み込んだもの（偽のログイン画面探し）</td></tr>
+        <tr><td data-l="クエリ"><code>hash:&lt;domStructHash&gt;</code></td><td data-l="見つかるもの">HTML の構造が同じページ（同じフィッシングキットの使い回し）</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="sc-limit" hidden>
+    <div class="tbl"><table>
+      <thead><tr><th>プラン</th><th>検索できる履歴</th><th>Public / 月</th><th>Unlisted / 月</th><th>レート</th></tr></thead>
+      <tbody>
+        <tr><td>Free / Radar</td><td>直近 50 件</td><td>5,000</td><td>なし</td><td>10 秒に 1 回</td></tr>
+        <tr><td>Self serve（有料）</td><td>30 日</td><td>5,000</td><td>500</td><td>10 秒に 1 回</td></tr>
+        <tr><td>Enterprise</td><td>12 か月</td><td>10,000</td><td>5,000</td><td>毎秒 12 回</td></tr>
+        <tr><td>Cloudforce One</td><td>無制限</td><td>75,000</td><td>20,000</td><td>毎秒 12 回</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">成功したスキャンは 12 か月保存、30 日を過ぎた失敗スキャンは削除される。失敗したスキャンや、個人情報らしきものを含むスキャンは自動で Unlisted になる。特定の国からのスキャンは Enterprise のみ。</p>
+  </div>
+
+  <h2 id="api">Radar API</h2>
+  <p>画面と同じデータを取り出せる無料の API。トークンは「Custom Token」で <b>Account &gt; Radar</b> を <b>Read</b> にして作る。ベース URL は <code>https://api.cloudflare.com/client/v4/radar/</code>（アカウント ID は要らない）。</p>
+<pre><code>curl "https://api.cloudflare.com/client/v4/radar/http/summary/device_type?dateRange=7d&amp;format=json" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"</code></pre>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="api-param">共通パラメータ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="api-ep">よく使うエンドポイント</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="api-cmp">比較する</button>
+  </div>
+  <div class="panel" id="api-param">
+    <div class="tbl stack"><table>
+      <thead><tr><th>パラメータ</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="パラメータ"><code>dateRange</code></td><td data-l="意味"><code>7d</code> など。<code>7dControl</code> はその前の 7 日（比較用）</td></tr>
+        <tr><td data-l="パラメータ"><code>dateStart</code>・<code>dateEnd</code></td><td data-l="意味">UTC の日時（<code>2026-11-01T00:00:00Z</code>）。URL エンコードする</td></tr>
+        <tr><td data-l="パラメータ"><code>location</code>・<code>asn</code></td><td data-l="意味">国（<code>JP</code>）や AS（<code>13335</code>）で絞る</td></tr>
+        <tr><td data-l="パラメータ"><code>aggInterval</code></td><td data-l="意味">時系列の粒度 <code>15m</code>・<code>1h</code>・<code>1d</code>・<code>1w</code></td></tr>
+        <tr><td data-l="パラメータ"><code>botClass</code></td><td data-l="意味"><code>LIKELY_AUTOMATED</code>（ボット）・<code>LIKELY_HUMAN</code>（人）</td></tr>
+        <tr><td data-l="パラメータ"><code>format</code></td><td data-l="意味"><code>json</code> か <code>csv</code>（pandas などにそのまま読ませる）</td></tr>
+        <tr><td data-l="パラメータ"><code>name</code></td><td data-l="意味">系列に名前を付ける。返り値のキーになる（下の「比較する」）</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">返り値の <code>meta</code> に、実際に使われた期間・粒度・信頼度（<code>confidenceInfo</code>）が入る。<code>7d</code> のような指定は実行時に日付へ変わるので、何の期間だったかは <code>meta</code> で確かめる。</p>
+  </div>
+  <div class="panel" id="api-ep" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>パス（/radar 以下）</th><th>取れるもの</th></tr></thead>
+      <tbody>
+        <tr><td data-l="パス"><code>/attacks/layer7/timeseries</code>・<code>/summary/{dimension}</code></td><td data-l="取れるもの">L7 攻撃の推移・内訳（<code>layer3</code> にすると DDoS）</td></tr>
+        <tr><td data-l="パス"><code>/annotations/outages</code></td><td data-l="取れるもの">Outage Center の障害（場所・原因・範囲・期間）</td></tr>
+        <tr><td data-l="パス"><code>/traffic_anomalies</code></td><td data-l="取れるもの">障害の兆候かもしれない通信の異常</td></tr>
+        <tr><td data-l="パス"><code>/bgp/hijacks/events</code></td><td data-l="取れるもの">BGP ハイジャックの検知。<code>involvedAsn</code>・<code>minConfidence=8</code>（高信頼のみ）</td></tr>
+        <tr><td data-l="パス"><code>/bgp/leaks/events</code></td><td data-l="取れるもの">経路リークの検知（今はプロバイダ→顧客→プロバイダ型のみ）</td></tr>
+        <tr><td data-l="パス"><code>/bgp/rpki/aspa/snapshot</code></td><td data-l="取れるもの">ASPA の登録状況</td></tr>
+        <tr><td data-l="パス"><code>/ct/timeseries</code>・<code>/ct/summary/{dimension}</code></td><td data-l="取れるもの">証明書発行の推移・CA ごとの内訳</td></tr>
+        <tr><td data-l="パス"><code>/post_quantum/tls/support</code></td><td data-l="取れるもの">指定したホストのポスト量子 TLS 対応と、TLS 実装の不具合</td></tr>
+        <tr><td data-l="パス"><code>/netflows/timeseries</code></td><td data-l="取れるもの">ルーターで見た通信量の推移（正規化した値）</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">ハイジャックの <code>confidence_score</code> は 1〜3 が低、4〜7 が中、8 以上が高。全エンドポイントは API リファレンスを参照。</p>
+  </div>
+  <div class="panel" id="api-cmp" hidden>
+    <p><code>name</code> で系列を始め、続くパラメータがその系列に付く。並び順で系列が決まる。</p>
+<pre><code># 日本とアメリカの直近 7 日を 1 回で
+/radar/netflows/timeseries?name=jp&amp;dateRange=7d&amp;location=JP&amp;name=us&amp;dateRange=7d&amp;location=US&amp;format=json
+
+# 今週と先週
+/radar/netflows/timeseries?name=this_week&amp;dateRange=7d&amp;location=JP&amp;name=last_week&amp;dateRange=7dControl&amp;location=JP</code></pre>
+    <p class="note">NetFlows のように最小・最大で正規化する値は、別々のリクエストで取った数字どうしを比べられない。比べたい系列は 1 回のリクエストにまとめる。</p>
+  </div>
+
+  <h2 id="alerts">通知で見張る</h2>
+  <p>ダッシュボードの Notifications で Radar の通知を作ると、指定した国・地域・ASN に変化があったときに知らせてくれる。種類は anomaly（通信の異常）・outage（障害）・route hijack（経路の乗っ取り）・route leak（経路リーク）の 4 つ。送り先はメール・Webhook・PagerDuty。</p>
+  <p>細かく制御したいときは、Workers で API を定期的に叩く方法が公式ドキュメントに載っている。</p>
+  <div class="pipe">
+    <div class="st"><b>Cron Trigger</b><span>例: 5 分ごと</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>/bgp/hijacks/events</b><span><code>involvedAsn</code> に自社 ASN、ID の降順</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>KV と比べる</b><span>前回処理した ID より新しいものだけ</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>通知</b><span>Webhook（Discord など）やメール</span></div>
+  </div>
+
+  <h2 id="ai">AI から使う</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>方法</th><th>使い方</th></tr></thead>
+    <tbody>
+      <tr><td data-l="方法">Radar Researcher（ベータ）</td><td data-l="使い方">Radar のヘッダーから開く AI アシスタント。質問に、API のデータからグラフを作って答える。会話は共有リンクにできる</td></tr>
+      <tr><td data-l="方法">Explain with AI</td><td data-l="使い方">グラフのメニューや URL Scanner のレポートから、そのデータの意味を聞く</td></tr>
+      <tr><td data-l="方法">MCP サーバー</td><td data-l="使い方">公式が勧めるのは統合された Cloudflare API MCP サーバー <code>https://mcp.cloudflare.com/mcp</code>（Cloudflare の OAuth で認証）。Radar API もここから呼べる。以前の Radar 専用サーバー <code>radar.mcp.cloudflare.com</code> は公式の一覧から外れている</td></tr>
+      <tr><td data-l="方法">WebMCP</td><td data-l="使い方">ブラウザで動く AI エージェントが、Radar のページ上で検索や URL スキャンを使える</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="license">データの使い方（ライセンス）</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>もの</th><th>ライセンス</th></tr></thead>
+    <tbody>
+      <tr><td data-l="もの">埋め込み・ダウンロードしたグラフや画像</td><td data-l="ライセンス">CC BY 4.0（出典を書けば商用も可）</td></tr>
+      <tr><td data-l="もの">API や直接ダウンロードで得たデータ</td><td data-l="ライセンス">CC BY-NC 4.0（非営利のみ。例外は radar@cloudflare.com に相談）</td></tr>
+      <tr><td data-l="もの">Radar のレポートの一部引用</td><td data-l="ライセンス">タイトル・リンク・出典が Cloudflare であることを書く</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Radar を見れば自分のサイトへの攻撃状況が分かる</summary><p>Radar はインターネット全体を集計した傾向で、特定のサイトの数字は出ない。自分のゾーンの攻撃は、ダッシュボードの Security Analytics などで見る。</p></details>
+  <details class="myth"><summary>グラフの値は通信量や攻撃の件数そのものだ</summary><p>多くのグラフは割合や、最小〜最大で 0〜1 に正規化した値で、絶対量は出していない。しかも Cloudflare から見えた範囲だけなので、比較は同じ条件の中で行う。</p></details>
+  <details class="myth"><summary>CVSS が高い順に直せば、危ない順に直したことになる</summary><p>CVSS は脆弱性そのものの深刻度で、実際に狙われているかは表さない。CVSS が中程度でも KEV に載っているものの方が急ぐべきことが多い。CVE ページの Exploitation（KEV・SSVC・EPSS）を合わせて見る。</p></details>
+  <details class="myth"><summary>URL Scanner に入れた URL は自分にしか見えない</summary><p>既定は Public で、最近のスキャン一覧と検索に載る。トークン入りの URL や社内の URL は、Unlisted にしてから調べる（Free では Unlisted が使えないので、そもそも入れない）。</p></details>
+  <details class="myth"><summary>URL Scanner で malicious と出なければ安全だ</summary><p>判定はスキャンした時点・その条件での結果にすぎない。相手が UA や地域で中身を切り替えることもあるので、リダイレクト先・読み込んだ資源・似た構造のページも合わせて見る。</p></details>
+  <details class="myth"><summary>API のデータは出典を書けば仕事の資料に自由に使える</summary><p>API のデータは CC BY-NC 4.0 で、営利目的には使えない。グラフの埋め込みや画像は CC BY 4.0 なので、社外向けにはそちらを使うか、Cloudflare に相談する。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://developers.cloudflare.com/radar/">Cloudflare Radar docs</a>（<a href="https://developers.cloudflare.com/radar/get-started/first-request/">最初のリクエスト</a>・<a href="https://developers.cloudflare.com/radar/get-started/making-comparisons/">比較</a>・<a href="https://developers.cloudflare.com/radar/get-started/configure-alerts/">通知</a>・<a href="https://developers.cloudflare.com/radar/investigate/bgp-anomalies/">BGP の異常</a>）</li>
+    <li><a href="https://developers.cloudflare.com/radar/investigate/url-scanner/">URL Scanner</a>・<a href="https://developers.cloudflare.com/security-center/investigate/scan-limits/">Scan limits</a></li>
+    <li><a href="https://developers.cloudflare.com/api/resources/radar/">Radar API リファレンス</a></li>
+    <li><a href="https://developers.cloudflare.com/changelog/product/radar/">Radar の changelog</a>（Zero Wire・CVE ページ・Radar Researcher・Routing の各ページ）</li>
+    <li><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV</a>・<a href="https://www.cisa.gov/ssvc">CISA SSVC</a>・<a href="https://www.first.org/epss/">FIRST EPSS</a></li>
+    <li><a href="https://radar.cloudflare.com/about">Radar の About（ライセンス）</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

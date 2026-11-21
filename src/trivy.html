@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivy 使い方</title>
+<meta name="description" content="Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート">
+<meta name="memo:tags" content="セキュリティ, 開発ツール">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <h1>Trivy 使い方</h1>
+  <p class="subtitle">Aqua Security の OSS セキュリティスキャナー。イメージ・ファイル・リポジトリ・Kubernetes から脆弱性・設定ミス・シークレット・ライセンスを探す（v0.76 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Trivy は「何を調べるか（ターゲット）」と「何を探すか（スキャナー）」を組み合わせて使う 1 本の CLI。</li>
+      <li>既定では検出があっても終了コード 0 なので、CI では <code>--exit-code 1</code> と <code>--severity</code> を付ける。</li>
+      <li>2026 年 3 月に配布物と GitHub Action が侵害されたので、版とコミット SHA を固定して使う。</li>
+    </ul>
+  </div>
+
+  <h2 id="model">ターゲットとスキャナー</h2>
+  <p>書き方は <code>trivy &lt;ターゲット&gt; [--scanners vuln,secret,...] &lt;対象&gt;</code>。ターゲットごとに既定で動くスキャナーが違う。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>ターゲット</th><th>対象</th><th>既定のスキャナー</th></tr></thead>
+    <tbody>
+      <tr><td data-l="ターゲット"><code>image</code></td><td data-l="対象">コンテナイメージ（レジストリ・ローカル・<code>--input</code> で tar）</td><td data-l="既定">vuln・secret</td></tr>
+      <tr><td data-l="ターゲット"><code>fs</code></td><td data-l="対象">ローカルのディレクトリ・ファイル</td><td data-l="既定">vuln・secret</td></tr>
+      <tr><td data-l="ターゲット"><code>repo</code></td><td data-l="対象">リモートの git リポジトリ</td><td data-l="既定">vuln・secret</td></tr>
+      <tr><td data-l="ターゲット"><code>rootfs</code></td><td data-l="対象">展開済みのルートファイルシステム（VM やコンテナの中）</td><td data-l="既定">vuln・secret</td></tr>
+      <tr><td data-l="ターゲット"><code>config</code></td><td data-l="対象">IaC（Terraform・CloudFormation・Dockerfile・Kubernetes・Helm）</td><td data-l="既定">misconfig</td></tr>
+      <tr><td data-l="ターゲット"><code>sbom</code></td><td data-l="対象">CycloneDX・SPDX の SBOM</td><td data-l="既定">vuln</td></tr>
+      <tr><td data-l="ターゲット"><code>k8s</code></td><td data-l="対象">稼働中の Kubernetes クラスター</td><td data-l="既定">vuln・misconfig・secret・rbac</td></tr>
+      <tr><td data-l="ターゲット"><code>vm</code></td><td data-l="対象">仮想マシンのイメージ（実験的）</td><td data-l="既定">vuln・secret</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">スキャナーは <code>vuln</code>（既知の脆弱性）・<code>misconfig</code>（設定ミス）・<code>secret</code>（埋め込まれた秘密情報）・<code>license</code>（ライセンス）の 4 つ（k8s だけ <code>rbac</code> もある）。<code>license</code> はどのターゲットでも既定で無効。</p>
+
+  <h2 id="commands">コマンド早見表</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cm-img">image</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-fs">fs・repo</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-iac">config（IaC）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-sbom">SBOM・k8s</button>
+  </div>
+  <div class="panel" id="cm-img">
+<pre><code>trivy image nginx:1.27                         # レジストリのイメージ
+trivy image --input app.tar                    # docker save した tar
+trivy image --scanners vuln nginx:1.27         # シークレット探しを止めて速くする
+trivy image --pkg-types os nginx:1.27          # OS パッケージだけ（library で言語の依存だけ）
+trivy image --image-config-scanners secret,misconfig app:1.0   # 環境変数などイメージ設定も見る</code></pre>
+  </div>
+  <div class="panel" id="cm-fs" hidden>
+<pre><code>trivy fs .                                     # ロックファイルの脆弱性とシークレット
+trivy fs --scanners vuln,secret,misconfig .    # IaC の設定ミスも
+trivy fs --scanners license .                  # ライセンス
+trivy fs --include-dev-deps .                  # 開発用の依存も（既定では除く言語がある）
+trivy repo https://github.com/org/app          # リモートのリポジトリ</code></pre>
+  </div>
+  <div class="panel" id="cm-iac" hidden>
+<pre><code>trivy config ./infra                                        # Terraform・Dockerfile・k8s YAML など
+trivy config --misconfig-scanners=terraform,dockerfile .    # 種類を絞る
+trivy config --helm-values values.prod.yaml ./chart         # Helm の値を差し替えて評価
+trivy config --config-check ./policy.rego --check-namespaces user .   # 自作の Rego チェック</code></pre>
+    <p class="note">特定の 1 リソースだけ外すなら、定義のすぐ上に <code># trivy:ignore:&lt;ID&gt;</code> のコメントを書く（<code>.trivyignore</code> はディレクトリ全体に効く）。</p>
+  </div>
+  <div class="panel" id="cm-sbom" hidden>
+<pre><code>trivy image --format cyclonedx --output app.cdx.json app:1.0   # SBOM を作る（spdx-json も可）
+trivy sbom app.cdx.json                                        # SBOM を脆弱性スキャン
+trivy k8s --report summary                                     # 今のコンテキストのクラスターを要約
+trivy k8s --include-namespaces prod --report all               # 名前空間を絞って詳細</code></pre>
+  </div>
+
+  <h2 id="filter">絞り込みと CI 向けのオプション</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td data-l="オプション"><code>--severity CRITICAL,HIGH</code></td><td data-l="意味">表示・判定する深刻度（UNKNOWN・LOW・MEDIUM・HIGH・CRITICAL）</td></tr>
+      <tr><td data-l="オプション"><code>--exit-code 1</code></td><td data-l="意味">検出があったときの終了コード。<b>既定は 0</b>（検出があっても成功扱い）</td></tr>
+      <tr><td data-l="オプション"><code>--ignore-unfixed</code></td><td data-l="意味">修正版のないものを隠す（<code>--ignore-status affected,will_not_fix,fix_deferred,end_of_life</code> の省略形）</td></tr>
+      <tr><td data-l="オプション"><code>--exit-on-eol 1</code></td><td data-l="意味">サポート切れ（EOL）の OS なら失敗にする</td></tr>
+      <tr><td data-l="オプション"><code>--skip-dirs</code>・<code>--skip-files</code></td><td data-l="意味">glob で除外（テスト用のデータなど）</td></tr>
+      <tr><td data-l="オプション"><code>--format</code>・<code>--output</code></td><td data-l="意味"><code>table</code>・<code>json</code>・<code>sarif</code>・<code>template</code>・<code>cyclonedx</code>・<code>spdx-json</code>・<code>github</code>（依存スナップショット）</td></tr>
+      <tr><td data-l="オプション"><code>--dependency-tree</code></td><td data-l="意味">脆弱な依存がどの直接依存から来たかを木で表示（table のみ）</td></tr>
+      <tr><td data-l="オプション"><code>--vex ./vex.json</code></td><td data-l="意味">VEX（「影響しない」などの判定）を読んで検出から外す</td></tr>
+    </tbody>
+  </table></div>
+<pre><code># CI の定番: 修正できる HIGH 以上が 1 件でもあれば失敗
+trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 app:1.0</code></pre>
+
+  <h2 id="config">設定ファイルと除外</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cf-yaml">trivy.yaml</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cf-ign">.trivyignore.yaml</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cf-old">.trivyignore（旧形式）</button>
+  </div>
+  <div class="panel" id="cf-yaml">
+    <p>カレントの <code>trivy.yaml</code> を自動で読む（<code>-c</code> で別ファイル）。フラグと同じ名前のキーで書ける。<code>trivy --generate-default-config</code> で全キーの雛形が出る。</p>
+<pre><code>severity:
+  - HIGH
+  - CRITICAL
+exit-code: 1
+format: table
+ignorefile: .trivyignore.yaml
+vulnerability:
+  ignore-unfixed: true
+scan:
+  skip-dirs:
+    - testdata</code></pre>
+  </div>
+  <div class="panel" id="cf-ign" hidden>
+    <p>拡張子が <code>.yaml</code> / <code>.yml</code> なら構造化した形式として読む。パス・パッケージ・期限・理由を付けられる。</p>
+<pre><code>vulnerabilities:
+  - id: CVE-2023-3817
+    purls:
+      - "pkg:deb/debian/libssl1.1"
+    statement: 該当の関数を使っていない
+    expired_at: 2027-03-31
+misconfigurations:
+  - id: AVD-DS-0002
+    paths:
+      - "docs/Dockerfile"
+    statement: ドキュメント用で本番に出さない
+secrets:
+  - id: aws-access-key-id
+    paths:
+      - "testdata/fake.env"</code></pre>
+    <p class="note">使うときは <code>--ignorefile .trivyignore.yaml</code>（または trivy.yaml の <code>ignorefile</code>）で指定する。</p>
+  </div>
+  <div class="panel" id="cf-old" hidden>
+<pre><code># 1 行 1 ID。exp: で期限を付けられる
+CVE-2023-29491 exp:2027-03-31
+AVD-DS-0002</code></pre>
+    <p class="note">既定で読まれるのはこの形式の <code>.trivyignore</code>。理由やパスを残せないので、新しく書くなら YAML 形式にする。</p>
+  </div>
+
+  <h2 id="db">データベースとキャッシュ</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>やりたいこと</th><th>方法</th></tr></thead>
+    <tbody>
+      <tr><td data-l="やりたいこと">DB の取得元</td><td data-l="方法">初回とその後定期的に、脆弱性 DB を OCI レジストリから取る（既定は <code>mirror.gcr.io/aquasec/trivy-db</code> が先で、だめなら <code>ghcr.io/aquasecurity/trivy-db</code>）。社内ミラーは <code>--db-repository</code></td></tr>
+      <tr><td data-l="やりたいこと">CI で毎回取りに行かない</td><td data-l="方法"><code>--cache-dir</code> をキャッシュし、同じジョブ内の 2 回目以降は <code>--skip-db-update</code></td></tr>
+      <tr><td data-l="やりたいこと">ネットのない環境</td><td data-l="方法">DB を持ち込み、<code>--skip-db-update --offline-scan</code></td></tr>
+      <tr><td data-l="やりたいこと">複数のマシンで DB を共有</td><td data-l="方法"><code>trivy server --listen 0.0.0.0:4954</code> を立て（既定は localhost のみ）、各マシンは <code>--server http://host:4954</code> で問い合わせる。<code>--token</code> で認証を付ける</td></tr>
+      <tr><td data-l="やりたいこと">キャッシュを消す</td><td data-l="方法"><code>trivy clean --all</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="incident">2026 年 3 月の侵害と、安全な使い方</h2>
+  <p>認証情報を盗まれ、配布物と公式 Action に認証情報を盗むマルウェアが仕込まれた（<code>CVE-2026-33634</code> / <code>GHSA-69fq-xp46-6x23</code>）。2 月末からの攻撃の続き（Aqua などは TeamPCP というグループによるものとしている）。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>侵害されたもの</th><th>期間（UTC）</th></tr></thead>
+    <tbody>
+      <tr><td data-l="もの">Trivy v0.69.4（GitHub・コンテナ・deb・rpm。その間の <code>latest</code> も）</td><td data-l="期間">2026-03-19 18:22 から約 3 時間</td></tr>
+      <tr><td data-l="もの"><code>aquasecurity/trivy-action</code> のタグ 77 個中 76 個（0.0.1〜0.34.2）</td><td data-l="期間">03-19 17:43 頃 から約 12 時間</td></tr>
+      <tr><td data-l="もの"><code>aquasecurity/setup-trivy</code> の全タグ</td><td data-l="期間">03-19 17:43 頃 から約 4 時間</td></tr>
+      <tr><td data-l="もの">Docker Hub の v0.69.5・v0.69.6</td><td data-l="期間">03-22 15:43 から約 10 時間</td></tr>
+    </tbody>
+  </table></div>
+  <ol class="steps">
+    <li><b>Action はコミット SHA で固定する</b>タグは書き換えられる。今回もタグを参照していた所が被害に遭った。ただし 2025-04-09 より前の trivy-action のコミットは中で setup-trivy をタグで呼んでいたため、SHA で固定していても影響を受けた可能性がある。新しい安全なコミットの SHA で固定する。</li>
+    <li><b>Trivy の版も固定する</b><code>version: latest</code> を使わない。action には版を明示し、イメージはダイジェストで指定する。</li>
+    <li><b>署名を確かめる</b>v0.69.3 からは GitHub の immutable releases が有効で、リリースを後から差し替えられない。バイナリは sigstore の署名で検証できる。</li>
+    <li><b>当時使っていたなら調べる</b>3 月 19〜20 日（イメージは 22〜23 日）のワークフローのログを見直し、組織に <code>tpcp-docs</code> というリポジトリができていないか確かめ、CI の秘密情報をすべて入れ替える。</li>
+  </ol>
+  <p class="note">trivy-action は乗っ取られた 0.0.1〜0.34.2 のタグを削除し、正規のコミットを指す <code>v</code> 付きのタグ（例: <code>v0.34.0</code>）として付け直した（v0.0.10・v0.34.1・v0.34.2 は未復元）。以後の新しい版も <code>v</code> 付きで出している。</p>
+
+  <h2 id="ci">CI（GitHub Actions）</h2>
+<pre><code>permissions:
+  contents: read
+  security-events: write      # SARIF のアップロードに必要
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@&lt;コミット SHA&gt;
+      - name: Build
+        run: docker build -t app:${{ github.sha }} .
+      - name: Scan
+        uses: aquasecurity/trivy-action@&lt;コミット SHA&gt;   # v0.36.0
+        with:
+          version: v0.76.2            # latest にしない
+          image-ref: app:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: sarif
+          output: trivy-results.sarif
+          limit-severities-for-sarif: true   # これがないと SARIF では severity が無視され、全件で判定される
+          trivyignores: .trivyignore.yaml
+      - name: Upload
+        if: always()                  # 失敗しても結果は上げる
+        uses: github/codeql-action/upload-sarif@&lt;コミット SHA&gt;
+        with:
+          sarif_file: trivy-results.sarif</code></pre>
+
+  <h2 id="vs">OSV-Scanner との使い分け</h2>
+  <div class="vs">
+    <div><b>Trivy が向く</b>コンテナイメージ・Kubernetes・IaC・シークレットまで 1 つの道具で見たいとき。OS パッケージの判定がディストリごとに細かい。</div>
+    <div><b>OSV-Scanner が向く</b>言語の依存が中心で、コール解析で検出を絞りたい、PR で新しく入った分だけ見たいとき。詳しくは <a href="osv-scanner.html">OSV-Scanner 使い方</a>。</div>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Trivy が何か見つければ CI は失敗する</summary><p>既定の終了コードは検出があっても 0。<code>--exit-code 1</code>（trivy.yaml なら <code>exit-code: 1</code>）を付けないと、ログに赤字が出ても CI は緑のまま。</p></details>
+  <details class="myth"><summary>古いイメージで 0 件なら問題ない</summary><p><code>--ignore-unfixed</code> で修正版のないものを全部隠していたり、サポート切れの OS でデータがなかったりすると 0 件になる。<code>--exit-on-eol</code> も併用する。</p></details>
+  <details class="myth"><summary>trivy-action@v0.x のようにタグで書けば固定したことになる</summary><p>タグは持ち主（や乗っ取った攻撃者）が別のコミットに付け替えられる。2026 年 3 月はまさにこの手口だった。固定はコミット SHA で行う。</p></details>
+  <details class="myth"><summary>fs スキャンは開発用の依存も含めて調べている</summary><p>npm などでは開発用の依存は既定で除かれる。ビルドに使う道具の脆弱性も見たいなら <code>--include-dev-deps</code> を付ける。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://github.com/aquasecurity/trivy">aquasecurity/trivy</a>・<a href="https://trivy.dev/">Trivy ドキュメント</a>（<a href="https://trivy.dev/docs/dev/references/configuration/config-file/">設定ファイル</a>・<a href="https://trivy.dev/docs/dev/configuration/others/">その他の設定</a>）</li>
+    <li><a href="https://github.com/aquasecurity/trivy-action">aquasecurity/trivy-action</a></li>
+    <li><a href="https://github.com/aquasecurity/trivy/security/advisories/GHSA-69fq-xp46-6x23">GHSA-69fq-xp46-6x23（侵害の公式アドバイザリ）</a>・<a href="https://www.aquasec.com/blog/trivy-supply-chain-attack/">Aqua のブログ</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

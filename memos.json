@@ -1,5 +1,48 @@
 [
  {
+  "file": "trivy.html",
+  "title": "Trivy 使い方",
+  "desc": "Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート",
+  "tags": [
+   "セキュリティ",
+   "開発ツール"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
+  "file": "osv-scanner.html",
+  "title": "OSV-Scanner 使い方",
+  "desc": "OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート",
+  "tags": [
+   "セキュリティ",
+   "開発ツール"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
+  "file": "downdetector.html",
+  "title": "Downdetector 使い方",
+  "desc": "Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート",
+  "tags": [
+   "セキュリティ"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
+  "file": "cloudflare-radar.html",
+  "title": "Cloudflare Radar 使い方",
+  "desc": "Cloudflare Radar の画面ごとの見どころ、URL Scanner、Radar API、通知、AI からの使い方をセキュリティ調査の目線でまとめたチートシート",
+  "tags": [
+   "Cloudflare",
+   "セキュリティ"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
   "file": "zap.html",
   "title": "zap 使い方",
   "desc": "Go の構造化ロガー zap の Logger と SugaredLogger、フィールド、Config、zapcore、レベル変更、テストをまとめたチートシート",

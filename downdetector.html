@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Downdetector 使い方</title>
+<meta name="description" content="Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート">
+<meta name="memo:tags" content="セキュリティ">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Downdetector 使い方">
+<meta property="og:description" content="Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート">
+<meta property="og:url" content="https://cs.taka1156.site/downdetector.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Downdetector 使い方</h1>
+  <p class="subtitle">利用者からの「つながらない」という報告を集めて、Web サービス・通信会社・銀行などの障害をいち早く見せるサイト（2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Downdetector は利用者の障害報告と SNS などの声を集め、普段より急に増えたサービスを障害として表示する。</li>
+      <li>公式発表より早く「自分だけか、みんなか」が分かるが、数字は報告した人の数で、影響の大きさや原因ではない。</li>
+      <li>公式のステータスページや Cloudflare Radar などの観測データと突き合わせて判断する。</li>
+    </ul>
+  </div>
+
+  <h2 id="how">仕組み</h2>
+  <div class="pipe">
+    <div class="st"><b>報告を集める</b><span>サイト・アプリからの「問題がある」報告と、SNS などの声</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>基準と比べる</b><span>サービスごと・時間帯ごとの「いつもの報告数」（過去 1 年の平均）を基準にする</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>障害と判断</b><span>基準を大きく上回る状態が続いたら、障害（incident）として表示</span></div>
+  </div>
+  <p class="note">しきい値や重み付けの細かい中身は公開されていない。報告そのものの真偽は 1 件ずつ確かめず、量とパターンで判断している。</p>
+
+  <h2 id="steps">障害かどうか確かめる手順</h2>
+  <ol class="steps">
+    <li><b>国のサイトを開く</b>日本なら <code>downdetector.jp</code>、アメリカなら <code>downdetector.com</code>。サービスの一覧や報告数は国ごとに別々。</li>
+    <li><b>サービスを検索する</b>サービス名で検索し、詳細ページを開く。トップには今報告が多いサービスが並ぶ。</li>
+    <li><b>グラフを見る</b>直近 24 時間の報告数の推移と、いつもの量（基準）を比べる。基準線を大きく超えた山があれば多くの人が困っている。</li>
+    <li><b>何が起きているか見る</b>「よく報告されている問題」（ログイン・アプリ・サーバー接続・Web サイトなど）の割合と、コメント・地図で、症状と地域を絞る。</li>
+    <li><b>公式の情報と突き合わせる</b>サービスの公式ステータスページや公式 SNS で発表を確かめる。発表がまだなら、Downdetector の山が先に来ていることが多い。</li>
+    <li><b>自分も困っていれば報告する</b>サービスのページにある報告ボタンから症状を選んで報告する。報告が集まるほど、ほかの人の判断材料になる。</li>
+  </ol>
+
+  <h2 id="read">画面の読み方</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>部分</th><th>見方</th></tr></thead>
+    <tbody>
+      <tr><td data-l="部分">報告数のグラフ</td><td data-l="見方">山の高さは「その時間に報告した人の数」。夜中の小さな山と、昼の大きな山は同じ重みではないので、基準との差で見る</td></tr>
+      <tr><td data-l="部分">基準（いつもの量）</td><td data-l="見方">時間帯ごとに違う。利用者の多いサービスほど、平常時でもある程度の報告がある</td></tr>
+      <tr><td data-l="部分">よく報告されている問題</td><td data-l="見方">症状の内訳。「ログインだけ」なら認証まわり、「すべて」ならネットワークや基盤の障害を疑う手がかり</td></tr>
+      <tr><td data-l="部分">障害マップ</td><td data-l="見方">報告の多い地域。通信会社の障害では、地域が偏っていれば局所的な設備の問題の可能性がある</td></tr>
+      <tr><td data-l="部分">コメント</td><td data-l="見方">症状の具体例やエラーメッセージ。ただし推測や誤情報も混じる</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="combine">ほかの情報源と組み合わせる</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>情報源</th><th>分かること</th><th>弱いところ</th></tr></thead>
+    <tbody>
+      <tr><td data-l="情報源">Downdetector</td><td data-l="分かること">利用者がどう困っているか（症状・地域）。公式発表より早いことが多い</td><td data-l="弱いところ">原因は分からない。報道や SNS の話題で報告が膨らむことがある</td></tr>
+      <tr><td data-l="情報源">公式ステータスページ</td><td data-l="分かること">事業者が認めた障害、影響範囲、復旧見込み</td><td data-l="弱いところ">発表が遅れる・小さめに書かれることがある</td></tr>
+      <tr><td data-l="情報源"><a href="cloudflare-radar.html">Cloudflare Radar</a></td><td data-l="分かること">国・AS 単位の通信量の落ち込み、BGP の異常、Outage Center の原因の記録</td><td data-l="弱いところ">個々のアプリの不具合（ログインだけ失敗など）は見えない</td></tr>
+      <tr><td data-l="情報源">自前の監視（外形監視・APM）</td><td data-l="分かること">自社サービスの正確な状態</td><td data-l="弱いところ">利用者側の回線や、依存先のサービスの障害は見落としやすい</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">たとえば「Downdetector で通信会社 A の報告が急増」＋「Radar で A の AS の通信量が落ちている」なら回線側の障害、「報告は増えたが Radar は平常」ならアプリやサービス側の不具合を疑う。</p>
+
+  <h2 id="ops">運用・セキュリティでの使いどころ</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>場面</th><th>使い方</th></tr></thead>
+    <tbody>
+      <tr><td data-l="場面">問い合わせが急に増えた</td><td data-l="使い方">自社サービスや依存先（クラウド・決済・認証・CDN）の Downdetector を見て、原因が外にあるか切り分ける</td></tr>
+      <tr><td data-l="場面">自社のサービスの障害</td><td data-l="使い方">自社の監視が気づく前に利用者の報告が増えることがある。症状の内訳とコメントで影響を把握する</td></tr>
+      <tr><td data-l="場面">DDoS や大規模障害のニュース</td><td data-l="使い方">本当に利用者に影響が出ているか、どの地域かを確かめる。報道だけで判断しない</td></tr>
+      <tr><td data-l="場面">障害の振り返り</td><td data-l="使い方">利用者が困り始めた時刻・ピーク・収まった時刻の目安として、社内の記録と並べる</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="plans">プランと提供元</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>プラン</th><th>主な内容</th></tr></thead>
+    <tbody>
+      <tr><td data-l="プラン">無料</td><td data-l="内容">障害状況の閲覧・報告。お気に入り 5 件まで、通知は 1 日 3 件まで（Speedtest アプリ経由）</td></tr>
+      <tr><td data-l="プラン">Pro（有料）</td><td data-l="内容">お気に入り 10 件・通知 1 日 10 件・広告なし。2026 年 9 月にオーストラリアから順に提供開始（同国で 13.99 豪ドル。第三者のまとめでは月額）。日本での提供は国ごとに確認する</td></tr>
+      <tr><td data-l="プラン">Enterprise（法人・個別見積もり）</td><td data-l="内容">Explorer（複数サービスのダッシュボード・地域別の報告・比較表示・履歴）、アラート（メール・RSS など）、API、Datadog などとの連携</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">運営は Speedtest と同じ Ookla。Ookla は 2026 年 6 月 17 日に Accenture に買収された。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>報告数は障害で困っている人の数だ</summary><p>数えているのは「Downdetector を開いて報告した人」だけ。サービスの利用者数・知名度・報道の量で大きく変わるので、サービスどうしの数字を比べて規模の大小は言えない。</p></details>
+  <details class="myth"><summary>報告が減ったら復旧した</summary><p>みんなが見に来なくなっただけ（夜になった、諦めた）でも報告は減る。復旧は公式発表や自分での確認で判断する。</p></details>
+  <details class="myth"><summary>Downdetector に何も出ていなければ障害はない</summary><p>利用者の少ないサービスや一部の地域だけの障害は、基準を超えず表示されないことがある。載っていないサービスもある。</p></details>
+  <details class="myth"><summary>グラフの山を見れば原因まで分かる</summary><p>分かるのは「困っている人が増えた」ことだけ。依存先の障害で巻き添えになったサービスにも山ができる（例: CDN やクラウドの障害で多数のサービスに同時に山）。原因は公式発表や観測データで確かめる。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://downdetector.jp/">Downdetector（日本）</a>・<a href="https://downdetector.com/">Downdetector（米国）</a></li>
+    <li><a href="https://www.gsma.com/get-involved/gsma-membership/gsma_resources/downdetector-helped-the-early-detection-of-major-outages-during-the-first-half-of-2024/">GSMA: Downdetector の検知方法の説明</a></li>
+    <li><a href="https://www.ispreview.co.uk/index.php/2026/09/ooklas-downdetector-service-starts-rolling-out-new-pro-plan-but-its-not-cheap.html">ISPreview: Pro プランの提供開始（2026-09）</a></li>
+    <li><a href="https://newsroom.accenture.com/news/2026/accenture-to-acquire-ookla-to-strengthen-network-intelligence-and-experience-with-data-and-ai-for-enterprises">Accenture: Ookla の買収（2026-06-17 完了）</a></li>
+    <li><a href="https://docs.datadoghq.com/integrations/downdetector/">Datadog: Downdetector 連携</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22。無料プランの上限など一部は第三者のまとめによる。最新の条件は公式サイトで確かめる。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

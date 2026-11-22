@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homebrew 使い方</title>
+<meta name="description" content="macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-23">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.cm { color: var(--fg-2); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.8rem; }
+ul.note { padding-left: 1.4em; margin: 8px 0; }
+ul.note li { margin: 2px 0; }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.panel.card { padding: 6px 10px; overflow-x: auto; }
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 4px 10px; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.danger { font-size: 0.7rem; font-weight: 700; color: var(--c-ng); border: 1px solid var(--c-ng); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+.nw { white-space: nowrap; }
+.empty { display: none; color: var(--fg-2); font-size: 0.8rem; padding: 6px 2px; }
+@media (max-width: 520px) {
+  .cheat td:first-child { white-space: normal; word-break: break-all; }
+  .cheat.ver td:first-child, .cheat.prefix td:first-child { white-space: nowrap; word-break: normal; }
+}
+
+/* 図：仕組み */
+.flow { display: flex; align-items: stretch; gap: 8px; margin: 6px 0; }
+.flow .node {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
+  font-size: 0.8rem;
+}
+.flow .node b { display: block; font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+.flow .node .sub { color: var(--fg-2); font-size: 0.75rem; }
+.flow .node .path { display: block; margin-top: 6px; font: 500 0.72rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); overflow-wrap: anywhere; }
+.flow .arrow { align-self: center; color: var(--fg-2); font: 700 1rem 'JetBrains Mono', ui-monospace, monospace; }
+.flow .arrow::before { content: "→"; }
+.terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.terms div { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 8px 10px; font-size: 0.78rem; }
+.terms b { display: block; font: 700 0.8rem 'JetBrains Mono', ui-monospace, monospace; }
+@media (max-width: 600px) {
+  .flow { flex-direction: column; }
+  .flow .arrow::before { content: "↓"; }
+  .terms { grid-template-columns: 1fr; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Homebrew 使い方">
+<meta property="og:description" content="macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。">
+<meta property="og:url" content="https://cs.taka1156.site/homebrew.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Homebrew 使い方</h1>
+  <p class="subtitle">macOS・Linux のパッケージマネージャー <code>brew</code> のチートシート（Homebrew 7.0 系、7.0.15 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Homebrew は CLI ツール（formula）と Mac アプリ（cask）を <code>brew</code> コマンド 1 つで入れて更新するパッケージマネージャー。</li>
+      <li>ビルド済みの bottle を Cellar に展開し、prefix の <code>bin</code> などへシンボリックリンクを張るので <code>sudo</code> は要らない。</li>
+      <li>6.0 から公式以外の tap は <code>brew trust</code> で信頼するまで読み込まれず、7.0 で <code>brew vulns</code> が加わった。</li>
+    </ul>
+  </div>
+
+  <h2 id="arch">仕組みと用語</h2>
+  <p>パッケージ定義（Ruby のファイル）は tap というリポジトリにまとまっている。公式の <code>homebrew/core</code>（formula）と <code>homebrew/cask</code>（cask）は、普段は Git で取り込まずに JSON の API から読む。</p>
+  <div class="flow" role="img" aria-label="tap にある formula の定義から bottle をダウンロードし、Cellar に展開して、prefix の bin にリンクする流れの図">
+    <div class="node"><b>tap</b><span class="sub">formula・cask・外部コマンドの定義を置くリポジトリ</span><span class="path">homebrew/core, homebrew/cask, user/repo</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>bottle</b><span class="sub">ビルド済みのバイナリ。無い環境ではソースからビルドする</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>Cellar</b><span class="sub">バージョンごとのフォルダ（keg）に展開する</span><span class="path">$(brew --prefix)/Cellar/wget/1.25.0</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>prefix</b><span class="sub">keg の中身をリンクして PATH から使えるようにする</span><span class="path">$(brew --prefix)/bin/wget</span></div>
+  </div>
+  <div class="terms">
+    <div><b>formula</b>ソースからビルドするパッケージの定義。CLI ツールやライブラリ（例: <code>wget</code>）。</div>
+    <div><b>cask</b>ビルド済みの macOS アプリなどを入れる定義（例: <code>firefox</code>）。<code>Caskroom</code> に置かれる。</div>
+    <div><b>keg</b>1 つの formula の 1 バージョンを入れたフォルダ。<code>opt/</code> には今のバージョンへのリンクがある。</div>
+  </div>
+
+  <h3>prefix（インストール先）の既定</h3>
+  <div class="tblwrap">
+<table class="cheat prefix"><thead><tr><th>環境</th><th>prefix</th><th>補足</th></tr></thead><tbody>
+<tr><td>macOS<br>Apple Silicon</td><td><code>/opt/<wbr>homebrew</code></td><td>macOS 15 Sequoia 以降で Tier 1（公式サポート）</td></tr>
+<tr><td>macOS<br>Intel</td><td><code>/usr/<wbr>local</code></td><td>7.0 で Tier 3（サポート外・新しい bottle なし）。2027 年 9 月に動かなくなる予定</td></tr>
+<tr><td>Linux<br>WSL</td><td><code>/home/<wbr>linuxbrew/<wbr>.linuxbrew</code></td><td>インストール後は sudo なしで使える既定の場所</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="start">はじめかた</h2>
+  <ol class="steps">
+    <li><b>インストール</b>下の公式スクリプトを実行する（Apple Silicon の Mac なら <code>.pkg</code> のインストーラーもある）。</li>
+    <li><b>PATH を通す</b>インストーラーが最後に表示する行（下の 2 行目のような形）を <code>~/.zprofile</code>（Linux なら <code>~/.bashrc</code> など）に足す。</li>
+    <li><b>確かめる</b><code>brew doctor</code> で問題がないかを見る。警告が出ても困っていなければ無視してよい、と公式に書かれている。</li>
+    <li><b>入れる</b><code>brew install wget</code>（CLI）、<code class="nw">brew install --cask firefox</code>（アプリ）。名前が formula と重ならなければ <code>--cask</code> は省ける。</li>
+  </ol>
+
+<pre><code><span class="cm"># 1. インストール</span>
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+<span class="cm"># 2. PATH を通す（Apple Silicon の Mac の例）</span>
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
+
+  <h2 id="commands">コマンド チートシート</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: cask, pin, json, services）… 全タブから探す" aria-label="コマンドを絞り込む">
+  <p class="note"><span class="danger">危険</span> は、元に戻しにくい操作（データや設定まで消す、変更を捨てる）。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-find">探す・調べる</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-inst">入れる・消す</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-up">更新</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-deps">依存・お掃除</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-tap">tap・trust</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-svc">services</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-diag">診断・場所</button>
+  </div>
+
+  <div class="panel card" id="t-find">
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew search jq</code></td><td>formula 名と cask 名を部分一致で探す。<code>/^jq$/</code> のように <code>/</code> で囲むと正規表現</td></tr>
+<tr><td><code>brew search --desc json</code></td><td>説明文（cask は名前も）から探す</td></tr>
+<tr><td><code>brew info jq</code></td><td>バージョン・依存・インストール状況・注意書き（caveats）を表示</td></tr>
+<tr><td><code>brew info --json=v2 --installed</code></td><td>入っている formula と cask を JSON で出す（スクリプト向け）</td></tr>
+<tr><td><code>brew desc jq</code></td><td>1 行の説明だけを表示</td></tr>
+<tr><td><code>brew home jq</code></td><td>公式サイトをブラウザで開く</td></tr>
+<tr><td><code>brew list</code></td><td>入っている formula と cask の一覧（<code>ls</code> でも可）。<code>--formula</code>・<code>--cask</code> で絞る</td></tr>
+<tr><td><code>brew list --versions</code></td><td>入っている formula をバージョンつきで表示</td></tr>
+<tr><td><code>brew list jq</code></td><td>その formula が入れたファイルの場所を表示</td></tr>
+<tr><td><code>brew leaves -r</code></td><td>自分で入れた（依存ではない）formula だけを一覧</td></tr>
+<tr><td><code>brew which-formula rg</code></td><td>そのコマンドを提供する formula を調べる</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-inst" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew install jq</code></td><td>formula を入れる。古い版が入っていれば更新する。依存などほかのパッケージも入るときは計画を表示して確認を求める</td></tr>
+<tr><td><code>brew install -y jq</code></td><td>確認なしで入れる（<code>--no-ask</code>・<code>--yes</code> と同じ）</td></tr>
+<tr><td><code>brew install --dry-run jq</code></td><td>何が入るかを表示するだけ（<code>-n</code>）</td></tr>
+<tr><td><code>brew install --cask firefox</code></td><td>cask（アプリ）を入れる</td></tr>
+<tr><td><code>brew install -s jq</code></td><td>bottle を使わずソースからビルドする（<code>--build-from-source</code>）</td></tr>
+<tr><td><code>brew install --HEAD foo</code></td><td>開発中の最新版（HEAD）をビルドして入れる（formula が対応している場合）</td></tr>
+<tr><td><code>brew install python@3.12</code></td><td><code>@</code> つきの名前で、Homebrew が用意している特定のメジャー版を入れる</td></tr>
+<tr><td><code>brew version-install automake@1.12</code></td><td>過去のバージョンを自分用の tap に取り出して入れる（5.1 で追加）。以後の更新は自己責任</td></tr>
+<tr><td><code>brew reinstall jq</code></td><td>入れ直す</td></tr>
+<tr><td><code>brew uninstall jq</code></td><td>削除する（<code>remove</code>・<code>rm</code> でも可）。依存で入ったものは残る</td></tr>
+<tr><td><code>brew uninstall --zap --cask foo</code> <span class="danger">危険</span></td><td>アプリの設定・キャッシュなど関連ファイルもまとめて消す。ほかのアプリと共有するファイルも消えることがある</td></tr>
+<tr><td><code>brew link jq</code> / <code>brew unlink jq</code></td><td>prefix へのシンボリックリンクを張る／外す（keg はそのまま）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-up" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew update</code></td><td>Homebrew 本体とパッケージ定義を最新にする（入っているパッケージは更新しない）</td></tr>
+<tr><td><code>brew outdated</code></td><td>新しい版がある formula と cask を一覧</td></tr>
+<tr><td><code>brew upgrade</code></td><td>古くなったパッケージをすべて更新する（pin したものは除く）</td></tr>
+<tr><td><code>brew upgrade jq</code></td><td>指定したものだけ更新する</td></tr>
+<tr><td><code>brew upgrade --greedy</code></td><td>自動更新するアプリ（<code>auto_updates true</code>）や <code>version :latest</code> の cask も更新対象に入れる（<code>-g</code>）</td></tr>
+<tr><td><code>brew pin node</code></td><td>バージョンを固定し、<code>brew upgrade</code> で上げないようにする</td></tr>
+<tr><td><code>brew unpin node</code></td><td>固定を外す</td></tr>
+<tr><td><code>brew list --pinned</code></td><td>固定しているパッケージの一覧</td></tr>
+<tr><td><code>brew update-reset</code> <span class="danger">危険</span></td><td>Homebrew と tap の Git リポジトリを <code>origin/HEAD</code> に戻す。手元の変更は消える</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-deps" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew deps --tree jq</code></td><td>依存をツリーで表示</td></tr>
+<tr><td><code>brew deps --installed</code></td><td>入っている formula ごとの依存を一覧</td></tr>
+<tr><td><code>brew uses --installed openssl@3</code></td><td>その formula に依存している、入っている formula を表示（消してよいかの確認に）</td></tr>
+<tr><td><code>brew autoremove</code></td><td>依存として入り、もう誰にも使われていない formula を消す。<code>-n</code> で一覧だけ</td></tr>
+<tr><td><code>brew cleanup</code></td><td>古いバージョンの keg と古いダウンロードを消す</td></tr>
+<tr><td><code>brew cleanup -n</code></td><td>何が消えるかを表示するだけ</td></tr>
+<tr><td><code>brew cleanup --prune=all</code></td><td>キャッシュのファイルを日数に関係なく消す</td></tr>
+<tr><td><code>brew vulns</code></td><td>入っている formula の既知の脆弱性を OSV.dev で調べる（7.0 で追加）。cask は対象外</td></tr>
+<tr><td><code>brew vulns --severity=high --deps</code></td><td>high 以上だけを、依存も含めて表示</td></tr>
+<tr><td><code>brew vulns --fix-available</code></td><td>修正版が出ているものだけを表示</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-tap" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew tap</code></td><td>取り込んでいる tap の一覧</td></tr>
+<tr><td><code>brew tap user/repo</code></td><td><code>https://github.com/user/homebrew-repo</code> を tap として取り込む</td></tr>
+<tr><td><code>brew tap user/repo URL</code></td><td>GitHub 以外（SSH など）の URL から取り込む</td></tr>
+<tr><td><code>brew install user/repo/foo</code></td><td>tap 名つきの完全な名前で入れる。その formula だけを信頼したことになる</td></tr>
+<tr><td><code>brew trust --formula user/repo/foo</code></td><td>公式以外の tap の formula を 1 つだけ信頼する（<code>--cask</code>・<code>--command</code> も同様）</td></tr>
+<tr><td><code>brew trust user/repo</code></td><td>tap 全体を信頼する。今後追加される定義もすべて信頼することになる</td></tr>
+<tr><td><code>brew trust</code></td><td>信頼している項目の一覧</td></tr>
+<tr><td><code>brew untrust user/repo</code></td><td>信頼を取り消す</td></tr>
+<tr><td><code>brew untap user/repo</code></td><td>tap を外す（7.0 から、その tap のパッケージを先に消すかを聞く）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-svc" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew services</code></td><td>管理しているサービスの一覧（<code>list</code> と同じ）</td></tr>
+<tr><td><code>brew services start postgresql@17</code></td><td>すぐ起動し、ログイン時に自動起動するよう登録する</td></tr>
+<tr><td><code>brew services run postgresql@17</code></td><td>起動するが、自動起動には登録しない</td></tr>
+<tr><td><code>brew services stop postgresql@17</code></td><td>止めて、自動起動の登録も外す（<code>--keep</code> で登録は残す）</td></tr>
+<tr><td><code>brew services restart postgresql@17</code></td><td>止めてから起動し直す（登録もする）</td></tr>
+<tr><td><code>brew services info postgresql@17</code></td><td>そのサービスの状態を表示</td></tr>
+<tr><td><code>sudo brew services start foo</code></td><td>ログイン時ではなく起動時に root で動かす。prefix の持ち主を信頼できるときだけ使う</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card" id="t-diag" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew doctor</code></td><td>環境の問題を調べる（<code>dr</code> でも可）。7.0 で <code>--json</code> 出力が加わった</td></tr>
+<tr><td><code>brew config</code></td><td>バージョン・prefix・OS などの設定を表示（問題を報告するときに貼る）</td></tr>
+<tr><td><code>brew --version</code></td><td>Homebrew のバージョン</td></tr>
+<tr><td><code>brew --prefix</code></td><td>prefix の場所。<code>brew --prefix jq</code> でその formula の場所（<code>opt/jq</code>）</td></tr>
+<tr><td><code>brew --cellar</code> / <code>brew --caskroom</code></td><td>Cellar・Caskroom の場所</td></tr>
+<tr><td><code>brew --cache</code></td><td>ダウンロードのキャッシュの場所</td></tr>
+<tr><td><code>brew shellenv</code></td><td>PATH などを設定する <code>export</code> 文を出力する</td></tr>
+<tr><td><code>brew commands</code></td><td>使えるコマンドの一覧</td></tr>
+<tr><td><code>brew help install</code></td><td>コマンドの使い方を表示（<code>brew install --help</code> と同じ）</td></tr>
+</tbody></table>
+  </div>
+  <p class="empty" id="empty">該当するコマンドがありません。</p>
+
+  <h2 id="bundle">Brewfile（brew bundle）</h2>
+  <p>入れるものを <code>Brewfile</code> に並べ、<code>brew bundle</code> でまとめて入れる。新しい Mac の準備や、チームで同じ道具をそろえるときに使う。formula・cask・tap のほか、Mac App Store（<code>mas</code>）、VS Code 拡張、Go・Cargo・npm・uv のツールなども書ける。</p>
+<pre style="margin-bottom:12px"><code><span class="cm"># Brewfile</span>
+<span class="cm"># 公式以外の tap は trusted: true で信頼を宣言できる</span>
+tap "user/repo", trusted: true
+brew "jq"
+brew "postgresql@17", restart_service: true
+cask "firefox"
+mas "Xcode", id: 497799835
+vscode "editorconfig.editorconfig"
+<span class="cm"># Ruby なので条件も書ける</span>
+brew "glibc" if OS.linux?</code></pre>
+  <div class="tblwrap">
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>brew bundle</code></td><td>今のフォルダの <code>Brewfile</code> にあるものを入れる（<code>brew bundle install</code> と同じ。入っていて古ければ更新する）</td></tr>
+<tr><td><code>brew bundle dump</code></td><td>今入っているものを <code>Brewfile</code> に書き出す。既にあるファイルを上書きするなら <code>--force</code></td></tr>
+<tr><td><code>brew bundle check</code></td><td><code>Brewfile</code> のものが全部入っているかを確かめる（足りなければ終了コードが 0 以外）</td></tr>
+<tr><td><code>brew bundle cleanup</code></td><td><code>Brewfile</code> に無いものを消す。既定は消す前に確認し、<code>--force</code> で確認なしに消す</td></tr>
+<tr><td><code>brew bundle list</code></td><td><code>Brewfile</code> の中身を一覧（既定は formula だけ）</td></tr>
+<tr><td><code>brew bundle add jq</code></td><td><code>Brewfile</code> に項目を足す（<code>--cask</code> などで種類を指定）</td></tr>
+<tr><td><code>brew bundle --file=path/Brewfile</code></td><td>別の場所の <code>Brewfile</code> を使う</td></tr>
+<tr><td><code>brew bundle --global</code></td><td><code>~/.Brewfile</code> など、ユーザー共通の <code>Brewfile</code> を使う</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="env">よく使う環境変数</h2>
+  <div class="tblwrap">
+<table class="cheat"><thead><tr><th>変数</th><th>効果</th></tr></thead><tbody>
+<tr><td><code>HOMEBREW_NO_AUTO_UPDATE=1</code></td><td><code>install</code>・<code>upgrade</code>・<code>tap</code> の前の自動 <code>brew update</code> をしない</td></tr>
+<tr><td><code>HOMEBREW_AUTO_UPDATE_SECS</code></td><td>自動 update の間隔（秒）。既定は 86400（24 時間）。止めるより間隔を延ばすのが推奨</td></tr>
+<tr><td><code>HOMEBREW_NO_INSTALL_CLEANUP=1</code></td><td><code>install</code>・<code>upgrade</code> のあとの自動 <code>cleanup</code> をしない</td></tr>
+<tr><td><code>HOMEBREW_NO_ASK=1</code></td><td>インストール前の確認（ask モード）をしない</td></tr>
+<tr><td><code>HOMEBREW_UPGRADE_GREEDY=1</code></td><td><code>brew upgrade</code> を常に <code>--greedy</code> で動かす</td></tr>
+<tr><td><code>HOMEBREW_NO_ANALYTICS=1</code></td><td>利用統計を送らない（<code>brew analytics off</code> でも止められる）</td></tr>
+<tr><td><code>HOMEBREW_NO_ENV_HINTS=1</code></td><td>環境変数についてのヒントを表示しない</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="changes">最近の主な変更（5.0〜7.0）</h2>
+  <div class="tblwrap">
+<table class="cheat ver"><thead><tr><th>版（公開日）</th><th>変わったこと</th></tr></thead><tbody>
+<tr><td>5.0.0<br><span class="note">2025-11-12</span></td><td>ダウンロードの並列化が既定に。<code>brew mcp-server</code>（4.6.0 で内蔵）で使える開発用コマンドが増えた。cask の <code>--no-quarantine</code> を非推奨に</td></tr>
+<tr><td>5.1.0<br><span class="note">2026-03-10</span></td><td><code>brew version-install</code> を追加。<code>brew bundle</code> の対応を拡大</td></tr>
+<tr><td>6.0.0<br><span class="note">2026-06-11</span></td><td>tap の信頼（tap trust）を導入し、公式以外の tap は信頼するまで読み込まないように。インストール前に計画を出して確認する ask モードを既定に（当初は開発者向け）</td></tr>
+<tr><td>7.0.0<br><span class="note">2026-09-13</span></td><td><code>brew vulns</code> を追加。公式 GUI アプリ BrewUI（<code>brew install homebrew-app</code>、macOS 26 以降）。Intel Mac と macOS 14 を Tier 3 に、macOS 10.15 以前のサポートを終了</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>権限エラーが出たら sudo brew で実行すればよい</summary><p><code>brew</code> は prefix の持ち主のユーザーで動かす前提で、<code>sudo</code> を付けると prefix の持ち主が書き換えたコードを root で動かすことになる。権限エラーは prefix の持ち主を直す。例外は、起動時に root で動かしたいサービス（<code>sudo brew services</code>）など、ドキュメントが <code>sudo</code> を示している場合だけ。</p></details>
+  <details class="myth"><summary>brew update で入っているパッケージも新しくなる</summary><p><code>brew update</code> は Homebrew 本体とパッケージ定義を更新するだけ。パッケージを新しくするのは <code>brew upgrade</code>（<code>brew outdated</code> で対象を確認できる）。</p></details>
+  <details class="myth"><summary>brew upgrade ですべての cask が更新される</summary><p>自分で更新するアプリ（<code>auto_updates true</code>）と <code>version :latest</code> の cask は既定で飛ばされる。まとめて上げるなら <code>brew upgrade --greedy</code>。</p></details>
+  <details class="myth"><summary>brew uninstall で依存パッケージも一緒に消える</summary><p>消えるのは指定したものだけ。使われなくなった依存は <code>brew autoremove</code> で消す（<code>-n</code> で事前に確認できる）。</p></details>
+  <details class="myth"><summary>brew tap した tap の formula はそのまま入れられる</summary><p>6.0 からは公式以外の tap は信頼が要る。<code>brew install user/repo/foo</code> と完全な名前で入れるか、<code>brew trust</code> で信頼してから短い名前で入れる。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul class="note">
+    <li><a href="https://docs.brew.sh/Manpage">brew(1) – Manpage</a></li>
+    <li><a href="https://docs.brew.sh/Installation">Installation</a></li>
+    <li><a href="https://docs.brew.sh/Brew-Bundle-and-Brewfile">Homebrew Bundle and Brewfile</a></li>
+    <li><a href="https://docs.brew.sh/Tap-Trust">Tap Trust</a></li>
+    <li><a href="https://docs.brew.sh/Versions">Versions</a></li>
+    <li><a href="https://brew.sh/2026/09/13/homebrew-7.0.0/">Homebrew 7.0.0（ブログ）</a>・<a href="https://brew.sh/2026/06/11/homebrew-6.0.0/">6.0.0</a>・<a href="https://brew.sh/2026/03/10/homebrew-5.1.0/">5.1.0</a>・<a href="https://brew.sh/2025/11/12/homebrew-5.0.0/">5.0.0</a>・<a href="https://brew.sh/2025/08/05/homebrew-4.6.0/">4.6.0</a></li>
+  </ul>
+  <p class="note">Homebrew/brew 7.0.15 の <code>docs/</code> とソース（<code>Library/Homebrew/cmd/</code>）と照らして 2026-11-23 に確認。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 絞り込み：入力があれば全タブの行から探し、該当する行だけ出す
+const filter = document.getElementById('filter');
+const panels = [...document.querySelectorAll('.panel')];
+const tabs = [...document.querySelectorAll('.tab')];
+const empty = document.getElementById('empty');
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelector('.tabs').style.display = q ? 'none' : '';
+  let total = 0;
+  panels.forEach(p => {
+    let hit = 0;
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      const ok = !q || tr.textContent.toLowerCase().includes(q);
+      tr.hidden = !ok;
+      if (ok) hit++;
+    });
+    total += hit;
+    const selected = tabs.find(t => t.dataset.panel === p.id).getAttribute('aria-selected') === 'true';
+    p.hidden = q ? hit === 0 : !selected;
+  });
+  empty.style.display = q && total === 0 ? 'block' : 'none';
+});
+</script>
+
+</body>
+</html>

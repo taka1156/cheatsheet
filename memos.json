@@ -10,6 +10,16 @@
   "quizzes": 0
  },
  {
+  "file": "homebrew.html",
+  "title": "Homebrew 使い方",
+  "desc": "macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-23",
+  "quizzes": 0
+ },
+ {
   "file": "trivy.html",
   "title": "Trivy 使い方",
   "desc": "Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート",

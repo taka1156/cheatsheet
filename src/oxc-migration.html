@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）</title>
+<meta name="description" content="ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-23">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; }
+td code, th code { word-break: break-all; }
+.tbl { overflow-x: auto; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+.note { color: var(--fg-2); font-size: 0.85rem; }
+
+/* 移行前 → 移行後の対応図 */
+.map { display: grid; gap: 8px; margin: 12px 0; }
+.map-head, .map-row { display: grid; grid-template-columns: 1fr 2em 1fr; align-items: stretch; gap: 6px; }
+.map-head { color: var(--fg-2); font-size: 0.78rem; font-weight: 700; }
+.map-row > div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; min-width: 0; }
+.map-row > div small { display: block; color: var(--fg-2); font-size: 0.76rem; }
+.map-row > .arr { background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--fg-2); }
+.map-row > .arr::before { content: '→'; }
+.map-row > .manual { border: 1px dashed var(--fg-2); }
+@media (max-width: 600px) {
+  .map-head { display: none; }
+  .map-row { grid-template-columns: 1fr; gap: 2px; margin-bottom: 6px; }
+  .map-row > .arr { height: 1.2em; }
+  .map-row > .arr::before { content: '↓'; }
+  .map-row > div:first-child::before { content: '移行前：'; color: var(--fg-2); font-size: 0.76rem; }
+  .map-row > div:last-child::before { content: '移行後：'; color: var(--fg-2); font-size: 0.76rem; }
+}
+details.script-box { margin: 12px 0; }
+details.script-box > summary { cursor: pointer; font-weight: 700; margin-bottom: 8px; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ESLint・Prettier → Oxlint・Oxfmt 移行</h1>
+  <p class="subtitle">Vite+ 環境を前提に、lint・format の移行と、husky・lint-staged から <code>vp staged</code> への移行をまとめる</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Vite+ なら <code>vp migrate</code>（既存の Vite+ は <code>--full</code>）で ESLint・Prettier を Oxlint・Oxfmt に変換できる</li>
+      <li>flat config と JSON・JS の Prettier 設定は自動、旧 <code>.eslintrc</code> と husky は自動では変換されない</li>
+      <li>husky は手で <code>.vite-hooks/</code>・<code>staged</code>・<code>vp config</code> に移す（下の変換スクリプトで自動化できる）</li>
+    </ul>
+  </div>
+
+  <h2 id="map">何が何に置き換わるか</h2>
+  <p>点線の箱は <code>vp migrate</code> が自動で変換しないもの（手で移すか、下のスクリプトを使う）。</p>
+  <div class="map">
+    <div class="map-head"><span>移行前</span><span></span><span>移行後（Vite+）</span></div>
+    <div class="map-row"><div><code>eslint.config.js</code>（flat config）<small><code>eslint .</code></small></div><div class="arr"></div><div><code>vite.config.ts</code> の <code>lint</code><small><code>vp lint</code>（Oxlint）</small></div></div>
+    <div class="map-row"><div class="manual"><code>.eslintrc.*</code>（v8 以前の形式）<small>そのままでは変換されない</small></div><div class="arr"></div><div class="manual">先に flat config へ変換してから移行<small><code>npx @eslint/migrate-config .eslintrc.json</code></small></div></div>
+    <div class="map-row"><div><code>.prettierrc</code>・<code>prettier.config.js</code><small><code>prettier --write .</code></small></div><div class="arr"></div><div><code>vite.config.ts</code> の <code>fmt</code><small><code>vp fmt</code>（Oxfmt）</small></div></div>
+    <div class="map-row"><div><code>.eslintignore</code>・<code>.prettierignore</code></div><div class="arr"></div><div><code>lint.ignorePatterns</code>・<code>fmt.ignorePatterns</code><small><code>.gitignore</code> は両方とも自動で読む</small></div></div>
+    <div class="map-row"><div>lint-staged（JSON の設定）<small><code>package.json</code> の <code>lint-staged</code> など</small></div><div class="arr"></div><div><code>vite.config.ts</code> の <code>staged</code><small><code>vp staged</code>（中身は lint-staged）</small></div></div>
+    <div class="map-row"><div class="manual"><code>.husky/pre-commit</code> など<small><code>npx lint-staged</code></small></div><div class="arr"></div><div class="manual"><code>.vite-hooks/pre-commit</code><small><code>vp staged</code></small></div></div>
+    <div class="map-row"><div class="manual"><code>"prepare": "husky"</code><small><code>core.hooksPath=.husky/_</code></small></div><div class="arr"></div><div class="manual"><code>"prepare": "vp config"</code><small><code>core.hooksPath=.vite-hooks/_</code></small></div></div>
+  </div>
+
+  <h2 id="flow">移行の手順</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="f-vp">Vite+（vp migrate）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="f-solo">単体で移す</button>
+  </div>
+  <div class="panel card" id="f-vp">
+    <p class="note">注意の色の番号（6）は、<code>vp migrate</code> では終わらず手作業が要る手順。</p>
+    <ol class="steps">
+      <li><b>ブランチを切り、旧 .eslintrc を flat config にする</b><code>vp migrate</code> は旧形式の <code>.eslintrc</code> を見つけると ESLint とその lint スクリプトを残す。先に <code>npx @eslint/migrate-config .eslintrc.json</code> で <code>eslint.config.mjs</code> にしておく。</li>
+      <li><b>vp migrate を実行する</b>Vite+ を入れていないプロジェクトは <code>vp migrate</code> だけで全部やる。既に Vite+ のプロジェクトは、ESLint・Prettier・フックの移行が既定では飛ばされるので <code>vp migrate --full</code>。モノレポはワークスペースのルートで 1 回だけ。</li>
+      <li><b>表示される警告とレポートを読む</b>先に質問にまとめて答え、その後は質問なしで実行される。変換できなかった ESLint ルールの一覧と husky を検出したときの警告が出て、最後にファイルごとのレポートが出る。コミットする前に読む。</li>
+      <li><b>確かめる</b><code>vp install</code> → <code>vp check</code> → <code>vp test</code> → <code>vp build</code>（ライブラリは <code>vp pack</code>）。<code>vp check</code> で新しく出た指摘と、整形の差分を見る。</li>
+      <li><b>差分を分けてレビューする</b>移行は変更したファイルを整形する。整形だけの差分と、依存・設定・import の変更は分けて見ると、ロジックの変更を見落としにくい。</li>
+      <li class="is-warn"><b>husky を使っていたら手で移す</b>husky のフック・スクリプト・依存はそのまま残る（警告だけ）。下の「husky の移行」の手順かスクリプトで移す。</li>
+    </ol>
+  </div>
+  <div class="panel card" id="f-solo" hidden>
+    <p>Vite+ を使わず、oxlint・oxfmt を単体で入れるときの手順。設定は <code>.oxlintrc.json</code>・<code>.oxfmtrc.json</code> に出る（Vite+ に移すときは <code>vp migrate</code> が <code>vite.config.ts</code> にまとめる）。</p>
+    <div class="tbl"><table>
+      <tr><th>やること</th><th>コマンド</th></tr>
+      <tr><td>ESLint の flat config を変換</td><td><code>npx @oxlint/migrate</code>（パスを渡すなら <code>npx @oxlint/migrate ./eslint.config.mjs</code>）</td></tr>
+      <tr><td>変換できなかったルールを見る</td><td><code>npx @oxlint/migrate --details</code></td></tr>
+      <tr><td>型情報を使うルールも移す</td><td><code>npx @oxlint/migrate --type-aware</code>（<code>tsrs</code> か <code>oxlint-tsgolint</code> が要る）</td></tr>
+      <tr><td>ESLint プラグインを JS プラグインにしない</td><td><code>npx @oxlint/migrate --js-plugins=false</code>（既定では未対応のプラグインを <code>jsPlugins</code> に移す）</td></tr>
+      <tr><td><code>// eslint-disable</code> を書き換える</td><td><code>--replace-eslint-comments</code>（<code>// oxlint-disable</code> にする。そのままでも効く）</td></tr>
+      <tr><td>Prettier の設定を変換して整形</td><td><code>pnpm add -D oxfmt@latest &amp;&amp; pnpm oxfmt --migrate=prettier &amp;&amp; pnpm oxfmt</code></td></tr>
+      <tr><td>整形のチェックだけ（CI）</td><td><code>oxfmt --check</code></td></tr>
+      <tr><td>lint-staged で使う</td><td><code>oxfmt --no-error-on-unmatched-pattern</code></td></tr>
+    </table></div>
+    <p class="note"><code>@oxlint/migrate</code> は 1 回きり使うもので、<code>package.json</code> に入れない。使うときは <code>oxlint</code> と同じ版にそろえる。</p>
+  </div>
+
+  <h2 id="vp-migrate">vp migrate が変換するもの・しないもの</h2>
+  <div class="tbl"><table>
+    <tr><th>対象</th><th>扱い</th></tr>
+    <tr><td>ESLint の flat config</td><td>Oxlint の設定（<code>lint</code>）に変換。ESLint の依存・設定・スクリプトは置き換え</td></tr>
+    <tr><td>旧形式の <code>.eslintrc</code></td><td>ESLint とその lint スクリプトを残す</td></tr>
+    <tr><td>Prettier の設定</td><td>Oxfmt の設定（<code>fmt</code>）に変換。Prettier を使っている間は、移行後の整形を飛ばす</td></tr>
+    <tr><td><code>.oxlintrc*</code>・<code>.oxfmtrc*</code></td><td><code>vite.config.ts</code> にまとめる</td></tr>
+    <tr><td>package.json の scripts</td><td><code>eslint</code> → <code>vp lint</code>、<code>prettier</code> → <code>vp fmt</code>、<code>lint-staged</code> → <code>vp staged</code></td></tr>
+    <tr><td>lint-staged（JSON の設定）</td><td>フックツールを残さないなら <code>staged</code> に移す。husky などを残すなら lint-staged も残る</td></tr>
+    <tr><td>JSON でない <code>.lintstagedrc</code>・<code>lint-staged.config.*</code></td><td>移さない</td></tr>
+    <tr><td>husky</td><td>フック・スクリプト・設定・依存を変えずに残し、警告を出す</td></tr>
+    <tr><td>lefthook・simple-git-hooks・yorkie</td><td><code>--hooks</code> を付けても残し、警告を出す</td></tr>
+  </table></div>
+  <p class="note">フラグ: <code>--full</code>（フック・ESLint・Prettier の移行も含める）、<code>--hooks</code> / <code>--no-hooks</code>（フックの設定だけ入れる／入れない）、<code>--no-interactive</code>（質問なし）。</p>
+
+  <h2 id="eslint">ESLint 側で気をつけること</h2>
+  <ul>
+    <li>変換できないルールは一覧で出る。どうしても要るルールは ESLint を残して <code>"lint:eslint": "eslint ."</code> を作り、<code>vp run lint:eslint</code> で動かせる（ESLint のスクリプトが残っている場合だけ。flat config を変換すると消えるので、手で戻す）</li>
+    <li>併用中は <code>eslint-plugin-oxlint</code> で、Oxlint が持つルールを ESLint 側で切る。実行は速い方から <code>oxlint &amp;&amp; eslint</code></li>
+    <li>同じリポジトリ内のローカルプラグイン（<code>../eslint-plugin-myplugin</code> など）は移らない。<code>jsPlugins</code> に手で足す</li>
+    <li><code>@oxlint/migrate</code> は、ESLint で有効にしていなかったルールが増えないよう <code>correctness</code> カテゴリを切った状態で出す。必要なら後で有効にする</li>
+  </ul>
+
+  <h2 id="prettier">Prettier 側で気をつけること</h2>
+  <ul>
+    <li>Oxfmt の <code>printWidth</code> の既定は 100（Prettier は 80）。<code>--migrate=prettier</code> は設定に無ければ 80 を書いて、Prettier の見た目を保つ</li>
+    <li>読める設定: <code>package.json</code> の <code>prettier</code>、JSON の <code>.prettierrc</code>、<code>.prettierrc.json</code>、JS・TS の設定。YAML・JSON5・TOML は先に JSON か JS にする</li>
+    <li>JS・TS の設定は評価した値に置き換わる。環境での分岐などは手で <code>oxfmt.config.ts</code> に移す。入れ子の設定は探さないので、ディレクトリごとに実行する</li>
+    <li>Prettier プラグインは使えない。tailwindcss・svelte・astro・packagejson のプラグインの設定は組み込みの機能（<code>sortTailwindcss</code>・<code>sortPackageJson</code> など）に移る。ほかは警告を出して飛ばす</li>
+    <li><code>// prettier-ignore</code> はそのまま効く（<code>// oxfmt-ignore</code> も使えるが、効くのは JS・TS のファイルだけ）</li>
+    <li><code>eslint-plugin-prettier</code> は外す。ESLint を残すなら <code>eslint-config-prettier</code> は残す</li>
+    <li>全体を整形したコミットのハッシュは <code>.git-blame-ignore-revs</code> に書いておく</li>
+  </ul>
+
+  <h2 id="husky">husky の移行（手で行う）</h2>
+  <p><code>vp migrate</code> は husky を変換しない。公式ガイドが lefthook などに示している手順と Commit Hooks ガイドをもとにすると、次のとおり。</p>
+  <ol class="steps">
+    <li><b>staged に移す</b>lint-staged のコマンドを <code>vite.config.ts</code> の <code>staged</code> に移す（<code>vp staged</code> はこのブロックしか読まない）。</li>
+    <li><b>prepare を vp config にする</b><code>"prepare": "husky"</code> を <code>"prepare": "vp config"</code> にする。</li>
+    <li><b>.vite-hooks/pre-commit を作る</b>中身は <code>vp staged</code> の 1 行。<code>commit-msg</code> などほかのフックも同じフォルダに置く。</li>
+    <li><b>ディスパッチャーを入れる</b><code>vp hooks enable</code> か <code>vp config</code>。<code>core.hooksPath</code> が別のフォルダを指していると <code>vp config</code> はディスパッチャーを入れない。husky のファイルが残っているうちに切り替えるなら <code>vp hooks enable --replace-husky</code> を 1 回だけ実行する（<code>prepare</code> には書かない。古い版にこのオプションが無ければ <code>git config --unset core.hooksPath</code> してから <code>vp config</code>）。</li>
+    <li><b>動いたら husky を消す</b>コミットしてフックが動くのを確かめてから、<code>.husky/</code> と husky・lint-staged の依存を消す。</li>
+  </ol>
+<pre>// vite.config.ts
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  staged: {
+    '*': 'vp check --fix',          // 公式の既定。glob ごとに分けてもよい
+  },
+});</pre>
+  <div class="tbl"><table>
+    <tr><th>やりたいこと</th><th>コマンド・設定</th></tr>
+    <tr><td>フックの状態を見る</td><td><code>vp hooks status</code></td></tr>
+    <tr><td>この clone だけフックを止める</td><td><code>vp hooks disable</code>（戻すときは <code>vp hooks enable</code>）</td></tr>
+    <tr><td>フックのフォルダを変える</td><td><code>vp config --hooks-dir .githooks</code></td></tr>
+    <tr><td>CI などでフックを動かさない</td><td>環境変数 <code>VP_GIT_HOOKS=0</code>（<code>HUSKY=0</code> も効く。<code>prepare</code> での再インストールも止まる）</td></tr>
+    <tr><td>変更が出たら失敗させる</td><td><code>vp staged --fail-on-changes</code></td></tr>
+  </table></div>
+  <p class="note"><code>.vite-hooks/pre-commit</code> などはコミットする。<code>.vite-hooks/_</code>（ディスパッチャー）は自動で無視され、<code>vp config</code> で作り直される。<code>vp staged</code> は Node.js 22.22.1 以上（22 系）か 24.11.0 以上、Git 2.32.0 以上が要る。</p>
+
+  <h2 id="script">husky → Vite+ 変換スクリプト</h2>
+  <p>上の手順をまとめて行うシェルスクリプト（公式のものではない）。<code>vp migrate</code> の後、リポジトリのルートで動かす。まず <code>--dry-run</code> で何が変わるかを見る。</p>
+<pre>bash migrate-husky-to-vp.sh --dry-run          # 変わる内容を表示するだけ
+bash migrate-husky-to-vp.sh                    # 実行（未コミットの変更があると止まる）
+bash migrate-husky-to-vp.sh --default-staged   # lint-staged を変換せず '*': 'vp check --fix' にする</pre>
+  <div class="tbl"><table>
+    <tr><th>やること</th><th>中身</th></tr>
+    <tr><td>lint-staged → <code>staged</code></td><td><code>package.json</code> の <code>lint-staged</code>・<code>.lintstagedrc(.json)</code> を読み、<code>eslint</code>・<code>oxlint</code> → <code>vp lint --fix</code>、<code>prettier</code>・<code>oxfmt</code> → <code>vp fmt</code>、両方あれば <code>vp check --fix</code> にまとめる。それ以外のコマンドは残す。<code>defineConfig({</code> の直後に挿入</td></tr>
+    <tr><td><code>.husky/*</code> → <code>.vite-hooks/*</code></td><td>husky v8 以前の shebang と <code>husky.sh</code> の読み込みを消し、<code>npx lint-staged</code> などを <code>vp staged</code> に置き換える</td></tr>
+    <tr><td>package.json</td><td><code>prepare</code>（・<code>postinstall</code>）の <code>husky</code> / <code>husky install</code> を <code>vp config</code> にし、<code>lint-staged</code> の欄を消す</td></tr>
+    <tr><td>Git の設定</td><td>husky の <code>core.hooksPath</code> を外す（どの版の <code>vp config</code> でもディスパッチャーが入るように）</td></tr>
+    <tr><td>後片付け</td><td><code>vp remove husky lint-staged</code>、<code>.husky/</code> を消す、<code>vp config --no-agent</code> と <code>vp hooks status</code></td></tr>
+    <tr><td>やらないこと</td><td>JS・YAML の lint-staged 設定の変換、<code>staged</code> が既にある設定への追記、<code>defineConfig(() =&gt; …)</code> のような関数形式への挿入（警告を出して手で直す）</td></tr>
+  </table></div>
+  <details class="card script-box" open>
+    <summary><b>migrate-husky-to-vp.sh</b></summary>
+<pre class="script">#!/usr/bin/env bash
+# husky + lint-staged を Vite+（vp config / .vite-hooks / vp staged）へ移す
+# 使い方: bash migrate-husky-to-vp.sh [--dry-run] [--default-staged] [--force]
+#   --dry-run         何をするかを表示するだけ（ファイルは変えない）
+#   --default-staged  lint-staged の中身を変換せず staged: { '*': 'vp check --fix' } にする
+#   --force           作業ツリーに未コミットの変更があっても進める
+# 前提: リポジトリのルートで実行 / vp migrate 済み（vite.config.* が vite-plus の defineConfig）
+set -euo pipefail
+
+DRY=0; DEFAULT=0; FORCE=0
+for a in "$@"; do
+  case "$a" in
+    --dry-run) DRY=1 ;;
+    --default-staged) DEFAULT=1 ;;
+    --force) FORCE=1 ;;
+    *) echo "不明なオプション: $a" &gt;&amp;2; exit 2 ;;
+  esac
+done
+
+say()  { printf '\033[1m==&gt;\033[0m %s\n' "$*"; }
+warn() { printf '\033[33m[警告]\033[0m %s\n' "$*" &gt;&amp;2; }
+die()  { printf '\033[31m[中止]\033[0m %s\n' "$*" &gt;&amp;2; exit 1; }
+run()  { if [ "$DRY" = 1 ]; then echo "  (dry-run) $*"; else "$@"; fi; }
+
+# ---- 0. 事前チェック --------------------------------------------------------
+[ -f package.json ] || die "package.json がない。リポジトリのルートで実行する"
+git rev-parse --is-inside-work-tree &gt;/dev/null 2&gt;&amp;1 || die "Git リポジトリではない"
+[ -d .husky ] || die ".husky/ がない（husky を使っていない）"
+command -v vp &gt;/dev/null 2&gt;&amp;1 || die "vp が見つからない（Vite+ の CLI を入れる）"
+NODE="node"; command -v node &gt;/dev/null 2&gt;&amp;1 || NODE="vp node"
+
+CONFIG=""
+for f in vite.config.ts vite.config.mts vite.config.js vite.config.mjs; do
+  [ -f "$f" ] &amp;&amp; { CONFIG="$f"; break; }
+done
+[ -n "$CONFIG" ] || die "vite.config.* がない。先に vp migrate を実行する"
+
+if [ "$FORCE" = 0 ] &amp;&amp; [ -n "$(git status --porcelain)" ]; then
+  die "未コミットの変更がある。コミットするか --force を付ける（戻すときは git で戻せるようにしておく）"
+fi
+
+# ---- 1. lint-staged の設定を読んで staged ブロックを作る ---------------------
+LS_SRC=""
+if [ "$DEFAULT" = 0 ]; then
+  if $NODE -e 'process.exit(require("./package.json")["lint-staged"]?0:1)' 2&gt;/dev/null; then
+    LS_SRC="package.json"
+  elif [ -f .lintstagedrc.json ]; then LS_SRC=".lintstagedrc.json"
+  elif [ -f .lintstagedrc ] &amp;&amp; $NODE -e 'JSON.parse(require("fs").readFileSync(".lintstagedrc","utf8"))' 2&gt;/dev/null; then
+    LS_SRC=".lintstagedrc"
+  fi
+  for f in .lintstagedrc.js .lintstagedrc.cjs .lintstagedrc.mjs .lintstagedrc.yaml .lintstagedrc.yml \
+           lint-staged.config.js lint-staged.config.cjs lint-staged.config.mjs lint-staged.config.ts; do
+    [ -f "$f" ] &amp;&amp; warn "$f は JSON ではないので変換しない。staged の中身を手で見直す"
+  done
+  [ -f .lintstagedrc ] &amp;&amp; [ -z "$LS_SRC" ] &amp;&amp; warn ".lintstagedrc が JSON ではない（YAML など）。変換しない"
+fi
+[ -z "$LS_SRC" ] &amp;&amp; say "lint-staged の JSON 設定なし → staged: { '*': 'vp check --fix' } を使う" \
+                 || say "lint-staged の設定を $LS_SRC から変換する"
+
+# node で: staged ブロックの生成 → vite.config への挿入（既にあれば挿入しない）
+STAGED_JS=$(LS_SRC="$LS_SRC" $NODE &lt;&lt;'EOF'
+const fs = require('fs');
+const src = process.env.LS_SRC;
+let rules = { '*': 'vp check --fix' };
+if (src) {
+  const raw = src === 'package.json'
+    ? require(process.cwd() + '/package.json')['lint-staged']
+    : JSON.parse(fs.readFileSync(src, 'utf8'));
+  // npx / pnpm exec などの前置きを外して、ESLint・Prettier・oxlint・oxfmt を vp に置き換える
+  const pre = String.raw`^(?:npx(?:\s+--no(?:-install)?)?(?:\s+--)?\s+|pnpm(?:\s+exec)?\s+|yarn\s+|bunx\s+|npm\s+exec\s+(?:--\s+)?)?`;
+  const conv = (c) =&gt; {
+    const s = c.trim();
+    if (new RegExp(pre + String.raw`(?:eslint|oxlint)\b`).test(s)) return 'vp lint --fix';
+    if (new RegExp(pre + String.raw`(?:prettier|oxfmt)\b`).test(s)) return 'vp fmt';
+    if (new RegExp(pre + String.raw`vp\s`).test(s)) return s.replace(new RegExp(pre), '');
+    return s; // それ以外（tsc・stylelint など）はそのまま残す
+  };
+  rules = {};
+  for (const [glob, v] of Object.entries(raw)) {
+    let cmds = (Array.isArray(v) ? v : [v]).map(conv);
+    cmds = [...new Set(cmds)];
+    if (cmds.includes('vp lint --fix') &amp;&amp; cmds.includes('vp fmt')) {
+      // fmt と lint が両方あるなら 1 つにまとめる
+      cmds = ['vp check --fix', ...cmds.filter(c =&gt; c !== 'vp lint --fix' &amp;&amp; c !== 'vp fmt')];
+    }
+    rules[glob] = cmds.length === 1 ? cmds[0] : cmds;
+  }
+}
+const q = (s) =&gt; `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+const val = (v) =&gt; Array.isArray(v) ? `[${v.map(q).join(', ')}]` : q(v);
+const body = Object.entries(rules).map(([k, v]) =&gt; `    ${q(k)}: ${val(v)},`).join('\n');
+process.stdout.write(`  staged: {\n${body}\n  },`);
+EOF
+)
+echo "$STAGED_JS" | sed 's/^/    /'
+
+if grep -Eq '(^|[^A-Za-z_])staged[[:space:]]*:' "$CONFIG"; then
+  warn "$CONFIG に staged が既にある。上の内容と見比べて手で直す"
+elif [ "$DRY" = 1 ]; then
+  echo "  (dry-run) $CONFIG の defineConfig({ の直後に staged を挿入"
+else
+  STAGED_JS="$STAGED_JS" CONFIG="$CONFIG" $NODE &lt;&lt;'EOF' || { warn "自動で挿入できなかった。上の staged を $CONFIG の defineConfig({ ... }) に手で貼る"; }
+const fs = require('fs');
+const file = process.env.CONFIG;
+const s = fs.readFileSync(file, 'utf8');
+const m = /defineConfig\(\s*\{/.exec(s);           // defineConfig({ ... }) の形だけ扱う
+if (!m) process.exit(1);                             // 関数形式などは手で
+const at = m.index + m[0].length;
+fs.writeFileSync(file, s.slice(0, at) + '\n' + process.env.STAGED_JS + s.slice(at));
+EOF
+fi
+
+# ---- 2. .husky/&lt;hook&gt; → .vite-hooks/&lt;hook&gt; ----------------------------------
+HOOKS_DIR=".vite-hooks"
+run mkdir -p "$HOOKS_DIR"
+for f in .husky/*; do
+  [ -f "$f" ] || continue
+  name=$(basename "$f")
+  case "$name" in _*|*.sh|*.md) continue ;; esac   # .husky/_ と補助ファイルは移さない
+  [ -e "$HOOKS_DIR/$name" ] &amp;&amp; { warn "$HOOKS_DIR/$name が既にあるので上書きしない"; continue; }
+  say ".husky/$name → $HOOKS_DIR/$name"
+  # husky v4〜v8 の shebang と husky.sh の読み込みを消し、lint-staged を vp staged に置き換える
+  conv=$(sed -E \
+    -e '/^#!\/usr\/bin\/env (ba)?sh/d' \
+    -e '/husky\.sh/d' \
+    -e 's#(^|[;&amp;|[:space:]])(npx( --no(-install)?)?( --)? |pnpm( exec)? |yarn |bunx |npm exec (-- )?)?lint-staged( [^;&amp;|]*)?#\1vp staged#' \
+    "$f" | sed -e '/./,$!d')                          # 先頭の空行を詰める
+  if [ "$DRY" = 1 ]; then printf '%s\n' "$conv" | sed 's/^/    | /'
+  else printf '%s\n' "$conv" &gt; "$HOOKS_DIR/$name"; chmod +x "$HOOKS_DIR/$name"; fi
+done
+[ -f "$HOOKS_DIR/pre-commit" ] || [ "$DRY" = 1 ] || { say "pre-commit が無いので vp staged だけの pre-commit を作る"; echo "vp staged" &gt; "$HOOKS_DIR/pre-commit"; chmod +x "$HOOKS_DIR/pre-commit"; }
+
+# ---- 3. package.json: prepare を vp config に、lint-staged の欄を消す -------
+say "package.json の prepare を vp config に置き換え、lint-staged の欄を消す"
+if [ "$DRY" = 0 ]; then
+  $NODE &lt;&lt;'EOF'
+const fs = require('fs');
+const txt = fs.readFileSync('package.json', 'utf8');
+const pkg = JSON.parse(txt);
+const indent = (txt.match(/^[ \t]+(?=")/m) || ['  '])[0];
+pkg.scripts ??= {};
+for (const k of ['prepare', 'postinstall']) {
+  const v = pkg.scripts[k];
+  if (typeof v === 'string' &amp;&amp; /\bhusky\b/.test(v)) {
+    const next = v.replace(/\bhusky(\s+install)?(\s+\S*\.husky\S*)?/g, 'vp config');
+    pkg.scripts[k] = next;
+  }
+}
+if (!Object.values(pkg.scripts).some(v =&gt; /\bvp config\b/.test(v))) {
+  pkg.scripts.prepare = pkg.scripts.prepare ? `${pkg.scripts.prepare} &amp;&amp; vp config` : 'vp config';
+}
+delete pkg['lint-staged'];
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, indent) + (txt.endsWith('\n') ? '\n' : ''));
+EOF
+fi
+
+# ---- 4. husky の core.hooksPath を外す（新しい vp は --replace-husky でも切り替えられるが、版によらず入るように）
+HP=$(git config --get core.hooksPath || true)
+if [ -n "$HP" ]; then
+  case "$HP" in
+    *.husky*) say "core.hooksPath=$HP を外す"; run git config --unset core.hooksPath ;;
+    *) warn "core.hooksPath=$HP（husky 以外）が設定されている。vp config はこのままだとディスパッチャーを入れない" ;;
+  esac
+fi
+
+# ---- 5. husky・lint-staged を消す ------------------------------------------
+DEPS=$($NODE -e 'const p=require("./package.json");const d={...p.dependencies,...p.devDependencies};console.log(["husky","lint-staged"].filter(n=&gt;n in d).join(" "))')
+[ -n "$DEPS" ] &amp;&amp; { say "依存から外す: $DEPS"; run vp remove $DEPS; }
+run rm -rf .husky
+[ "$LS_SRC" = ".lintstagedrc.json" ] || [ "$LS_SRC" = ".lintstagedrc" ] &amp;&amp; run rm -f "$LS_SRC"
+
+# ---- 6. Vite+ のフックを入れて確かめる -------------------------------------
+say "vp config でディスパッチャーを入れる"
+run vp config --no-agent
+run vp hooks status
+
+cat &lt;&lt;'MSG'
+
+次にやること:
+  1. vite.config.* の staged と .vite-hooks/ の中身を読んで確かめる
+  2. 何か 1 ファイルを git add して git commit し、フックが動くか試す
+  3. .vite-hooks/ をコミットする（.vite-hooks/_ は自動で無視される）
+  4. CI では VP_GIT_HOOKS=0 でフックを止められる（HUSKY=0 も効く）
+MSG</pre>
+  </details>
+  <p class="note">変換の例: <code>"*.{ts,tsx}": ["eslint --fix", "prettier --write"]</code> → <code>'*.{ts,tsx}': 'vp check --fix'</code>、<code>"*.md": "prettier --write"</code> → <code>'*.md': 'vp fmt'</code>。<code>vp</code> をスタブにした仮のプロジェクトで動作を確かめた（実際の <code>vp config</code> の結果は <code>vp hooks status</code> で確かめる）。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>vp migrate を流せば husky も Vite+ のフックに変わる</summary><p>husky・lefthook・simple-git-hooks・yorkie は変換されず、警告が出るだけ。husky を残している間は lint-staged も残る。手で移すか、上のスクリプトを使う。</p></details>
+  <details class="myth"><summary>既に Vite+ のプロジェクトでも vp migrate だけで ESLint・Prettier が移る</summary><p>既存の Vite+ プロジェクトのアップグレードでは、フック・ESLint・Prettier の移行は飛ばされ、<code>--full</code> を付けるよう案内が出る。Vite+ を入れていないプロジェクトは常に全部を移す。</p></details>
+  <details class="myth"><summary>Oxfmt は Prettier と同じく 80 文字で折り返す</summary><p>Oxfmt の <code>printWidth</code> の既定は 100。<code>--migrate=prettier</code> や <code>vp migrate</code> を使えば 80 が書かれるが、手で設定を作るときは自分で書く。</p></details>
+  <details class="myth"><summary>vp staged は .lintstagedrc や lint-staged.config.js も読む</summary><p><code>vp staged</code> が読むのは <code>vite.config.ts</code> の <code>staged</code> だけ。中で lint-staged 17 を使っているが、単体の設定ファイルは見ない。</p></details>
+  <details class="myth"><summary>移行したら // eslint-disable のコメントを全部書き換える必要がある</summary><p>Oxlint は <code>// eslint-disable</code>・<code>// eslint-disable-next-line</code> をそのまま解釈する。書き換えたいときだけ <code>@oxlint/migrate --replace-eslint-comments</code> を使う（<code>vp migrate</code> は ESLint を移すときにこれも実行する）。</p></details>
+  <p>関連: <a href="oxlint-oxfmt.html">oxlint・oxfmt 使い方</a>・<a href="vite-plus.html">Vite+ と vp コマンド チートシート</a></p>
+
+  <h2 id="sources">出典と確認日</h2>
+  <ul>
+    <li><a href="https://oxc.rs/docs/guide/usage/linter/migrate-from-eslint">Oxc: Migrate from ESLint</a></li>
+    <li><a href="https://oxc.rs/docs/guide/usage/formatter/migrate-from-prettier">Oxc: Migrate from Prettier</a></li>
+    <li><a href="https://viteplus.dev/guide/migrate">Vite+: Migrate</a>・<a href="https://main.viteplus.dev/guide/migrate-rules">Migrate rules</a></li>
+    <li><a href="https://www.viteplus.dev/guide/commit-hooks">Vite+: Commit Hooks</a></li>
+    <li><a href="https://github.com/oxc-project/oxlint-migrate">oxc-project/oxlint-migrate</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-23。Vite+ 1.x、Oxlint・Oxfmt は 2026 年 11 月時点の版。<code>vp migrate</code> の挙動は版で変わるので、実行前に <code>vp help migrate</code> で確かめる。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

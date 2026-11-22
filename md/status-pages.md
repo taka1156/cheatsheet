@@ -44,6 +44,26 @@
 4. **依存先も見る** 自社サービスの多くは Cloudflare・AWS（特に us-east-1）・GitHub などに乗っている。直接使っていないつもりのサービスが原因のこともある。
 5. **公式発表がまだなら外部の情報と突き合わせる** [Downdetector](https://cs.taka1156.site/md/downdetector.md) （利用者の報告）や [Cloudflare Radar](https://cs.taka1156.site/md/cloudflare-radar.md) （通信の観測）で、自分だけか全体かを確かめる。
 
+## Docker Hub が止まったときの逃げ道
+
+`FROM node:22` のようにレジストリを書かないイメージは Docker Hub から取ってくる。自分のイメージを別のレジストリに置いていても、ベースイメージの取得で CI のビルドが止まることがある。公式イメージ (Docker Official Images) には次の取得先がある。
+
+| 取得先 | 使い方 | 注意 |
+| --- | --- | --- |
+| Amazon ECR Public | イメージ名の前に `public.ecr.aws/docker/library/` を付ける | Docker Hub で更新されると自動で ECR Public にも push される。 [ECR Public Gallery](https://gallery.ecr.aws/docker) では「by Docker」の公式イメージか確かめる（同名で配布元が違うものがある） |
+| mirror.gcr.io（Google） | Docker デーモンの `registry-mirrors` に設定する | よく取得される公開イメージだけのキャッシュ。いつまで残るかの保証はなく、キャッシュに無いイメージを直接取ろうとすると失敗する |
+
+```
+# ECR Public から取る（Dockerfile でも同じ書き方）
+docker pull public.ecr.aws/docker/library/node:22
+# FROM public.ecr.aws/docker/library/node:22
+
+# mirror.gcr.io を経由させる（/etc/docker/daemon.json。設定後に Docker を再起動）
+{ "registry-mirrors": ["https://mirror.gcr.io"] }
+```
+
+障害が起きてから Dockerfile を書き換えるより、平時から ECR Public などを指定しておく方が慌てずに済む。Docker Hub の取得回数の制限 (rate limit) を避ける効果もある。
+
 ## 通知を受ける・機械で読む
 
 AWS・GCP・Azure
@@ -137,6 +157,7 @@ Slack の障害時は Slack に流す通知も届かないことがある。Slac
 - [Azure status overview](https://learn.microsoft.com/azure/service-health/azure-status-overview) ・ [When to use Azure Service Health versus the status page](https://azure.microsoft.com/en-us/blog/when-to-use-azure-service-health-versus-the-status-page/)
 - [New Cloudflare Status page（Cloudflare changelog）](https://developers.cloudflare.com/changelog/post/2026-08-11-new-status-page/)
 - [Slack Status API](https://docs.slack.dev/reference/slack-status-api)
+- [Docker Official Images on Amazon ECR Public（Docker Blog）](https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/) ・ [Pull cached Docker Hub images（Google Cloud）](https://docs.cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images)
 - [How to check Microsoft 365 service health](https://learn.microsoft.com/microsoft-365/enterprise/view-service-health)
 - [Check the status of a Google Workspace service](https://knowledge.workspace.google.com/admin/reports/check-the-status-of-a-google-workspace-service)
 

@@ -2,7 +2,7 @@
 
 # クラウド・SaaS ステータスページ早見表
 
-> AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表
+> AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace・npm などの公式ステータスページと通知の受け方をまとめた障害時の早見表
 
 - URL: https://cs.taka1156.site/status-pages.html
 - タグ: セキュリティ
@@ -32,6 +32,9 @@
 | Slack | [Slack System Status](https://slack-status.com/) | なし |
 | Microsoft 365 | [status.cloud.microsoft](https://status.cloud.microsoft/) （と X の @MSFT365Status） | [Microsoft 365 管理センター](https://admin.microsoft.com/) → 正常性 (Health) → サービス正常性 (Service health) |
 | Google Workspace | [Google Workspace Status Dashboard](https://www.google.com/appsstatus/dashboard/) | 管理コンソール → ルール → Apps outage alert（アラートセンター・メール） |
+| npm | [npm Status](https://status.npmjs.org/) | なし |
+| Docker Hub | [Docker System Status](https://www.dockerstatus.com/) | なし |
+| Vercel | [Vercel Status](https://www.vercel-status.com/) | なし |
 
 ## 障害かも？の確かめ方
 
@@ -65,7 +68,7 @@ M365・Workspace
 ### Azure
 
 - 公開ページはページ上部の RSS で購読できる。履歴ページでは過去の障害の事後レビュー (PIR) が読める。
-- 本命は Service Health アラート（Azure Monitor のアクショングループでメール・SMS・Webhook など）。公開ページには自動通知の仕組みがない。
+- 本命は Service Health アラート（Azure Monitor のアクショングループでメール・SMS・Webhook など）。公開ページにはメールなどで知らせる機能がない（RSS を自分で購読するだけ）。
 
 ### Cloudflare
 
@@ -130,11 +133,11 @@ Slack の障害時は Slack に流す通知も届かないことがある。Slac
 ## 出典
 
 - [AWS Health Dashboard（AWS Health ユーザーガイド）](https://docs.aws.amazon.com/health/latest/ug/aws-health-dashboard-status.html)
-- [Use Google Cloud Service Health as a fallback](https://docs.cloud.google.com/support/docs/dashboard) ・ [Personalized Service Health overview](https://docs.cloud.google.com/service-health/docs/overview)
-- [Azure status overview](https://learn.microsoft.com/azure/service-health/azure-status-overview)
+- [Use Google Cloud Service Health as a fallback](https://docs.cloud.google.com/support/docs/dashboard) ・ [Personalized Service Health overview](https://docs.cloud.google.com/service-health/docs/overview) ・ [Manage Personalized Service Health access](https://docs.cloud.google.com/service-health/docs/manage-access) ・ [Configure alerts in the Service Health dashboard](https://docs.cloud.google.com/service-health/docs/configure-alerts-dashboard)
+- [Azure status overview](https://learn.microsoft.com/azure/service-health/azure-status-overview) ・ [When to use Azure Service Health versus the status page](https://azure.microsoft.com/en-us/blog/when-to-use-azure-service-health-versus-the-status-page/)
 - [New Cloudflare Status page（Cloudflare changelog）](https://developers.cloudflare.com/changelog/post/2026-08-11-new-status-page/)
 - [Slack Status API](https://docs.slack.dev/reference/slack-status-api)
 - [How to check Microsoft 365 service health](https://learn.microsoft.com/microsoft-365/enterprise/view-service-health)
-- [Check the status of a Google Workspace service](https://support.google.com/a/answer/139569)
+- [Check the status of a Google Workspace service](https://knowledge.workspace.google.com/admin/reports/check-the-status-of-a-google-workspace-service)
 
-確認した日付: 2026-11-22。GitHub の API は Statuspage の共通仕様と第三者の資料による。URL は変わることがあるので、開けないときは各社のドキュメントで確かめる。
+確認した日付: 2026-11-22。GitHub の API は Statuspage の共通仕様と第三者の資料による。npm・Docker Hub・Vercel の URL は第三者の監視サービスの記載で確かめた。URL は変わることがあるので、開けないときは各社のドキュメントで確かめる。

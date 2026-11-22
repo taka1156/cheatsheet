@@ -13,7 +13,7 @@
  {
   "file": "status-pages.html",
   "title": "クラウド・SaaS ステータスページ早見表",
-  "desc": "AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表",
+  "desc": "AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace・npm などの公式ステータスページと通知の受け方をまとめた障害時の早見表",
   "tags": [
    "セキュリティ"
   ],

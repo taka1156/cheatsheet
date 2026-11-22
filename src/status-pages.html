@@ -179,6 +179,25 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <li><b>公式発表がまだなら外部の情報と突き合わせる</b><a href="downdetector.html">Downdetector</a>（利用者の報告）や <a href="cloudflare-radar.html">Cloudflare Radar</a>（通信の観測）で、自分だけか全体かを確かめる。</li>
   </ol>
 
+  <h2 id="dockerhub">Docker Hub が止まったときの逃げ道</h2>
+  <p><code>FROM node:22</code> のようにレジストリを書かないイメージは Docker Hub から取ってくる。自分のイメージを別のレジストリに置いていても、ベースイメージの取得で CI のビルドが止まることがある。公式イメージ (Docker Official Images) には次の取得先がある。</p>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>取得先</th><th>使い方</th><th>注意</th></tr></thead>
+      <tbody>
+        <tr><td data-l="取得先">Amazon ECR Public</td><td data-l="使い方">イメージ名の前に <code>public.ecr.aws/docker/library/</code> を付ける</td><td data-l="注意">Docker Hub で更新されると自動で ECR Public にも push される。<a href="https://gallery.ecr.aws/docker">ECR Public Gallery</a> では「by Docker」の公式イメージか確かめる（同名で配布元が違うものがある）</td></tr>
+        <tr><td data-l="取得先">mirror.gcr.io（Google）</td><td data-l="使い方">Docker デーモンの <code>registry-mirrors</code> に設定する</td><td data-l="注意">よく取得される公開イメージだけのキャッシュ。いつまで残るかの保証はなく、キャッシュに無いイメージを直接取ろうとすると失敗する</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code># ECR Public から取る（Dockerfile でも同じ書き方）
+docker pull public.ecr.aws/docker/library/node:22
+# FROM public.ecr.aws/docker/library/node:22
+
+# mirror.gcr.io を経由させる（/etc/docker/daemon.json。設定後に Docker を再起動）
+{ "registry-mirrors": ["https://mirror.gcr.io"] }</code></pre>
+  <p class="note">障害が起きてから Dockerfile を書き換えるより、平時から ECR Public などを指定しておく方が慌てずに済む。Docker Hub の取得回数の制限 (rate limit) を避ける効果もある。</p>
+
   <h2 id="notify">通知を受ける・機械で読む</h2>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-panel="p-cloud">AWS・GCP・Azure</button>
@@ -259,6 +278,7 @@ https://slack-status.com/feed/rss</code></pre>
     <li><a href="https://learn.microsoft.com/azure/service-health/azure-status-overview">Azure status overview</a>・<a href="https://azure.microsoft.com/en-us/blog/when-to-use-azure-service-health-versus-the-status-page/">When to use Azure Service Health versus the status page</a></li>
     <li><a href="https://developers.cloudflare.com/changelog/post/2026-08-11-new-status-page/">New Cloudflare Status page（Cloudflare changelog）</a></li>
     <li><a href="https://docs.slack.dev/reference/slack-status-api">Slack Status API</a></li>
+    <li><a href="https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/">Docker Official Images on Amazon ECR Public（Docker Blog）</a>・<a href="https://docs.cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images">Pull cached Docker Hub images（Google Cloud）</a></li>
     <li><a href="https://learn.microsoft.com/microsoft-365/enterprise/view-service-health">How to check Microsoft 365 service health</a></li>
     <li><a href="https://knowledge.workspace.google.com/admin/reports/check-the-status-of-a-google-workspace-service">Check the status of a Google Workspace service</a></li>
   </ul>

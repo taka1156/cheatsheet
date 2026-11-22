@@ -317,6 +317,16 @@ ENV GH_VERSION=2.60.0
 | スケジュール外に今すぐ作る | Dependency Dashboard の該当行にチェックを入れる |
 | App の実行ログを見る | Mend の Developer Portal（ `developer.mend.io` ）でリポジトリごとのジョブログが見られる |
 
+## Renovate の PR 同士がコンフリクトしたら
+
+同じ `package.json` やロックファイルを触る PR が並ぶと、1 本マージした時点で残りがコンフリクトする。 **手で直さず Renovate に任せる** のが基本。Renovate はコンフリクトした PR を、ベースブランチの最新から作り直してくれる（Git の rebase ではなく、更新をやり直した新しいコミットにする）。
+
+1. **1 本ずつマージする** コンフリクトした残りの PR はそのままにしておく
+2. **次の実行を待つ** Renovate が次に動いたとき、コンフリクトした PR を最新のベースから作り直す
+3. **急ぐなら rebase/retry にチェック** PR 本文のチェックボックスに印を付けると、その PR を優先して作り直す
+
+手でコンフリクトを解消してコミットすると（GitHub の「Resolve conflicts」ボタンも同じ）、Renovate は誰かが編集したとみなし、そのブランチを自動で更新しなくなる。元に戻すには rebase/retry にチェックを入れる（手で入れた変更は消える）。コンフリクトが頻繁なら、 `groupName` でまとめるか automerge にすると減る。
+
 ## Dependabot との使い分け
 
 **Renovate** GitHub・GitLab・Bitbucket・Azure DevOps・Gitea/Forgejo などで動く。対応 manager が多く、プリセットで組織共通の設定を配れる。packageRules・Dashboard・customManagers で細かく決められる。

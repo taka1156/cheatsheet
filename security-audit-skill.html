@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Audit Skill 使い方</title>
+<meta name="description" content="Cloudflare のコーディングエージェント用スキル security-audit の入れ方・頼み方・6 フェーズ・出力ファイル・判定と重大度をまとめた。">
+<meta name="memo:tags" content="セキュリティ, 開発ツール">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 判定のラベル（色は意味ごと。文字でも判定名を出す） */
+.vd { display: inline-block; font: 700 0.78rem 'JetBrains Mono', ui-monospace, monospace; padding: 0 6px; border: 1.5px solid currentColor; border-radius: 4px; white-space: nowrap; }
+.vd.ok { color: var(--c-ok); }
+.vd.warn { color: var(--c-warn); }
+.vd.ng { color: var(--c-ng); }
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Security Audit Skill 使い方">
+<meta property="og:description" content="Cloudflare のコーディングエージェント用スキル security-audit の入れ方・頼み方・6 フェーズ・出力ファイル・判定と重大度をまとめた。">
+<meta property="og:url" content="https://cs.taka1156.site/security-audit-skill.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Security Audit Skill 使い方</h1>
+  <p class="subtitle">Cloudflare が公開した、コーディングエージェントをセキュリティ監査人にするスキル <code>security-audit</code>（MIT・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Markdown の手順書と JSON スキーマ・検証ツールの一式で、エージェントにコードベースの脆弱性監査をさせる。</li>
+      <li>見つける役と確かめる役を別のサブエージェントに分け、6 フェーズで候補を反証してから報告する。</li>
+      <li>1 回で全部は見つからないので繰り返し実行し、対象コードは必ずネットから切ったサンドボックスで動かす。</li>
+    </ul>
+  </div>
+
+  <h2 id="install">インストールと頼み方</h2>
+  <p>Skills CLI（<code>npx skills</code>）で入れる（使い方は <a href="skills-cli.html">Skills CLI 使い方</a>）。Claude Code・Cursor・Codex など、Agent Skills を読めて並列のサブエージェントを使えるエージェントで使える。</p>
+  <pre><code># このプロジェクトに入れる
+npx skills add https://github.com/cloudflare/security-audit-skill \
+  --skill security-audit
+
+# ユーザー単位で入れる（全プロジェクトで使う）
+npx skills add https://github.com/cloudflare/security-audit-skill \
+  --skill security-audit \
+  --global
+
+# エージェントの選択や非対話のオプション
+npx skills --help</code></pre>
+  <p>監査したいリポジトリでエージェントを起動し、ふつうに頼む。「security audit」「find vulnerabilities」「pen-test」などの言葉で自動的に読み込まれる。</p>
+  <pre><code>security audit this codebase
+find security vulnerabilities in ./src
+do a security review, output to ~/audits/my-project</code></pre>
+
+  <h2 id="modes">2 つのモード</h2>
+  <p>スキルを読み込んだだけでは監査は始まらない。<b>既定はガイダンスモード</b>で、フル監査は明示的に頼んだときだけ。どちらとも取れる依頼なら、エージェントがファイルを作る前に 1 つ質問する。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>モード</th><th>始まる頼み方</th><th>やること</th></tr></thead>
+    <tbody>
+      <tr><td data-l="モード">ガイダンス</td><td data-l="頼み方">セキュリティの質問、特定箇所のレビュー、見つけた問題の調査・トリアージ</td><td data-l="やること">必要な部分だけ使う。6 フェーズは回さず、出力フォルダも作らない</td></tr>
+      <tr><td data-l="モード">フル監査</td><td data-l="頼み方">「コードベースを監査して」「pen-test して」、full / comprehensive / end-to-end のレビュー、レポートのファイルが欲しいとき</td><td data-l="やること">6 フェーズを全部回し、決まったファイルを書き出す</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="phases">フル監査の 6 フェーズ</h2>
+  <p>親エージェント（parent）が全体を仕切り、共有ファイルを書くのは親だけ。調べる作業はサブエージェントに渡す。</p>
+  <ol class="steps">
+    <li><b>偵察（Reconnaissance）</b>構成・信頼境界（trust boundary）・入力面・過去の結果を調べ、<code>architecture.md</code> と、何をどこまで見たかを記録する <code>coverage-ledger.json</code> を作る。</li>
+    <li><b>カバレッジに沿った探索（Hunting）</b>台帳の単位ごとに独立した hunter を割り当てる。coverage critic が見落としを探し、足りなければ次の波を出す。</li>
+    <li><b>候補の検証（Candidate validation）</b>候補 1 つずつを、見つけた本人ではない新しい verifier に渡して反証（disprove）させる。</li>
+    <li><b>構造化出力（Structured output）</b>検証で判定が決まった記録（confirmed・needs_validation・rejected）を <code>findings.json</code> に書き、スキーマと検証ツールで確かめる。</li>
+    <li><b>記録の独立検証（Record verification）</b>新しいエージェントが最終的なソースの主張を確かめ直す。中身が大きく変わったら、さらに別の verifier を付ける。</li>
+    <li><b>レポート（Reporting）</b>検証済みの記録と台帳から <code>REPORT.md</code> などを作る。本番環境を叩く手順は書かない。</li>
+  </ol>
+  <p class="note">終わり方は 2 つだけ。(a) レポートを全部書き、検証ツールが 2 つとも通る。(b) <code>run_status: "incomplete"</code> と理由を記録し、レポートに抜けを書く。フェーズの途中で止めない。</p>
+
+  <h2 id="verdicts">判定（verdict）と重大度</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>判定</th><th>意味</th><th>重大度</th></tr></thead>
+    <tbody>
+      <tr><td data-l="判定"><span class="vd ok">confirmed</span></td><td data-l="意味">入口から到達点（sink）までのソースの追跡がそろい、サンドボックスの中で結果を観測できた脆弱性</td><td data-l="重大度">付ける</td></tr>
+      <tr><td data-l="判定"><span class="vd warn">needs_validation</span></td><td data-l="意味">ソースに根拠はあるが、確かめられない事実が 1 つ残っている（デプロイ設定やプロキシの挙動など、リポジトリに無いもの）。その事実を正確に書く</td><td data-l="重大度">付けない</td></tr>
+      <tr><td data-l="判定"><span class="vd ng">rejected</span></td><td data-l="意味">検証で反証された候補。次の実行で同じ主張を蒸し返さないために残す</td><td data-l="重大度">付けない</td></tr>
+    </tbody>
+  </table></div>
+  <p>重大度は confirmed だけに付け、実際に示せた影響を超えない。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>重大度</th><th>目安</th></tr></thead>
+    <tbody>
+      <tr><td data-l="重大度">critical</td><td data-l="目安">認証なしでコード実行・データストア全体へのアクセス・任意アカウントの乗っ取り</td></tr>
+      <tr><td data-l="重大度">high</td><td data-l="目安">明示的なセキュリティ制御を完全に破る（認証回避、テナントをまたぐ読み書き、他人に効く stored XSS、認証ありのコード実行、認証なしで共有サービスを外から止める）</td></tr>
+      <tr><td data-l="重大度">medium</td><td data-l="目安">本物の境界違反だが、影響範囲が狭い・前提条件がまれ</td></tr>
+      <tr><td data-l="重大度">low</td><td data-l="目安">秘密ではない内部情報の露出、手間のわりに得るものが小さい</td></tr>
+      <tr><td data-l="重大度">informational</td><td data-l="目安">影響は最小。大きな問題の前提条件として役立つもの</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">high と medium の分かれ目は「制御を完全に破ったか、弱めただけか」。具体的な被害を言えないなら、感覚より低い。</p>
+
+  <h2 id="files">出力ファイル</h2>
+  <p>出力先を指定しなければ、対象の外の <code>~/security-audit-skill/&lt;repo-name&gt;/run-&lt;N&gt;</code> に書く。対象リポジトリの中に書くのは、Git に無視されるフォルダを自分で指定したときだけ。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>ファイル</th><th>中身</th></tr></thead>
+    <tbody>
+      <tr><td data-l="ファイル"><code>run-metadata.json</code></td><td data-l="中身">対象・コミット・プロファイル・範囲・予算・実行の状態</td></tr>
+      <tr><td data-l="ファイル"><code>architecture.md</code></td><td data-l="中身">偵察でまとめた構成と信頼境界</td></tr>
+      <tr><td data-l="ファイル"><code>coverage-ledger.json</code></td><td data-l="中身">カバレッジ台帳。どの単位を誰がどこまで見たか</td></tr>
+      <tr><td data-l="ファイル"><code>findings.json</code></td><td data-l="中身">3 種類の判定の記録（<code>report-schema.json</code> に沿う）</td></tr>
+      <tr><td data-l="ファイル"><code>REPORT.md</code></td><td data-l="中身">全体のレポート</td></tr>
+      <tr><td data-l="ファイル"><code>FINDINGS-DETAIL.md</code></td><td data-l="中身">重大度 medium 以上の confirmed の詳細（追跡・再現手順・ソースの修正と回帰テスト）</td></tr>
+      <tr><td data-l="ファイル"><code>NEEDS-VALIDATION.md</code></td><td data-l="中身">needs_validation の一覧と、確かめ方の案</td></tr>
+      <tr><td data-l="ファイル"><code>agents/&lt;id&gt;/</code></td><td data-l="中身">サブエージェントごとの <code>scratch/</code>（作業用）と <code>artifacts/</code>（親が選んで残す証拠）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="validators">検証ツール</h2>
+  <p>どちらも依存パッケージなしの Node.js スクリプト。親が決まったタイミングで自動で流すが、手でも実行できる。<code>&lt;skill-dir&gt;</code> は <code>SKILL.md</code> のあるフォルダ。</p>
+  <pre><code># 台帳を作った後と、更新するたびに
+node &lt;skill-dir&gt;/validate-coverage-ledger.cjs &lt;output-dir&gt;/coverage-ledger.json
+
+# フェーズ 4 と、フェーズ 5 で記録を差し替えるたびに
+node &lt;skill-dir&gt;/validate-findings.cjs &lt;output-dir&gt;/findings.json</code></pre>
+  <p class="note">台帳の検証ツールは、5 MiB・ネスト 64 段・10,000 単位を超える入力を拒否する。</p>
+
+  <h2 id="profiles">プロファイル・範囲・予算</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="pf-profile">プロファイル</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pf-scope">範囲を絞る</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="pf-budget">予算</button>
+  </div>
+  <div class="panel" id="pf-profile">
+    <div class="tbl stack"><table>
+      <thead><tr><th>プロファイル</th><th>向く場面</th><th>違い</th></tr></thead>
+      <tbody>
+        <tr><td data-l="プロファイル"><code>quick</code></td><td data-l="向く場面">小さい対象、再実行、最初のざっと見</td><td data-l="違い">台帳の単位を粗くし、hunter の波 1 回と critic 1 回だけ。候補ごとの verifier は 1 つ</td></tr>
+        <tr><td data-l="プロファイル"><code>standard</code></td><td data-l="向く場面">既定</td><td data-l="違い">書かれたとおりの手順</td></tr>
+        <tr><td data-l="プロファイル"><code>deep</code></td><td data-l="向く場面">大きい対象、重要度の高い対象</td><td data-l="違い">単位をサブシステムごとに細かく分け、critic が何も見つけなくなるまで回す。候補の検証と記録の検証を別のエージェントにする</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">プロファイルで変わるのは広さと重ね方だけ。証拠の基準（独立検証・サンドボックス・スキーマ検証）は変わらない。</p>
+  </div>
+  <div class="panel" id="pf-scope" hidden>
+    <p>パス・サブシステム・ドメイン・2 つのコミットの差分（diff）に絞った scoped run もできる。範囲外は台帳に <code>out_of_scope</code> と書かれ、<code>covered</code>（確認済み）にはならない。scoped run と quick は、レポートで「部分的なカバレッジ」と名乗る。</p>
+  </div>
+  <div class="panel" id="pf-budget" hidden>
+    <p>予算は「全フェーズでのエージェント呼び出しの最大回数」で指定する（<code>run-metadata.json</code> の <code>budget</code>）。偵察・critic・検証の分を先に取っておき、残りで hunter を割り当てる。最低限も賄えない予算なら、エージェントを 1 つも起動せず、予算を増やすか範囲を絞るよう求める。</p>
+    <p>検証の途中で予算が尽きたら <code>run_status: "incomplete"</code> になる。未検証の候補を <code>needs_validation</code> に言い換えて済ませることはしない。</p>
+  </div>
+
+  <h2 id="companions">攻撃クラスの補助ファイル</h2>
+  <p>偵察の結果に合わせて、対象の種類ごとの補助ファイルを選んで hunter に渡す。共通は <code>ATTACK-CLASSES.md</code>。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>ファイル</th><th>対象</th></tr></thead>
+    <tbody>
+      <tr><td data-l="ファイル"><code>WEB-PROTOCOL-AND-AUTH.md</code></td><td data-l="対象">HTTP のリクエスト解釈のずれ・キャッシュ・認証プロトコル</td></tr>
+      <tr><td data-l="ファイル"><code>CLIENT-SIDE.md</code></td><td data-l="対象">DOM への注入・メッセージの送り元の信頼・クリックジャッキング・プロトタイプ汚染</td></tr>
+      <tr><td data-l="ファイル"><code>AI-AND-LLM.md</code></td><td data-l="対象">プロンプトインジェクション・エージェントやツールの権限・出力の扱い</td></tr>
+      <tr><td data-l="ファイル"><code>SUPPLY-CHAIN-AND-RELEASE.md</code></td><td data-l="対象">依存・CI・リリース・署名・更新・プラグイン</td></tr>
+      <tr><td data-l="ファイル"><code>CLOUD-AND-DEPLOYMENT.md</code></td><td data-l="対象">IAM・IaC・コンテナ・サーバーレス・実行時の設定</td></tr>
+      <tr><td data-l="ファイル"><code>PROTOCOLS-RPC-AND-MESSAGING.md</code></td><td data-l="対象">RPC・シリアライズ・キュー・Webhook・ストリーミング</td></tr>
+      <tr><td data-l="ファイル"><code>DATA-ISOLATION-AND-LIFECYCLE.md</code></td><td data-l="対象">テナント分離・エクスポート・バックアップ・削除と復元</td></tr>
+      <tr><td data-l="ファイル"><code>RESOURCE-EXHAUSTION-AND-AVAILABILITY.md</code></td><td data-l="対象">共有リソース・クォータ・ワーカーの枯渇、運営側の課金</td></tr>
+      <tr><td data-l="ファイル"><code>MEMORY-SAFETY-AND-BINARY.md</code></td><td data-l="対象">メモリ安全性・バイナリ・カーネル（ネイティブコード）</td></tr>
+      <tr><td data-l="ファイル"><code>DESKTOP-MOBILE-AND-LOCAL-IPC.md</code></td><td data-l="対象">ネイティブアプリ・ディープリンク・WebView・ローカル IPC</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="requirements">必要なもの（特にサンドボックス）</h2>
+  <ul>
+    <li>ツール呼び出しと<b>並列のサブエージェント</b>が使えるモデルとエージェント</li>
+    <li>Node.js（検証ツール用）</li>
+    <li>対象のビルド・テスト・ブラウザ・ファザーなどを動かすための、<b>OS が強制するサンドボックス</b></li>
+  </ul>
+  <p>サンドボックスには次の 4 つがすべて要る。1 つでも無ければ対象のコードは実行せず、その候補は <code>needs_validation</code> のまま残す。</p>
+  <ol class="steps">
+    <li><b>外部ネットワークなし</b>必要ならループバックだけの分離された名前空間を使う。</li>
+    <li><b>空の環境変数から始める</b>許可リストの安全な値だけを入れる。<code>HOME</code>・一時フォルダ・キャッシュも作業用フォルダの中にする。</li>
+    <li><b>書き込みは作業用フォルダだけ</b>対象とツールチェーンは読み取り専用にする。</li>
+    <li><b>リソースの上限</b>CPU・メモリ・プロセス数・ファイルサイズ・ディスク・実行時間に低い上限をかける。</li>
+  </ol>
+  <p class="note">依存のインストールや、ビルド中のダウンロードもさせない。デプロイ済みのエンドポイント・外部サービス・本番の ID には触らない。</p>
+
+  <h2 id="vs">Trivy・OSV-Scanner との使い分け</h2>
+  <div class="vs">
+    <div><b>security-audit が向く</b>自分たちのコードに固有のロジックの穴（認可漏れ、テナント越え、プロンプトインジェクションなど）を、ソースの追跡つきで探したいとき。時間とトークンがかかる。</div>
+    <div><b>スキャナーが向く</b>既知の CVE・設定ミス・シークレットを、速く同じ結果で CI に組み込みたいとき。<a href="trivy.html">Trivy 使い方</a>・<a href="osv-scanner.html">OSV-Scanner 使い方</a>。</div>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>1 回フル監査すれば脆弱性は出尽くす</summary><p>Cloudflare のテストでは、1 回の実行で見つかったのは、何度も実行して見つかった脆弱性全体のおよそ半分だった。実行は積み上がる仕組みで、2 回目以降は前回の台帳と結果を読み、見ていない所や変わったソースを狙う。</p></details>
+  <details class="myth"><summary>スキルを入れると、セキュリティの質問のたびに重い監査が走る</summary><p>既定はガイダンスモード。6 フェーズとファイルの書き出しは、コードベースの監査・pen-test・フルレビュー・レポートのファイルを明示的に頼んだときだけ。</p></details>
+  <details class="myth"><summary>needs_validation は確度の低い脆弱性なので、重大度を低くして扱えばよい</summary><p>needs_validation は「脆弱性かどうかを決める事実が 1 つ確かめられていない」状態で、重大度は付かない。書かれた事実（本番の設定など）を持ち主が確かめれば、confirmed にも rejected にもなりうる。</p></details>
+  <details class="myth"><summary>ベストプラクティスから外れている所は、すべて脆弱性として報告される</summary><p>報告するのは、実際の信頼境界を破れる場合だけ。チェックリストからの逸脱や、別の層ですでに攻撃が防がれている多層防御の欠けは、脆弱性ではなく強化のメモ（hardening）として扱う。</p></details>
+  <details class="myth"><summary>監査のついでに、見つけた脆弱性を直してくれる</summary><p>対象のソースは書き換えない。confirmed ごとに、守るべき不変条件と、最後に信頼できる判断の場所での最小の修正案、回帰テストを提案する。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://github.com/cloudflare/security-audit-skill">cloudflare/security-audit-skill</a>（README.md・skills/security-audit/SKILL.md ほか。コミット c1c8a8c、2026-09-14）</li>
+    <li><a href="https://blog.cloudflare.com/build-your-own-vulnerability-harness">Build your own vulnerability harness</a>（Cloudflare ブログ。このスキルから発展した社内の脆弱性探索の仕組み）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-22</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

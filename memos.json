@@ -21,6 +21,27 @@
   "quizzes": 0
  },
  {
+  "file": "skills-cli.html",
+  "title": "Skills CLI（npx skills）使い方",
+  "desc": "エージェントスキルを入れる・更新する・消す Vercel Labs の CLI、npx skills のコマンド・オプション・置き場所・ロックファイルをまとめた。",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
+  "file": "security-audit-skill.html",
+  "title": "Security Audit Skill 使い方",
+  "desc": "Cloudflare のコーディングエージェント用スキル security-audit の入れ方・頼み方・6 フェーズ・出力ファイル・判定と重大度をまとめた。",
+  "tags": [
+   "セキュリティ",
+   "開発ツール"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
   "file": "osv-scanner.html",
   "title": "OSV-Scanner 使い方",
   "desc": "OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート",

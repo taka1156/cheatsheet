@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renovate 使い方</title>
+<meta name="description" content="依存関係の更新 PR を自動で作る Renovate の導入方法・renovate.json の書き方・packageRules・automerge・スケジュールをまとめたチートシート">
+<meta name="memo:tags" content="開発ツール, セキュリティ">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Renovate 使い方</h1>
+  <p class="subtitle">依存関係の更新 PR を自動で作るボット。導入・renovate.json・packageRules・automerge の早見表（v44 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>リポジトリの依存（npm・Go・Docker・GitHub Actions など）の新しい版を見つけ、更新 PR を自動で作るボット。</li>
+      <li><code>renovate.json</code> の <code>extends</code> でプリセットを読み、<code>packageRules</code> で依存ごとに振る舞いを変える。</li>
+      <li>まず <code>config:recommended</code> から始め、PR が多すぎたらグループ化・スケジュール・automerge で減らす。</li>
+    </ul>
+  </div>
+
+  <h2 id="how">動く仕組み</h2>
+  <p>Renovate は実行されるたびに（App なら定期的に）リポジトリを読み、次の流れで PR を作る。常駐してファイルを監視するのではなく、毎回はじめから調べ直す。</p>
+  <div class="pipe">
+    <div class="st"><b>設定を読む</b><span><code>renovate.json</code> と <code>extends</code> のプリセットを合わせる</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>依存を見つける</b><span>manager（<code>npm</code>・<code>gomod</code>・<code>dockerfile</code>…）が各ファイルから依存と今の版を取り出す</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>新しい版を調べる</b><span>datasource（npm レジストリ・Docker Hub・GitHub Releases…）に問い合わせる</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>振り分ける</b><span><code>packageRules</code> でグループ化・無効化・automerge などを決める</span></div>
+    <div class="ar"></div>
+    <div class="st"><b>ブランチと PR</b><span><code>renovate/…</code> ブランチを作って PR を出す。条件を満たせば automerge</span></div>
+  </div>
+  <p class="note">Dependency Dashboard（Issue 1 つ）に、保留中・作成待ち・エラーの更新がまとまる。チェックボックスで「今すぐ PR を作る」「作り直す」を指示できる。</p>
+
+  <h2 id="install">導入</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="in-app">Mend Renovate App</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-action">GitHub Action</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="in-cli">CLI・Docker</button>
+  </div>
+  <div class="panel card" id="in-app">
+    <p>GitHub.com ならいちばん手軽。Mend がホストするボットが動くので、トークンの管理も実行環境も要らない。</p>
+    <ol class="steps">
+      <li><b>App を入れる</b><code>github.com/apps/renovate</code> から Install し、対象を「All repositories」か「Select repositories」で選ぶ</li>
+      <li><b>Onboarding PR を確認する</b>「Configure Renovate」という PR が来る。中身は <code>renovate.json</code>（既定は <code>config:recommended</code>）と、これから来る PR の予告</li>
+      <li><b>マージする</b>マージした時点から更新 PR が作られ始める。マージ前にこの PR のブランチで設定を直すと、予告の内容も作り直される</li>
+    </ol>
+  </div>
+  <div class="panel card" id="in-action" hidden>
+    <p>自分の CI でボットを動かす（セルフホスト）。社内レジストリに届く・実行タイミングを自分で決められるのが利点。</p>
+<pre><code># .github/workflows/renovate.yml
+on:
+  schedule:
+    - cron: '0 18 * * *'      # 毎日 3:00 JST
+  workflow_dispatch:
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v3   # GitHub App で動かす場合
+        id: app-token
+        with:
+          client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_KEY }}
+      - uses: renovatebot/github-action@v46.3.14   # 版を固定する（Renovate に更新させる）
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+        env:
+          RENOVATE_REPOSITORIES: 'owner/repo'
+          LOG_LEVEL: debug</code></pre>
+    <p class="note">個人アクセストークン（PAT）でも動くが、PR の作成者がその人になる。GitHub App にするとボット名（<code>xxx[bot]</code>）で PR が作られる。</p>
+  </div>
+  <div class="panel card" id="in-cli" hidden>
+    <p>GitLab・Gitea/Forgejo などや自社ホストの環境では、CLI か Docker イメージで動かす（Bitbucket Cloud には Mend の App もある）。</p>
+<pre><code># npm で
+npx renovate --platform=gitlab --token=$TOKEN group/project
+
+# Docker で（公式イメージ。必要なツールは実行時に入る。ツール入りは 44-full）
+docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
+  ghcr.io/renovatebot/renovate:44 group/project</code></pre>
+    <p class="note">ボット側の設定（<code>platform</code>・<code>token</code>・<code>repositories</code>・<code>onboardingConfig</code> など）は「セルフホスト用の設定」で、<code>config.js</code>・環境変数（<code>RENOVATE_*</code>）・CLI 引数に書く。リポジトリの <code>renovate.json</code> に書いても無視される。</p>
+  </div>
+
+  <h2 id="config">設定ファイル</h2>
+  <p>置き場所は次のどれか（上から探して最初に見つかったもの 1 つだけを使う）。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>場所</th><th>メモ</th></tr></thead>
+    <tbody>
+      <tr><td data-l="場所"><code>renovate.json</code> / <code>renovate.jsonc</code> / <code>renovate.json5</code></td><td data-l="メモ">いちばん普通。コメントを書くなら <code>.jsonc</code> が推奨（<code>.json</code> も JSONC として読まれる）</td></tr>
+      <tr><td data-l="場所"><code>.github/renovate.json(5)</code>・<code>.gitlab/renovate.json(5)</code></td><td data-l="メモ">ルートを散らかしたくないとき</td></tr>
+      <tr><td data-l="場所"><code>.renovaterc</code>・<code>.renovaterc.json(5)</code></td><td data-l="メモ">dotfile 派向け</td></tr>
+      <tr><td data-l="場所"><code>package.json</code> の <code>"renovate"</code></td><td data-l="メモ">非推奨。使わない</td></tr>
+    </tbody>
+  </table></div>
+<pre><code>{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["* 0-6 * * 1"],
+  "labels": ["dependencies"]
+}</code></pre>
+  <p class="note"><code>$schema</code> を書くとエディタで補完と検証が効く。</p>
+
+  <h3>プリセット（extends）</h3>
+  <div class="tbl stack"><table>
+    <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td data-l="書き方"><code>config:recommended</code></td><td data-l="意味">標準の推奨セット。Dependency Dashboard・monorepo のグループ化（<code>group:monorepos</code>・<code>group:recommended</code>）・<code>node_modules</code> とテスト用フォルダの除外・Age/Confidence バッジ・置き換え／回避策ルールなど</td></tr>
+      <tr><td data-l="書き方"><code>config:best-practices</code></td><td data-l="意味">recommended ＋ Docker と GitHub Actions のダイジェスト固定・devDependencies の固定・設定の自動移行・npm は公開 3 日後から提案・週 1 のロックファイル更新・放棄パッケージの検出</td></tr>
+      <tr><td data-l="書き方"><code>:dependencyDashboard</code></td><td data-l="意味">先頭が <code>:</code> は <code>default:</code> の略</td></tr>
+      <tr><td data-l="書き方"><code>schedule:weekly</code>・<code>schedule:nonOfficeHours</code></td><td data-l="意味">スケジュールの組み込みプリセット</td></tr>
+      <tr><td data-l="書き方"><code>github&gt;owner/repo</code></td><td data-l="意味">別リポジトリの <code>default.json</code> を読む（組織共通の設定）。<code>github&gt;owner/repo:name</code> なら <code>name.json</code></td></tr>
+      <tr><td data-l="書き方"><code>local&gt;owner/repo</code></td><td data-l="意味">同じプラットフォーム上のリポジトリから読む（GitLab・セルフホストでも使える）</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">プリセットの一部だけ外したいときは <code>"ignorePresets": [":ignoreModulesAndTests"]</code>。</p>
+
+  <h2 id="options">よく使う設定</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="op-amount">PR の量</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="op-merge">automerge</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="op-ver">版の扱い</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="op-scope">対象</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="op-sec">セキュリティ</button>
+  </div>
+  <div class="panel" id="op-amount">
+    <div class="tbl stack"><table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="キー"><code>schedule</code></td><td data-l="既定"><code>["at any time"]</code></td><td data-l="意味">ブランチを作ってよい時間帯。cron の 5 項目で書く（分は <code>*</code> にする）。<code>"before 4am on monday"</code> のような英文の書き方（later）は非推奨</td></tr>
+        <tr><td data-l="キー"><code>timezone</code></td><td data-l="既定">なし（UTC）</td><td data-l="意味"><code>schedule</code> を解釈するタイムゾーン（<code>Asia/Tokyo</code> など）</td></tr>
+        <tr><td data-l="キー"><code>prHourlyLimit</code></td><td data-l="既定"><code>2</code></td><td data-l="意味">1 時間に新しく作る PR の数。<code>0</code> で無制限</td></tr>
+        <tr><td data-l="キー"><code>prConcurrentLimit</code></td><td data-l="既定"><code>10</code></td><td data-l="意味">同時に開いておく PR の数。<code>0</code> で無制限</td></tr>
+        <tr><td data-l="キー"><code>groupName</code></td><td data-l="既定">—</td><td data-l="意味">同じ名前の更新を 1 つのブランチ・PR にまとめる（<code>packageRules</code> の中で使う）</td></tr>
+        <tr><td data-l="キー"><code>separateMajorMinor</code></td><td data-l="既定"><code>true</code></td><td data-l="意味">メジャーとマイナー以下を別の PR にする</td></tr>
+        <tr><td data-l="キー"><code>separateMinorPatch</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">マイナーとパッチも分ける</td></tr>
+        <tr><td data-l="キー"><code>dependencyDashboardApproval</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">Dashboard でチェックを入れるまで PR を作らない（承認制）</td></tr>
+        <tr><td data-l="キー"><code>prCreation</code></td><td data-l="既定"><code>"immediate"</code></td><td data-l="意味"><code>"not-pending"</code>・<code>"status-success"</code> にすると、ブランチの CI が終わる／通るまで PR を作らない</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="op-merge" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="キー"><code>automerge</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">CI が通ったら人の手を介さずマージする</td></tr>
+        <tr><td data-l="キー"><code>automergeType</code></td><td data-l="既定"><code>"pr"</code></td><td data-l="意味"><code>"branch"</code> にすると PR を作らずブランチを直接マージする（通知が減る）。ほかに <code>"pr-comment"</code></td></tr>
+        <tr><td data-l="キー"><code>platformAutomerge</code></td><td data-l="既定"><code>true</code></td><td data-l="意味">GitHub の auto-merge など、プラットフォームの機能でマージする（Renovate の次の実行を待たない）</td></tr>
+        <tr><td data-l="キー"><code>automergeSchedule</code></td><td data-l="既定"><code>["at any time"]</code></td><td data-l="意味">automerge してよい時間帯。<code>schedule</code> とは別に決める。ただし既定の <code>platformAutomerge: true</code> では守られないので、守らせるなら <code>platformAutomerge: false</code> も書く</td></tr>
+        <tr><td data-l="キー"><code>automergeStrategy</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味"><code>squash</code>・<code>rebase</code>・<code>merge-commit</code> などのマージ方法</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">ブランチ保護で必須のチェックがある前提で使う。必須レビューを設定していると、レビューが済むまで automerge されない（Renovate をバイパス対象に入れることもできる）。</p>
+  </div>
+  <div class="panel" id="op-ver" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="キー"><code>rangeStrategy</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味"><code>^1.2.0</code> のような範囲の直し方。<code>pin</code>（固定版にする）・<code>bump</code>（範囲の下限を上げる）・<code>replace</code>・<code>widen</code>・<code>update-lockfile</code>（範囲内ならロックファイルだけ）・<code>in-range-only</code></td></tr>
+        <tr><td data-l="キー"><code>lockFileMaintenance</code></td><td data-l="既定">無効</td><td data-l="意味">ロックファイルを作り直して間接依存もまとめて更新する。<code>{"enabled": true}</code> で有効。既定のスケジュールは月曜の早朝</td></tr>
+        <tr><td data-l="キー"><code>minimumReleaseAge</code></td><td data-l="既定">なし</td><td data-l="意味">公開から指定の期間（<code>"3 days"</code> など）が経つまで提案しない。取り下げ・乗っ取られた版を避ける</td></tr>
+        <tr><td data-l="キー"><code>pinDigests</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">Docker イメージや GitHub Actions をタグでなく SHA256 ダイジェストに固定する</td></tr>
+        <tr><td data-l="キー"><code>rebaseWhen</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味">既存ブランチを作り直す条件。<code>conflicted</code>（衝突時だけ）・<code>behind-base-branch</code>・<code>never</code> など</td></tr>
+        <tr><td data-l="キー"><code>recreateWhen</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味">閉じた PR を作り直すか。<code>always</code>・<code>never</code></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="op-scope" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="キー"><code>enabledManagers</code></td><td data-l="既定">すべて</td><td data-l="意味">書いた manager だけを動かす（例: <code>["npm", "github-actions"]</code>）</td></tr>
+        <tr><td data-l="キー"><code>ignorePaths</code></td><td data-l="既定"><code>node_modules</code>・<code>bower_components</code></td><td data-l="意味">調べないパス（glob）。<code>config:recommended</code> はテスト用フォルダなども足す</td></tr>
+        <tr><td data-l="キー"><code>ignoreDeps</code></td><td data-l="既定"><code>[]</code></td><td data-l="意味">無視する依存の名前（完全一致）。パターンを使うなら <code>packageRules</code> ＋ <code>enabled: false</code></td></tr>
+        <tr><td data-l="キー"><code>baseBranchPatterns</code></td><td data-l="既定"><code>[]</code>（既定ブランチ）</td><td data-l="意味">更新を当てるブランチ。<code>"$default"</code>・<code>/^release\//</code> のように書ける</td></tr>
+        <tr><td data-l="キー"><code>customManagers</code></td><td data-l="既定"><code>[]</code></td><td data-l="意味">対応していないファイル（Makefile・任意の YAML など）から正規表現で版を拾う</td></tr>
+        <tr><td data-l="キー"><code>labels</code>・<code>addLabels</code></td><td data-l="既定"><code>[]</code></td><td data-l="意味">PR のラベル。<code>labels</code> は置き換え、<code>addLabels</code> は追加</td></tr>
+        <tr><td data-l="キー"><code>semanticCommits</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味">コミットに <code>chore(deps):</code> などを付けるか。<code>auto</code> は履歴を見て決める</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="op-sec" hidden>
+    <div class="tbl stack"><table>
+      <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="キー"><code>vulnerabilityAlerts</code></td><td data-l="既定">有効</td><td data-l="意味">GitHub の Dependabot アラートを読み、修正版への PR をスケジュールに関係なく作る（GitHub で、アラートの読み取り権限があるとき）</td></tr>
+        <tr><td data-l="キー"><code>osvVulnerabilityAlerts</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">osv.dev の脆弱性情報から修正 PR を作る。GitHub 以外でも使える</td></tr>
+        <tr><td data-l="キー"><code>minimumReleaseAge</code></td><td data-l="既定">なし</td><td data-l="意味">サプライチェーン攻撃対策。<code>config:best-practices</code> は npm に 3 日を設定する</td></tr>
+        <tr><td data-l="キー"><code>configMigration</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">古い書き方のキーを新しい書き方に直す PR を出す</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <h2 id="rules">packageRules</h2>
+  <p><code>packageRules</code> は「<b>match* で対象を選び、残りのキーで振る舞いを上書きする</b>」ルールの配列。上から順に当てはめ、後のルールが前のルールを上書きする。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>match キー</th><th>選ぶもの</th></tr></thead>
+    <tbody>
+      <tr><td data-l="match キー"><code>matchPackageNames</code></td><td data-l="選ぶもの">パッケージ名（<code>"react"</code>・<code>"@types/**"</code>・<code>"/^eslint/"</code>・<code>"!foo"</code>）</td></tr>
+      <tr><td data-l="match キー"><code>matchDepNames</code></td><td data-l="選ぶもの">ファイルに書かれた依存名（パッケージ名と違うことがある Docker・Go など）</td></tr>
+      <tr><td data-l="match キー"><code>matchUpdateTypes</code></td><td data-l="選ぶもの">更新の種類: <code>major</code>・<code>minor</code>・<code>patch</code>・<code>pin</code>・<code>digest</code>・<code>pinDigest</code>・<code>lockFileMaintenance</code>・<code>rollback</code>・<code>bump</code>・<code>replacement</code></td></tr>
+      <tr><td data-l="match キー"><code>matchDepTypes</code></td><td data-l="選ぶもの"><code>dependencies</code>・<code>devDependencies</code>・<code>peerDependencies</code> など</td></tr>
+      <tr><td data-l="match キー"><code>matchManagers</code></td><td data-l="選ぶもの"><code>npm</code>・<code>dockerfile</code>・<code>github-actions</code>・<code>gomod</code> など</td></tr>
+      <tr><td data-l="match キー"><code>matchDatasources</code></td><td data-l="選ぶもの">版の取得元: <code>npm</code>・<code>docker</code>・<code>go</code>・<code>github-tags</code> など</td></tr>
+      <tr><td data-l="match キー"><code>matchFileNames</code></td><td data-l="選ぶもの">依存が書かれたファイルのパス（<code>"apps/web/**"</code>）。monorepo で場所ごとに変えるとき</td></tr>
+      <tr><td data-l="match キー"><code>matchCurrentVersion</code></td><td data-l="選ぶもの">今の版（<code>"&lt; 1.0.0"</code> など）</td></tr>
+    </tbody>
+  </table></div>
+  <p>名前などの指定は共通の書き方: 普通の文字列は glob（大文字小文字を区別しない）、<code>/…/</code> は正規表現（RE2、<code>/…/i</code> で区別しない）、先頭の <code>!</code> は否定。肯定のパターンが 1 つ以上あればどれかに合うこと、否定のパターンにはどれにも合わないことが条件になる。</p>
+  <p class="note">v38 から <code>matchPackagePatterns</code>・<code>matchPackagePrefixes</code>・<code>excludePackageNames</code> は <code>matchPackageNames</code> に統合された（古い書き方は自動で読み替えられ、<code>configMigration</code> で書き直せる）。</p>
+
+  <h3>よく使う書き方</h3>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="r-group">まとめる</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-auto">自動マージ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-major">メジャーは承認制</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-off">止める・固定する</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-custom">任意のファイル</button>
+  </div>
+  <div class="panel" id="r-group">
+<pre><code>"packageRules": [
+  {
+    "description": "メジャー以外は 1 本の PR にまとめる",
+    "matchUpdateTypes": ["minor", "patch"],
+    "groupName": "all non-major dependencies",
+    "groupSlug": "all-minor-patch"
+  },
+  {
+    "matchPackageNames": ["@types/**"],
+    "groupName": "type definitions"
+  }
+]</code></pre>
+    <p class="note">プリセット <code>group:allNonMajor</code> を <code>extends</code> に足すのと同じ効果（1 つ目のルール）。</p>
+  </div>
+  <div class="panel" id="r-auto" hidden>
+<pre><code>"packageRules": [
+  {
+    "description": "devDependencies のマイナー・パッチは CI が通れば自動マージ",
+    "matchDepTypes": ["devDependencies"],
+    "matchUpdateTypes": ["minor", "patch"],
+    "automerge": true
+  },
+  {
+    "description": "GitHub Actions はブランチのまま自動マージ（PR を作らない）",
+    "matchManagers": ["github-actions"],
+    "matchUpdateTypes": ["minor", "patch", "digest"],
+    "automerge": true,
+    "automergeType": "branch"
+  }
+]</code></pre>
+  </div>
+  <div class="panel" id="r-major" hidden>
+<pre><code>"packageRules": [
+  {
+    "matchUpdateTypes": ["major"],
+    "dependencyDashboardApproval": true,
+    "addLabels": ["major"]
+  }
+]</code></pre>
+    <p class="note">メジャー更新は Dashboard でチェックを入れたときだけ PR になる。</p>
+  </div>
+  <div class="panel" id="r-off" hidden>
+<pre><code>"packageRules": [
+  {
+    "description": "特定のパッケージを更新しない",
+    "matchPackageNames": ["legacy-lib", "/^@internal\\//"],
+    "enabled": false
+  },
+  {
+    "description": "Node 本体は 22 系に留める",
+    "matchPackageNames": ["node"],
+    "allowedVersions": "&lt;23"
+  }
+]</code></pre>
+    <p class="note"><code>allowedVersions</code> は範囲（その版の versioning の書き方）か <code>/正規表現/</code> で書く。</p>
+  </div>
+  <div class="panel" id="r-custom" hidden>
+<pre><code>// Dockerfile の ENV などに書いた版を拾う
+"customManagers": [
+  {
+    "customType": "regex",
+    "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+    "matchStrings": [
+      "# renovate: datasource=(?&lt;datasource&gt;\\S+) depName=(?&lt;depName&gt;\\S+)\\s+ENV \\S+_VERSION=(?&lt;currentValue&gt;\\S+)"
+    ]
+  }
+]</code></pre>
+<pre><code># Dockerfile 側
+# renovate: datasource=github-releases depName=cli/cli
+ENV GH_VERSION=2.60.0</code></pre>
+    <p class="note">名前付きグループ <code>depName</code>・<code>currentValue</code>・<code>datasource</code> を取れれば更新できる。ファイルの指定は <code>managerFilePatterns</code>（旧 <code>fileMatch</code>）。</p>
+  </div>
+
+  <h2 id="debug">確認・デバッグ</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>やること</th><th>方法</th></tr></thead>
+    <tbody>
+      <tr><td data-l="やること">設定の検証</td><td data-l="方法"><code>npx --yes --package renovate -- renovate-config-validator</code>（<code>--strict</code> で古い書き方も警告）。pre-commit のフックもある</td></tr>
+      <tr><td data-l="やること">手元で何が見つかるか見る</td><td data-l="方法"><code>LOG_LEVEL=debug npx renovate --platform=local</code>（今いるフォルダを読み、PR は作らない）</td></tr>
+      <tr><td data-l="やること">実際のリポジトリで試す</td><td data-l="方法"><code>npx renovate --dry-run=full --token=$TOKEN owner/repo</code>。<code>extract</code>・<code>lookup</code>・<code>full</code> の順に深く調べる</td></tr>
+      <tr><td data-l="やること">PR を作り直す</td><td data-l="方法">PR 本文の「rebase/retry」のチェックボックスに印を付ける</td></tr>
+      <tr><td data-l="やること">スケジュール外に今すぐ作る</td><td data-l="方法">Dependency Dashboard の該当行にチェックを入れる</td></tr>
+      <tr><td data-l="やること">App の実行ログを見る</td><td data-l="方法">Mend の Developer Portal（<code>developer.mend.io</code>）でリポジトリごとのジョブログが見られる</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="vs">Dependabot との使い分け</h2>
+  <div class="vs">
+    <div><b>Renovate</b>GitHub・GitLab・Bitbucket・Azure DevOps・Gitea/Forgejo などで動く。対応 manager が多く、プリセットで組織共通の設定を配れる。packageRules・Dashboard・customManagers で細かく決められる。</div>
+    <div><b>Dependabot</b>GitHub に組み込みで、<code>.github/dependabot.yml</code> だけで始められる。Security updates が GitHub のアラートと直結。細かい振り分けや対応する形式は Renovate より少ない。</div>
+  </div>
+  <p class="note">両方を同じエコシステムに有効にすると、同じ更新の PR が二重に来る。Renovate に寄せるなら Dependabot の version updates は止める（security alerts は残して Renovate の <code>vulnerabilityAlerts</code> に読ませてよい）。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>config:recommended に入れればロックファイルの更新もされる</summary><p><code>lockFileMaintenance</code> は既定で無効で、<code>config:recommended</code> にも入っていない。間接依存も上げたいなら <code>{"lockFileMaintenance": {"enabled": true}}</code> か、<code>config:best-practices</code>（<code>:maintainLockFilesWeekly</code> を含む）を使う。</p></details>
+  <details class="myth"><summary>timezone を書かなくても schedule は日本時間で解釈される</summary><p><code>timezone</code> が無いと UTC で解釈される。<code>"timezone": "Asia/Tokyo"</code> を一緒に書く。</p></details>
+  <details class="myth"><summary>schedule を設定すれば automerge もその時間帯だけになる</summary><p><code>schedule</code> はブランチ・PR を作る時間帯。マージの時間帯は <code>automergeSchedule</code> で別に決める（既定は「いつでも」）。既定の <code>platformAutomerge: true</code> では PR 作成時にマージが予約されるので、時間帯を守るには <code>platformAutomerge: false</code> が要る。また、スケジュール外でも既存の PR の更新や脆弱性の修正 PR は動くことがある。</p></details>
+  <details class="myth"><summary>パターンで選ぶには matchPackagePatterns を使う</summary><p>v38 以降は <code>matchPackageNames</code> に glob や <code>/正規表現/</code> をそのまま書く。<code>matchPackagePatterns</code> は古い書き方で、<code>renovate-config-validator --strict</code> が移行を促す。</p></details>
+  <details class="myth"><summary>Renovate の PR を閉じれば、その更新は二度と来ない</summary><p>閉じた PR は「その版を無視する」意味になるが、さらに新しい版が出れば新しい PR が来る。メジャー更新の PR を閉じると、そのメジャー系列全体を無視する。恒久的に止めたいなら <code>packageRules</code> で <code>enabled: false</code> や <code>allowedVersions</code> を書く。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://docs.renovatebot.com/">Renovate Docs</a>・<a href="https://docs.renovatebot.com/configuration-options/">Configuration Options</a>・<a href="https://docs.renovatebot.com/string-pattern-matching/">String Pattern Matching</a></li>
+    <li><a href="https://docs.renovatebot.com/config-presets/">Shareable Config Presets</a>・<a href="https://docs.renovatebot.com/presets-config/">Full Config Presets</a></li>
+    <li><a href="https://docs.renovatebot.com/getting-started/running/">Running Renovate</a>・<a href="https://docs.renovatebot.com/getting-started/installing-onboarding">Installing &amp; Onboarding</a>・<a href="https://github.com/renovatebot/github-action">renovatebot/github-action</a></li>
+    <li><a href="https://docs.renovatebot.com/config-validation">Config Validation</a>・<a href="https://docs.renovatebot.com/release-notes-for-major-versions">Release notes for major versions</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22（Renovate v44 系）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

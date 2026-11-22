@@ -362,6 +362,7 @@ ENV GH_VERSION=2.60.0
 - [Renovate Docs](https://docs.renovatebot.com/) ・ [Configuration Options](https://docs.renovatebot.com/configuration-options/) ・ [String Pattern Matching](https://docs.renovatebot.com/string-pattern-matching/)
 - [Shareable Config Presets](https://docs.renovatebot.com/config-presets/) ・ [Full Config Presets](https://docs.renovatebot.com/presets-config/)
 - [Running Renovate](https://docs.renovatebot.com/getting-started/running/) ・ [Installing & Onboarding](https://docs.renovatebot.com/getting-started/installing-onboarding) ・ [renovatebot/github-action](https://github.com/renovatebot/github-action)
+- [Updating and rebasing branches](https://docs.renovatebot.com/updating-rebasing/)
 - [Config Validation](https://docs.renovatebot.com/config-validation) ・ [Release notes for major versions](https://docs.renovatebot.com/release-notes-for-major-versions)
 
 確認した日付: 2026-11-22（Renovate v44 系）

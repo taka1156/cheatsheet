@@ -42,6 +42,17 @@
   "quizzes": 0
  },
  {
+  "file": "renovate.html",
+  "title": "Renovate 使い方",
+  "desc": "依存関係の更新 PR を自動で作る Renovate の導入方法・renovate.json の書き方・packageRules・automerge・スケジュールをまとめたチートシート",
+  "tags": [
+   "開発ツール",
+   "セキュリティ"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
   "file": "osv-scanner.html",
   "title": "OSV-Scanner 使い方",
   "desc": "OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート",

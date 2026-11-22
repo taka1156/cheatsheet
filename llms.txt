@@ -8,6 +8,7 @@
 - [クラウド・SaaS ステータスページ早見表](https://cs.taka1156.site/md/status-pages.md): AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace・npm などの公式ステータスページと通知の受け方をまとめた障害時の早見表（セキュリティ / 2026-11-22）
 - [Skills CLI（npx skills）使い方](https://cs.taka1156.site/md/skills-cli.md): エージェントスキルを入れる・更新する・消す Vercel Labs の CLI、npx skills のコマンド・オプション・置き場所・ロックファイルをまとめた。（開発ツール / 2026-11-22）
 - [Security Audit Skill 使い方](https://cs.taka1156.site/md/security-audit-skill.md): Cloudflare のコーディングエージェント用スキル security-audit の入れ方・頼み方・6 フェーズ・出力ファイル・判定と重大度をまとめた。（セキュリティ, 開発ツール / 2026-11-22）
+- [Renovate 使い方](https://cs.taka1156.site/md/renovate.md): 依存関係の更新 PR を自動で作る Renovate の導入方法・renovate.json の書き方・packageRules・automerge・スケジュールをまとめたチートシート（開発ツール, セキュリティ / 2026-11-22）
 - [OSV-Scanner 使い方](https://cs.taka1156.site/md/osv-scanner.md): OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート（セキュリティ, 開発ツール / 2026-11-22）
 - [Downdetector 使い方](https://cs.taka1156.site/md/downdetector.md): Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート（セキュリティ / 2026-11-22）
 - [Cloudflare Radar 使い方](https://cs.taka1156.site/md/cloudflare-radar.md): Cloudflare Radar の画面ごとの見どころ、URL Scanner、Radar API、通知、AI からの使い方をセキュリティ調査の目線でまとめたチートシート（Cloudflare, セキュリティ / 2026-11-22）

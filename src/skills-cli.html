@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skills CLI（npx skills）使い方</title>
+<meta name="description" content="エージェントスキルを入れる・更新する・消す Vercel Labs の CLI、npx skills のコマンド・オプション・置き場所・ロックファイルをまとめた。">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Skills CLI（npx skills）使い方</h1>
+  <p class="subtitle">Vercel Labs のエージェントスキル管理 CLI。GitHub などからスキルを入れ、Claude Code・Codex・Cursor など 79 のエージェントに配る（skills v1.9.0・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li><code>npx skills add owner/repo</code> で、リポジトリの SKILL.md を各エージェントのスキル置き場に入れる CLI。</li>
+      <li>実体を <code>.agents/skills/</code> に 1 つ置き、各エージェントのフォルダからはシンボリックリンクで指す。</li>
+      <li>プロジェクトに入れたものは <code>skills-lock.json</code> に記録され、CI で更新や改変を検知できる。</li>
+    </ul>
+  </div>
+
+  <h2 id="model">仕組み</h2>
+  <div class="pipe">
+    <div class="st"><b>ソース</b><span>GitHub・GitLab・Git URL・ローカル・ダウンロード URL</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>.agents/skills/&lt;name&gt;</b><span>実体（canonical）。グローバルなら <code>~/.agents/skills/</code></span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>.claude/skills/ など</b><span>各エージェントのフォルダ。実体へのシンボリックリンク</span></div>
+  </div>
+  <p>Node.js 22.20 以降が要る。インストールせずに <code>npx</code> で使うのがふつう。<code>add</code> は対話式で、入れるスキルとエージェントを選ぶ（入っているエージェントは自動で検出される）。シンボリックリンクが使えない環境では <code>--copy</code> で各フォルダにコピーする。</p>
+
+  <h2 id="commands">コマンド早見表</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cm-add">入れる</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-manage">確認・更新・削除</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-other">探す・試す・作る</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cm-exp">実験的</button>
+  </div>
+  <div class="panel" id="cm-add">
+    <pre><code># 対話式（スキルとエージェントを選ぶ）
+npx skills add vercel-labs/agent-skills
+
+# 中身を一覧するだけ（入れない）
+npx skills add vercel-labs/agent-skills --list
+
+# スキルとエージェントを指定
+npx skills add vercel-labs/agent-skills --skill web-design-guidelines -a claude-code
+
+# ユーザー単位（全プロジェクト）に、確認なしで（CI 向け）
+npx skills add vercel-labs/agent-skills --skill web-design-guidelines -g -a claude-code -y
+
+# リポジトリの全スキルを全エージェントへ
+npx skills add vercel-labs/agent-skills --all
+
+# 同名スキルの衝突を避けて別名で入れる
+npx skills add vercel-labs/agent-skills --skill web-design-guidelines --rename vercel-web-design</code></pre>
+  </div>
+  <div class="panel" id="cm-manage" hidden>
+    <pre><code># 入っているスキルの一覧（ls でもよい）
+npx skills list
+npx skills ls -g
+npx skills ls -a claude-code -a cursor
+
+# 更新があるか・手で書き換えられていないか（あれば終了コード 1）
+npx skills check
+
+# 更新
+npx skills update                 # 全部（スコープを聞かれる）
+npx skills update my-skill        # 名前を指定
+npx skills update -y              # プロジェクト内ならプロジェクト、外ならグローバル
+
+# 削除（rm でもよい）
+npx skills remove my-skill
+npx skills remove owner/repo      # そのソースから入れたものを全部
+npx skills remove --global my-skill
+npx skills remove --all           # ロックに記録されたものを確認なしで全部</code></pre>
+  </div>
+  <div class="panel" id="cm-other" hidden>
+    <pre><code># skills.sh のスキルを探す
+npx skills find                   # 対話式
+npx skills find typescript
+npx skills find react --owner vercel
+
+# 入れずに 1 回だけ使う（プロンプトを出力 / エージェントを起動）
+npx skills use vercel-labs/agent-skills@web-design-guidelines | claude
+npx skills use vercel-labs/agent-skills@web-design-guidelines --agent claude-code
+
+# スキルのひな形を作る
+npx skills init                   # 今のフォルダに SKILL.md
+npx skills init my-skill          # my-skill/SKILL.md</code></pre>
+  </div>
+  <div class="panel" id="cm-exp" hidden>
+    <p><code>experimental_</code> の付くコマンドは予告なく変わる・なくなることがある。</p>
+    <pre><code># npm の依存が同梱しているスキルをプロジェクトに取り込む
+npm install -D skills agent-browser
+npx skills experimental_sync -y
+
+# skills-lock.json からプロジェクトのスキルを復元（skills install でもよい）
+npx skills experimental_install</code></pre>
+    <p class="note"><code>package.json</code> の <code>"prepare": "skills experimental_sync -y"</code> にすると、<code>npm install</code> のたびに同期される。<code>package.json</code> の <code>"skills"</code> 配列（<code>"npm:パッケージ名"</code> や <code>"owner/repo@skill"</code>）でも取り込むスキルを宣言できる。</p>
+  </div>
+
+  <h2 id="sources">add に渡せるソース</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>形式</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td data-l="形式">GitHub の省略形</td><td data-l="例"><code>vercel-labs/agent-skills</code></td></tr>
+      <tr><td data-l="形式">タグ・コミットで固定</td><td data-l="例"><code>owner/repo@v1.2.3 --skill my-skill</code></td></tr>
+      <tr><td data-l="形式">GitHub の URL</td><td data-l="例"><code>https://github.com/vercel-labs/agent-skills</code></td></tr>
+      <tr><td data-l="形式">リポジトリ内の 1 スキル</td><td data-l="例"><code>https://github.com/owner/repo/tree/main/skills/name</code></td></tr>
+      <tr><td data-l="形式">GitLab・Azure Repos</td><td data-l="例"><code>https://gitlab.com/org/repo</code>、<code>https://dev.azure.com/org/project/_git/repo</code></td></tr>
+      <tr><td data-l="形式">任意の Git URL</td><td data-l="例"><code>git@github.com:owner/repo.git</code></td></tr>
+      <tr><td data-l="形式">ローカル</td><td data-l="例"><code>./my-local-skills</code></td></tr>
+      <tr><td data-l="形式">ダウンロード URL</td><td data-l="例">SKILL.md 単体か .zip・.tar・.tgz（既定の上限 10 MiB）</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">非公開リポジトリも同じコマンドで入る。Git の認証情報 → GitHub CLI（<code>gh</code>）→ SSH の順に試す。GitHub API 用に <code>GITHUB_TOKEN</code> / <code>GH_TOKEN</code> を渡すこともできる（必須ではない）。</p>
+
+  <h2 id="options">add のオプション</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td data-l="オプション"><code>-g, --global</code></td><td data-l="意味">プロジェクトではなくユーザーのホームに入れる</td></tr>
+      <tr><td data-l="オプション"><code>-a, --agent &lt;agents...&gt;</code></td><td data-l="意味">入れるエージェント（<code>claude-code</code>・<code>codex</code> など。<code>'*'</code> で全部）</td></tr>
+      <tr><td data-l="オプション"><code>-s, --skill &lt;skills...&gt;</code></td><td data-l="意味">入れるスキル名（<code>'*'</code> で全部。空白を含む名前は引用符で囲む）</td></tr>
+      <tr><td data-l="オプション"><code>-l, --list</code></td><td data-l="意味">入れずに一覧だけ出す</td></tr>
+      <tr><td data-l="オプション"><code>--copy</code></td><td data-l="意味">シンボリックリンクではなくコピーする</td></tr>
+      <tr><td data-l="オプション"><code>--rename &lt;name&gt;</code></td><td data-l="意味">選んだ 1 つのスキルを別名で入れる（フォルダ名・ロック・SKILL.md の <code>name</code> が変わる）</td></tr>
+      <tr><td data-l="オプション"><code>-y, --yes</code></td><td data-l="意味">確認をすべて飛ばす</td></tr>
+      <tr><td data-l="オプション"><code>--all</code></td><td data-l="意味">全スキルを全エージェントに、確認なしで</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="paths">主なエージェントの置き場所</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>エージェント</th><th><code>-a</code> の値</th><th>プロジェクト</th><th>グローバル（<code>-g</code>）</th></tr></thead>
+    <tbody>
+      <tr><td data-l="エージェント">Claude Code</td><td data-l="-a"><code>claude-code</code></td><td data-l="プロジェクト"><code>.claude/skills/</code></td><td data-l="グローバル"><code>~/.claude/skills/</code></td></tr>
+      <tr><td data-l="エージェント">Codex</td><td data-l="-a"><code>codex</code></td><td data-l="プロジェクト"><code>.agents/skills/</code></td><td data-l="グローバル"><code>~/.agents/skills/</code></td></tr>
+      <tr><td data-l="エージェント">Cursor</td><td data-l="-a"><code>cursor</code></td><td data-l="プロジェクト"><code>.agents/skills/</code></td><td data-l="グローバル"><code>~/.cursor/skills/</code></td></tr>
+      <tr><td data-l="エージェント">OpenCode</td><td data-l="-a"><code>opencode</code></td><td data-l="プロジェクト"><code>.agents/skills/</code></td><td data-l="グローバル"><code>~/.config/opencode/skills/</code></td></tr>
+      <tr><td data-l="エージェント">Gemini CLI</td><td data-l="-a"><code>gemini-cli</code></td><td data-l="プロジェクト"><code>.agents/skills/</code></td><td data-l="グローバル"><code>~/.gemini/skills/</code></td></tr>
+      <tr><td data-l="エージェント">GitHub Copilot</td><td data-l="-a"><code>github-copilot</code></td><td data-l="プロジェクト"><code>.agents/skills/</code></td><td data-l="グローバル"><code>~/.copilot/skills/</code></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">プロジェクトの置き場所が <code>.agents/skills/</code> のエージェントは、実体をそのまま読む。ほかのエージェントの一覧は公式の <a href="https://github.com/vercel-labs/skills/blob/main/docs/agents.md">docs/agents.md</a>。</p>
+
+  <h2 id="lock">skills-lock.json と CI</h2>
+  <p>プロジェクトに入れたスキルは <code>skills-lock.json</code>（version 2）に、ソース・Git のコミット・中身のハッシュ（<code>computedHash</code>）と一緒に記録される。コミットしてチームで共有する。グローバルのロックは <code>~/.agents/.skill-lock.json</code>（<code>XDG_STATE_HOME</code> があれば <code>$XDG_STATE_HOME/skills/.skill-lock.json</code>）。</p>
+  <div class="tbl stack"><table>
+    <thead><tr><th>使い方</th><th>コマンド</th><th>動き</th></tr></thead>
+    <tbody>
+      <tr><td data-l="使い方">状態を見る</td><td data-l="コマンド"><code>skills list</code></td><td data-l="動き">ロックと比べて <code>modified</code>（手で変えた）・<code>untracked</code>（ロックにない）・<code>Missing</code>（ロックにあるが無い）を表示。<code>--json</code> で機械向け</td></tr>
+      <tr><td data-l="使い方">CI で止める</td><td data-l="コマンド"><code>skills check</code></td><td data-l="動き">更新か手元の改変があれば終了コード 1</td></tr>
+      <tr><td data-l="使い方">ロックどおりに戻す</td><td data-l="コマンド"><code>skills install --frozen-lockfile</code></td><td data-l="動き">記録したコミットを取り直し、ハッシュが合わなければ失敗。CI では <code>--frozen-lockfile</code> が既定</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="create">スキルを作る</h2>
+  <p><code>npx skills init my-skill</code> でひな形ができる。必須は frontmatter の <code>name</code>（英小文字とハイフン）と <code>description</code> の 2 つ。どちらかが欠けると「No skills found」になる。</p>
+  <pre><code>---
+name: my-skill
+description: What this skill does and when to use it
+---
+
+# My Skill
+
+Instructions for the agent to follow when this skill is activated.</code></pre>
+  <p>CLI がリポジトリで探す場所は、ルートの <code>SKILL.md</code>、<code>skills/</code>（<code>skills/&lt;分類&gt;/&lt;name&gt;/</code> のように 3 段まで）、<code>.claude/skills/</code> などの各エージェントのフォルダ。それ以外の場所も探すなら <code>--full-depth</code>。<code>metadata.internal: true</code> を付けたスキルは、<code>INSTALL_INTERNAL_SKILLS=1</code> のときだけ表示・インストールされる。</p>
+
+  <h2 id="env">環境変数とテレメトリ</h2>
+  <div class="tbl stack"><table>
+    <thead><tr><th>変数</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td data-l="変数"><code>DISABLE_TELEMETRY</code> / <code>DO_NOT_TRACK</code></td><td data-l="意味">匿名の利用統計と、セキュリティ監査の問い合わせを止める</td></tr>
+      <tr><td data-l="変数"><code>GITHUB_TOKEN</code> / <code>GH_TOKEN</code></td><td data-l="意味">GitHub API に使うトークン（任意）</td></tr>
+      <tr><td data-l="変数"><code>INSTALL_INTERNAL_SKILLS</code></td><td data-l="意味"><code>1</code> か <code>true</code> で internal のスキルも出す</td></tr>
+      <tr><td data-l="変数"><code>SKILLS_DOWNLOAD_MAX_BYTES</code> など</td><td data-l="意味">ダウンロード URL の上限（展開後のサイズ・ファイル数も同様に変えられる）</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">公開と確認できた GitHub リポジトリから入れるときは、<code>add</code> が skills.sh の監査結果（Gen・Socket・Snyk のリスク評価）を表に出す。参考にはなるが、入れる前に SKILL.md を自分で読むのが基本。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>npx skills add は Vercel のスキルしか入れられない</summary><p>GitHub・GitLab・Azure Repos・任意の Git URL・ローカルのフォルダ・ダウンロード URL から入れられる。非公開リポジトリも、手元の Git や GitHub CLI の認証で入る。Cloudflare の <a href="security-audit-skill.html">Security Audit Skill</a> もこの CLI で入れる。</p></details>
+  <details class="myth"><summary>skills.sh にあるスキルや、npx skills add で入れたスキルは安全だと保証されている</summary><p>CLI はソースのファイルをそのままコピー・リンクするだけで、中身の安全性は保証しない。<code>add</code> で出る Gen・Socket・Snyk の監査結果も第三者による参考情報で、公開と確認できた GitHub リポジトリにしか出ない。</p><p>スキルの SKILL.md はエージェントへの指示としてそのまま読み込まれるので、悪意のある指示を仕込めばプロンプトインジェクションになる。同梱のスクリプトもエージェントが実行しうる。入れる前に SKILL.md と同梱ファイルを読み、信頼できるソースをタグやコミットで固定して入れる。</p></details>
+  <details class="myth"><summary>remove --all を使うと、手で書いたスキルまで消える</summary><p><code>--all</code>（と <code>--skill '*'</code>）が消すのは、ロックファイルに記録されたものだけ。手で置いたスキルは「skipped」と表示されて残る。消したいなら名前を指定する。</p></details>
+  <details class="myth"><summary>skills check は更新を表示するだけで、CI では使えない</summary><p>更新があるか、入れた中身が手で変えられていると終了コード 1 で終わる。そのまま CI のゲートに使える。</p></details>
+  <details class="myth"><summary>グローバルに入れると、全プロジェクトのロックファイルに記録される</summary><p><code>-g</code> で入れたものはユーザー単位のロック（既定は <code>~/.agents/.skill-lock.json</code>）に入り、プロジェクトの <code>skills-lock.json</code> には載らない。チームで揃えたいスキルはプロジェクトに入れる。</p></details>
+
+  <h2 id="ref">出典</h2>
+  <ul>
+    <li><a href="https://github.com/vercel-labs/skills">vercel-labs/skills</a>（README.md・docs/commands.md・docs/agents.md・docs/creating-skills.md・docs/troubleshooting.md。v1.9.0、コミット 57217cf）</li>
+    <li><a href="https://skills.sh">skills.sh</a>（スキルのディレクトリ）</li>
+  </ul>
+  <p class="note">確認日: 2026-11-22</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

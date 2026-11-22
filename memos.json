@@ -11,6 +11,16 @@
   "quizzes": 0
  },
  {
+  "file": "status-pages.html",
+  "title": "クラウド・SaaS ステータスページ早見表",
+  "desc": "AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表",
+  "tags": [
+   "セキュリティ"
+  ],
+  "date": "2026-11-22",
+  "quizzes": 0
+ },
+ {
   "file": "osv-scanner.html",
   "title": "OSV-Scanner 使い方",
   "desc": "OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート",

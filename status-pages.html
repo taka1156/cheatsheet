@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クラウド・SaaS ステータスページ早見表</title>
+<meta name="description" content="AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表">
+<meta name="memo:tags" content="セキュリティ">
+<meta name="memo:date" content="2026-11-22">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.note { color: var(--fg-2); font-size: 0.85rem; }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child, .panel > h3:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="クラウド・SaaS ステータスページ早見表">
+<meta property="og:description" content="AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表">
+<meta property="og:url" content="https://cs.taka1156.site/status-pages.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>クラウド・SaaS ステータスページ早見表</h1>
+  <p class="subtitle">障害かも？と思ったときに開く公式ステータスページ・自分の環境向けのヘルス画面・通知の受け方</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>各社の公式ステータスページと、ログインして見る「自分の環境向け」のヘルス画面のリンク集。</li>
+      <li>Azure・M365・GCP の公開ページは大規模障害が中心で、個別の影響はアカウント向けの画面に出る。</li>
+      <li>障害が起きてから探すのでは遅いので、RSS・アラート・Slack 通知を平時に設定しておく。</li>
+    </ul>
+  </div>
+
+  <h2 id="links">まず開くページ</h2>
+  <p class="note">「公開」はログイン不要。「自分の環境向け」はアカウント・テナントへのログインと権限が必要。</p>
+  <div class="tbl stack">
+    <table>
+      <thead><tr><th>サービス</th><th>公開ステータス</th><th>自分の環境向け</th></tr></thead>
+      <tbody>
+        <tr><td data-l="サービス">AWS</td><td data-l="公開"><a href="https://health.aws.amazon.com/health/status">AWS Health Dashboard – Service health</a></td><td data-l="自分の環境向け">AWS Health Dashboard – Your account health（コンソール。公開ページから「Open your account health」）</td></tr>
+        <tr><td data-l="サービス">Google Cloud</td><td data-l="公開"><a href="https://status.cloud.google.com/">Google Cloud Service Health</a></td><td data-l="自分の環境向け">Personalized Service Health（コンソールの Service Health ダッシュボード）</td></tr>
+        <tr><td data-l="サービス">Azure</td><td data-l="公開"><a href="https://azure.status.microsoft/">Azure status</a></td><td data-l="自分の環境向け">Azure portal の Service Health（と Resource Health）</td></tr>
+        <tr><td data-l="サービス">Cloudflare</td><td data-l="公開"><a href="https://www.cloudflarestatus.com/">Cloudflare Status</a>（拠点ごとは <a href="https://www.cloudflarestatus.com/locations">/locations</a>）</td><td data-l="自分の環境向け">なし（ダッシュボードの Notifications で個別のアラートは設定できる）</td></tr>
+        <tr><td data-l="サービス">GitHub</td><td data-l="公開"><a href="https://www.githubstatus.com/">GitHub Status</a></td><td data-l="自分の環境向け">なし</td></tr>
+        <tr><td data-l="サービス">Slack</td><td data-l="公開"><a href="https://slack-status.com/">Slack System Status</a></td><td data-l="自分の環境向け">なし</td></tr>
+        <tr><td data-l="サービス">Microsoft 365</td><td data-l="公開"><a href="https://status.cloud.microsoft/">status.cloud.microsoft</a>（と X の @MSFT365Status）</td><td data-l="自分の環境向け"><a href="https://admin.microsoft.com/">Microsoft 365 管理センター</a> → 正常性 (Health) → サービス正常性 (Service health)</td></tr>
+        <tr><td data-l="サービス">Google Workspace</td><td data-l="公開"><a href="https://www.google.com/appsstatus/dashboard/">Google Workspace Status Dashboard</a></td><td data-l="自分の環境向け">管理コンソール → ルール → Apps outage alert（アラートセンター・メール）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="flow">障害かも？の確かめ方</h2>
+  <ol class="steps">
+    <li><b>自分の側を切り分ける</b>別の回線・別の端末・別のリージョンで再現するか。自分のデプロイや設定変更の直後なら、まずそちらを疑う。</li>
+    <li><b>自分の環境向けの画面を見る</b>AWS・GCP・Azure・M365 は、影響を受けた顧客だけに出る通知がある。公開ページが緑でも、ここに出ていることがある。</li>
+    <li><b>公開ステータスページを見る</b>上の表から。アカウント向けの画面やコンソール自体が開けないときの「予備の窓口」でもある。</li>
+    <li><b>依存先も見る</b>自社サービスの多くは Cloudflare・AWS（特に us-east-1）・GitHub などに乗っている。直接使っていないつもりのサービスが原因のこともある。</li>
+    <li><b>公式発表がまだなら外部の情報と突き合わせる</b><a href="downdetector.html">Downdetector</a>（利用者の報告）や <a href="cloudflare-radar.html">Cloudflare Radar</a>（通信の観測）で、自分だけか全体かを確かめる。</li>
+  </ol>
+
+  <h2 id="notify">通知を受ける・機械で読む</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="p-cloud">AWS・GCP・Azure</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-cf">Cloudflare・GitHub・Slack</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-office">M365・Workspace</button>
+  </div>
+
+  <div class="panel card" id="p-cloud">
+    <h3>AWS</h3>
+    <ul>
+      <li>公開ページの各イベントの横の RSS で、サービス×リージョンごとに購読できる（例: <code>https://status.aws.amazon.com/rss/ec2-us-east-1.rss</code>）。</li>
+      <li>RSS の形式は変わることがあると公式が注意している。機械で取り込むなら Amazon EventBridge で AWS Health のイベントを受ける。</li>
+      <li>公開イベント（アカウントに依らないもの）は AWS User Notifications の管理通知には来ない。EventBridge のルールか、自分で設定する通知で受ける。</li>
+    </ul>
+    <h3>Google Cloud</h3>
+    <ul>
+      <li>公開ページの RSS: <code>https://status.cloud.google.com/en/feed.atom</code>。ページ下部から JSON の履歴も取れる。プログラムで扱うときは表示名ではなく製品 ID で判定する。</li>
+      <li>Personalized Service Health は Service Health API を有効にして使う。アラートは Cloud Monitoring の通知チャネル（メール・Slack・PagerDuty・Pub/Sub・Webhook など）に送れる。</li>
+    </ul>
+    <h3>Azure</h3>
+    <ul>
+      <li>公開ページはページ上部の RSS で購読できる。履歴ページでは過去の障害の事後レビュー (PIR) が読める。</li>
+      <li>本命は Service Health アラート（Azure Monitor のアクショングループでメール・SMS・Webhook など）。公開ページには自動通知の仕組みがない。</li>
+    </ul>
+  </div>
+
+  <div class="panel card" id="p-cf" hidden>
+    <h3>Cloudflare</h3>
+    <ul>
+      <li>2026-08 にステータスページが作り直され、障害とメンテナンスが別のフィードになった（RSS・Atom）。</li>
+      <li>ステータスページの通知はメール・Webhook・Slack・Discord・Google Chat で受けられる。Cloudflare 本体とは別の基盤から送られるので、Cloudflare が落ちていても届く。</li>
+      <li>どのページも <code>Accept: text/markdown</code> を付けると Markdown で返る（AI エージェント向け）。</li>
+    </ul>
+<pre><code>https://www.cloudflarestatus.com/api/v3/incidents.rss
+https://www.cloudflarestatus.com/api/v3/maintenance.rss
+curl -H "Accept: text/markdown" https://www.cloudflarestatus.com/locations</code></pre>
+    <h3>GitHub</h3>
+    <ul>
+      <li>Atlassian Statuspage で動いていて、Statuspage 共通の JSON API と履歴フィードがある。ページの「Subscribe to updates」でメールなども受けられる。</li>
+    </ul>
+<pre><code>curl https://www.githubstatus.com/api/v2/summary.json   # 全体と各コンポーネント
+curl https://www.githubstatus.com/api/v2/status.json    # 全体の状態だけ
+https://www.githubstatus.com/history.rss</code></pre>
+    <h3>Slack</h3>
+    <ul>
+      <li>認証なしの Status API と RSS・Atom がある。ページの「Subscribe to updates」でメール通知も受けられる。</li>
+    </ul>
+<pre><code>curl https://slack-status.com/api/v2.0.0/current   # 進行中の障害
+curl https://slack-status.com/api/v2.0.0/history   # 過去の障害
+https://slack-status.com/feed/rss</code></pre>
+    <p class="note">Slack の障害時は Slack に流す通知も届かないことがある。Slack の状態だけはメールなど別の経路でも受けておく。</p>
+  </div>
+
+  <div class="panel card" id="p-office" hidden>
+    <h3>Microsoft 365</h3>
+    <ul>
+      <li>個別の障害は管理センターのサービス正常性に出る。計画メンテナンスやセキュリティ関連はメッセージセンターに出る。</li>
+      <li>Microsoft 365 Admin モバイルアプリでプッシュ通知を受けられる。</li>
+      <li>公開ページ <code>status.cloud.microsoft</code> は、管理センターやサービス正常性そのものが開けない障害のときに使われる。サインインの障害（Entra ID）は Azure status 側も見る。</li>
+    </ul>
+    <h3>Google Workspace</h3>
+    <ul>
+      <li>ダッシュボード下部の「RSS Feed」「JSON History」から購読・取り込みができる。Google は Gmail 自体が止まっても気づけるよう RSS の購読を勧めている。</li>
+      <li>管理コンソールの Apps outage alert（システム定義のルール）でアラートセンターやメールに通知できるが、RSS より遅れることがある。</li>
+      <li>履歴は過去 5 年分まで見られる（「View history」）。</li>
+    </ul>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>公開ステータスページが緑なら、クラウド側に問題はない</summary><p>Azure・Microsoft 365 は、影響を受けた顧客にだけ届く通知を主な連絡手段にしていて、公開ページに載るのは広い範囲の障害などに限られる。AWS・GCP も、個別の影響はアカウント向けの画面に出る。公開ページだけで判断しない。</p></details>
+  <details class="myth"><summary>障害が起きたらステータスページを見に行けば十分</summary><p>反映まで時間がかかることがあり、ページやコンソール自体が重くなることもある。平時に RSS・アラート・Webhook を設定し、障害を起こしているサービスとは別の経路（Slack の障害ならメールなど）で受けておく。</p></details>
+  <details class="myth"><summary>AWS の状態は RSS をスクレイピングすれば確実に取れる</summary><p>AWS は RSS の形式が変わりうると明記している。システムに組み込むなら EventBridge で AWS Health のイベントを受ける。</p></details>
+
+  <h2 id="sources">出典</h2>
+  <ul>
+    <li><a href="https://docs.aws.amazon.com/health/latest/ug/aws-health-dashboard-status.html">AWS Health Dashboard（AWS Health ユーザーガイド）</a></li>
+    <li><a href="https://docs.cloud.google.com/support/docs/dashboard">Use Google Cloud Service Health as a fallback</a>・<a href="https://docs.cloud.google.com/service-health/docs/overview">Personalized Service Health overview</a></li>
+    <li><a href="https://learn.microsoft.com/azure/service-health/azure-status-overview">Azure status overview</a></li>
+    <li><a href="https://developers.cloudflare.com/changelog/post/2026-08-11-new-status-page/">New Cloudflare Status page（Cloudflare changelog）</a></li>
+    <li><a href="https://docs.slack.dev/reference/slack-status-api">Slack Status API</a></li>
+    <li><a href="https://learn.microsoft.com/microsoft-365/enterprise/view-service-health">How to check Microsoft 365 service health</a></li>
+    <li><a href="https://support.google.com/a/answer/139569">Check the status of a Google Workspace service</a></li>
+  </ul>
+  <p class="note">確認した日付: 2026-11-22。GitHub の API は Statuspage の共通仕様と第三者の資料による。URL は変わることがあるので、開けないときは各社のドキュメントで確かめる。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

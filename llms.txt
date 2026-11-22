@@ -5,6 +5,7 @@
 ## Memos
 
 - [Trivy 使い方](https://cs.taka1156.site/md/trivy.md): Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート（セキュリティ, 開発ツール / 2026-11-22）
+- [クラウド・SaaS ステータスページ早見表](https://cs.taka1156.site/md/status-pages.md): AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表（セキュリティ / 2026-11-22）
 - [OSV-Scanner 使い方](https://cs.taka1156.site/md/osv-scanner.md): OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート（セキュリティ, 開発ツール / 2026-11-22）
 - [Downdetector 使い方](https://cs.taka1156.site/md/downdetector.md): Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート（セキュリティ / 2026-11-22）
 - [Cloudflare Radar 使い方](https://cs.taka1156.site/md/cloudflare-radar.md): Cloudflare Radar の画面ごとの見どころ、URL Scanner、Radar API、通知、AI からの使い方をセキュリティ調査の目線でまとめたチートシート（Cloudflare, セキュリティ / 2026-11-22）

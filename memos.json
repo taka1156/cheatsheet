@@ -1,5 +1,15 @@
 [
  {
+  "file": "oxc-migration.html",
+  "title": "ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）",
+  "desc": "ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-23",
+  "quizzes": 0
+ },
+ {
   "file": "trivy.html",
   "title": "Trivy 使い方",
   "desc": "Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート",

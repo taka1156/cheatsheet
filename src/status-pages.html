@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>クラウド・SaaS ステータスページ早見表</title>
-<meta name="description" content="AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace の公式ステータスページと通知の受け方をまとめた障害時の早見表">
+<meta name="description" content="AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace・npm などの公式ステータスページと通知の受け方をまとめた障害時の早見表">
 <meta name="memo:tags" content="セキュリティ">
 <meta name="memo:date" content="2026-11-22">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
@@ -163,6 +163,9 @@ footer#memo-backlink a:hover { color: var(--accent); }
         <tr><td data-l="サービス">Slack</td><td data-l="公開"><a href="https://slack-status.com/">Slack System Status</a></td><td data-l="自分の環境向け">なし</td></tr>
         <tr><td data-l="サービス">Microsoft 365</td><td data-l="公開"><a href="https://status.cloud.microsoft/">status.cloud.microsoft</a>（と X の @MSFT365Status）</td><td data-l="自分の環境向け"><a href="https://admin.microsoft.com/">Microsoft 365 管理センター</a> → 正常性 (Health) → サービス正常性 (Service health)</td></tr>
         <tr><td data-l="サービス">Google Workspace</td><td data-l="公開"><a href="https://www.google.com/appsstatus/dashboard/">Google Workspace Status Dashboard</a></td><td data-l="自分の環境向け">管理コンソール → ルール → Apps outage alert（アラートセンター・メール）</td></tr>
+        <tr><td data-l="サービス">npm</td><td data-l="公開"><a href="https://status.npmjs.org/">npm Status</a></td><td data-l="自分の環境向け">なし</td></tr>
+        <tr><td data-l="サービス">Docker Hub</td><td data-l="公開"><a href="https://www.dockerstatus.com/">Docker System Status</a></td><td data-l="自分の環境向け">なし</td></tr>
+        <tr><td data-l="サービス">Vercel</td><td data-l="公開"><a href="https://www.vercel-status.com/">Vercel Status</a></td><td data-l="自分の環境向け">なし</td></tr>
       </tbody>
     </table>
   </div>
@@ -198,7 +201,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <h3>Azure</h3>
     <ul>
       <li>公開ページはページ上部の RSS で購読できる。履歴ページでは過去の障害の事後レビュー (PIR) が読める。</li>
-      <li>本命は Service Health アラート（Azure Monitor のアクショングループでメール・SMS・Webhook など）。公開ページには自動通知の仕組みがない。</li>
+      <li>本命は Service Health アラート（Azure Monitor のアクショングループでメール・SMS・Webhook など）。公開ページにはメールなどで知らせる機能がない（RSS を自分で購読するだけ）。</li>
     </ul>
   </div>
 
@@ -252,14 +255,14 @@ https://slack-status.com/feed/rss</code></pre>
   <h2 id="sources">出典</h2>
   <ul>
     <li><a href="https://docs.aws.amazon.com/health/latest/ug/aws-health-dashboard-status.html">AWS Health Dashboard（AWS Health ユーザーガイド）</a></li>
-    <li><a href="https://docs.cloud.google.com/support/docs/dashboard">Use Google Cloud Service Health as a fallback</a>・<a href="https://docs.cloud.google.com/service-health/docs/overview">Personalized Service Health overview</a></li>
-    <li><a href="https://learn.microsoft.com/azure/service-health/azure-status-overview">Azure status overview</a></li>
+    <li><a href="https://docs.cloud.google.com/support/docs/dashboard">Use Google Cloud Service Health as a fallback</a>・<a href="https://docs.cloud.google.com/service-health/docs/overview">Personalized Service Health overview</a>・<a href="https://docs.cloud.google.com/service-health/docs/manage-access">Manage Personalized Service Health access</a>・<a href="https://docs.cloud.google.com/service-health/docs/configure-alerts-dashboard">Configure alerts in the Service Health dashboard</a></li>
+    <li><a href="https://learn.microsoft.com/azure/service-health/azure-status-overview">Azure status overview</a>・<a href="https://azure.microsoft.com/en-us/blog/when-to-use-azure-service-health-versus-the-status-page/">When to use Azure Service Health versus the status page</a></li>
     <li><a href="https://developers.cloudflare.com/changelog/post/2026-08-11-new-status-page/">New Cloudflare Status page（Cloudflare changelog）</a></li>
     <li><a href="https://docs.slack.dev/reference/slack-status-api">Slack Status API</a></li>
     <li><a href="https://learn.microsoft.com/microsoft-365/enterprise/view-service-health">How to check Microsoft 365 service health</a></li>
-    <li><a href="https://support.google.com/a/answer/139569">Check the status of a Google Workspace service</a></li>
+    <li><a href="https://knowledge.workspace.google.com/admin/reports/check-the-status-of-a-google-workspace-service">Check the status of a Google Workspace service</a></li>
   </ul>
-  <p class="note">確認した日付: 2026-11-22。GitHub の API は Statuspage の共通仕様と第三者の資料による。URL は変わることがあるので、開けないときは各社のドキュメントで確かめる。</p>
+  <p class="note">確認した日付: 2026-11-22。GitHub の API は Statuspage の共通仕様と第三者の資料による。npm・Docker Hub・Vercel の URL は第三者の監視サービスの記載で確かめた。URL は変わることがあるので、開けないときは各社のドキュメントで確かめる。</p>
 
   <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
 </div>

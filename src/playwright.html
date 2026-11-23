@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright 使い方</title>
+<meta name="description" content="Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child code { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+  td:first-child code { white-space: normal; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Playwright 使い方</h1>
+  <p class="subtitle">Chromium・Firefox・WebKit を同じ API で動かす E2E テストフレームワーク Playwright Test のチートシート（v1.65 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Microsoft 製の E2E テストフレームワークで、<code>@playwright/test</code> がテストランナーとブラウザ操作をまとめて提供する。</li>
+      <li>操作は要素が押せる状態になるまで自動で待ち、<code>await expect(locator)</code> は条件を満たすまで再試行する。</li>
+      <li>要素は <code>getByRole</code> など見た目に近いロケーターで探し、固定の待ち時間や CSS の細かい指定に頼らない。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">使う流れ</h2>
+  <div class="pipe">
+    <div class="st"><b>導入</b><span><code>npm init playwright@latest</code> で設定・サンプル・ブラウザを入れる</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>書く</b><span><code>tests/*.spec.ts</code> に書く。<code>codegen</code> で操作を記録して下書きにしてもよい</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>実行</b><span><code>npx playwright test</code>。既定はヘッドレス・並列</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>調べる</b><span>HTML レポート・トレース・UI モードで失敗した操作を 1 つずつ見る</span></div>
+  </div>
+  <p class="note">要件（v1.65）: Node.js 22・24・26 の最新版。Node.js 20 は v1.65 からテストされていない。OS は Windows 11 以上・macOS 14 以上・Debian 12/13・Ubuntu 22.04/24.04/26.04。</p>
+
+  <h2 id="setup">導入</h2>
+  <ol class="steps">
+    <li><b>プロジェクトに入れる</b><code>npm init playwright@latest</code>。TypeScript か JavaScript か、テストの置き場所、GitHub Actions のワークフローを作るか、ブラウザを入れるかを聞かれる</li>
+    <li><b>できるもの</b><code>playwright.config.ts</code>・<code>tests/example.spec.ts</code>（と選べば <code>.github/workflows/playwright.yml</code>）。<code>package.json</code> の devDependencies に <code>@playwright/test</code> が入る</li>
+    <li><b>ブラウザを入れる</b>パッケージだけではブラウザは入らない。clone した直後や CI では <code>npx playwright install --with-deps</code> を実行する</li>
+    <li><b>上げる</b><code>npm install -D @playwright/test@latest</code> のあと、もう一度 <code>npx playwright install --with-deps</code>（版ごとに対応するブラウザの版が違う）</li>
+  </ol>
+
+  <h2 id="cli">CLI</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cli-run">実行・絞り込み</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cli-debug">デバッグ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cli-ci">CI・スナップショット</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cli-manage">導入・管理</button>
+  </div>
+  <div class="panel" id="cli-run">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
+        <tbody>
+          <tr><td><code>npx playwright test</code></td><td data-l="やること">全テストを全プロジェクト（ブラウザ）で実行</td></tr>
+          <tr><td><code>npx playwright test tests/login.spec.ts</code></td><td data-l="やること">ファイルを指定。引数はファイルパスに対する正規表現なので <code>login</code> だけでもよい</td></tr>
+          <tr><td><code>npx playwright test login.spec.ts:42</code></td><td data-l="やること">その行のテストだけ</td></tr>
+          <tr><td><code>--project=chromium</code></td><td data-l="やること">プロジェクトを指定（複数・<code>*</code> 可）</td></tr>
+          <tr><td><code>-g "@smoke"</code> / <code>-G "@slow"</code></td><td data-l="やること">タイトル（タグを含む）が一致するものだけ／一致しないものだけ</td></tr>
+          <tr><td><code>--headed</code></td><td data-l="やること">ブラウザの画面を出して実行</td></tr>
+          <tr><td><code>-j 4</code>（<code>--workers</code>）</td><td data-l="やること">並列数。<code>50%</code> のように CPU コア数の割合でも書ける（既定 50%）</td></tr>
+          <tr><td><code>--last-failed</code></td><td data-l="やること">前回失敗したテストだけ</td></tr>
+          <tr><td><code>--only-changed=main</code></td><td data-l="やること"><code>main</code> から変わったテストファイルだけ（値なしなら未コミットの変更）</td></tr>
+          <tr><td><code>--repeat-each 10</code></td><td data-l="やること">各テストを 10 回。不安定なテスト探しに</td></tr>
+          <tr><td><code>--shuffle [seed]</code></td><td data-l="やること">順番をランダムに（v1.64〜）。シードが表示されるので再現できる</td></tr>
+          <tr><td><code>-x</code>（<code>--max-failures=N</code>）</td><td data-l="やること">最初の失敗（N 件）で止める</td></tr>
+          <tr><td><code>--list</code></td><td data-l="やること">実行せずにテストの一覧だけ出す</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cli-debug" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
+        <tbody>
+          <tr><td><code>npx playwright test --ui</code></td><td data-l="やること">UI モード。ウォッチ・ステップごとの画面・DOM を時間をさかのぼって見られる</td></tr>
+          <tr><td><code>npx playwright test --debug</code></td><td data-l="やること">Inspector で 1 ステップずつ実行。<code>--headed --workers=1 --timeout=0</code> などが付く</td></tr>
+          <tr><td><code>--trace on</code></td><td data-l="やること">設定に関係なくトレースを取る</td></tr>
+          <tr><td><code>npx playwright show-report</code></td><td data-l="やること">前回の HTML レポートを開く（失敗があるときは自動で開く）</td></tr>
+          <tr><td><code>npx playwright show-trace trace.zip</code></td><td data-l="やること">トレースビューアーで開く。<a href="https://trace.playwright.dev">trace.playwright.dev</a> にドロップしてもよい</td></tr>
+          <tr><td><code>npx playwright codegen localhost:3000</code></td><td data-l="やること">ブラウザを操作してテストコードを記録。詳しくは<a href="#codegen">下の codegen の節</a></td></tr>
+          <tr><td><code>await page.pause()</code></td><td data-l="やること">テストの途中に書くと、そこで止まって Inspector が開く（headed 時）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cli-ci" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
+        <tbody>
+          <tr><td><code>--forbid-only</code></td><td data-l="やること"><code>test.only</code> が残っていたら失敗にする</td></tr>
+          <tr><td><code>--retries=2</code></td><td data-l="やること">失敗したテストを最大 2 回やり直す。やり直しで通ったものは flaky と表示</td></tr>
+          <tr><td><code>--fail-on-flaky-tests</code></td><td data-l="やること">flaky が 1 件でもあれば失敗にする</td></tr>
+          <tr><td><code>--shard=1/4</code></td><td data-l="やること">4 台に分けたうちの 1 番目だけ実行。reporter を <code>blob</code> にして集める</td></tr>
+          <tr><td><code>npx playwright merge-reports --reporter html ./all-blob-reports</code></td><td data-l="やること">シャードごとの blob レポートを 1 つにまとめる</td></tr>
+          <tr><td><code>--pass-with-no-tests</code></td><td data-l="やること">テストが 0 件でも成功にする（v1.65 から、シャード実行で全シャードを通じて該当が 0 件だと失敗になった。空のシャードがあるだけなら成功）</td></tr>
+          <tr><td><code>--reporter=failures</code></td><td data-l="やること">失敗とやり直しで通ったものだけを出す（v1.65〜）</td></tr>
+          <tr><td><code>--add-reporter=github</code></td><td data-l="やること">設定の reporter を残したまま追加（v1.63〜）</td></tr>
+          <tr><td><code>-u</code></td><td data-l="やること">スクリーンショット・aria スナップショットを更新。値なしは <code>changed</code>（変わったものだけ）</td></tr>
+          <tr><td><code>--update-snapshots=all</code></td><td data-l="やること">全部書き直す。<code>missing</code> は無いものだけ書いて成功、<code>none</code> は書かない</td></tr>
+          <tr><td><code>--ignore-snapshots</code></td><td data-l="やること">スナップショットのアサーションを飛ばす</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="cli-manage" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
+        <tbody>
+          <tr><td><code>npm init playwright@latest</code></td><td data-l="やること">新規導入（既存プロジェクトにも追加できる）</td></tr>
+          <tr><td><code>npx playwright install</code></td><td data-l="やること">対応する全ブラウザを入れる。<code>chromium</code> のように 1 つだけも可</td></tr>
+          <tr><td><code>npx playwright install --with-deps</code></td><td data-l="やること">OS の依存パッケージも一緒に入れる（CI・Linux 向け）</td></tr>
+          <tr><td><code>npx playwright install --only-shell</code></td><td data-l="やること">ヘッドレス専用の <code>chromium-headless-shell</code> だけ入れる（CI を軽く）</td></tr>
+          <tr><td><code>npx playwright install-deps</code></td><td data-l="やること">OS の依存パッケージだけ入れる</td></tr>
+          <tr><td><code>npx playwright --version</code></td><td data-l="やること">入っている版を確かめる</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 id="codegen">操作を記録してコードを作る（codegen）</h2>
+  <p>ブラウザを実際に操作すると、その操作がテストコードとして書き出される。ロケーターは役割・文字・test id を優先して選ばれ、複数の要素に当てはまるときは 1 つに絞れる形に直される。</p>
+  <ol class="steps">
+    <li><b>起動する</b><code>npx playwright codegen localhost:3000</code>。操作するブラウザと、コードが出る Inspector の 2 つの窓が開く</li>
+    <li><b>操作する</b>クリック・入力・移動などがそのままコードになる</li>
+    <li><b>確認を足す</b>ツールバーのアイコンを選んで要素をクリックすると、見えているか（assert visibility）・文字（assert text）・値（assert value）のアサーションが入る。aria スナップショットも作れる</li>
+    <li><b>持ち出す</b>録画ボタンで止めてコピーし、テストファイルに貼る。<code>-o tests/new.spec.ts</code> を付けるとファイルに書く</li>
+    <li><b>手で整える</b>出てくるのは下書き。<code>test.step</code> でまとめる、値を変数にする、確認を足すなどしてから使う</li>
+  </ol>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>オプション</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td><code>-o, --output &lt;file&gt;</code></td><td data-l="やること">生成したコードをファイルに保存</td></tr>
+        <tr><td><code>--target &lt;lang&gt;</code></td><td data-l="やること">出力の形式。<code>playwright-test</code>（既定）・<code>javascript</code>・<code>python-pytest</code>・<code>java</code>・<code>csharp</code> など</td></tr>
+        <tr><td><code>-b, --browser &lt;name&gt;</code></td><td data-l="やること"><code>chromium</code>（既定）・<code>firefox</code>・<code>webkit</code></td></tr>
+        <tr><td><code>--device="iPhone 13"</code></td><td data-l="やること">端末をまねて記録（画面サイズ・UA など）</td></tr>
+        <tr><td><code>--viewport-size="800,600"</code></td><td data-l="やること">画面サイズを指定</td></tr>
+        <tr><td><code>--color-scheme=dark</code></td><td data-l="やること">ダークモードで記録</td></tr>
+        <tr><td><code>--lang</code> / <code>--timezone</code> / <code>--geolocation</code></td><td data-l="やること">言語・タイムゾーン・位置情報をまねる</td></tr>
+        <tr><td><code>--save-storage=auth.json</code></td><td data-l="やること">終わったときの Cookie・localStorage・IndexedDB を保存（ログインだけ先に記録）</td></tr>
+        <tr><td><code>--load-storage=auth.json</code></td><td data-l="やること">保存した状態を読み込み、ログイン済みから記録</td></tr>
+        <tr><td><code>--http-credentials="user:pass"</code></td><td data-l="やること">HTTP 認証（Basic 認証など）の奥のページを記録（v1.63〜）</td></tr>
+        <tr><td><code>--test-id-attribute=data-pw</code></td><td data-l="やること"><code>getByTestId</code> に使う属性名</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>ほかの記録のしかた</h3>
+  <ul>
+    <li><b>VS Code 拡張</b>: テストのサイドバーの <b>Record new</b> で新しいファイルに記録、<b>Record at cursor</b> で今のテストのカーソル位置から続きを記録</li>
+    <li><b>ロケーターだけ欲しい</b>: Inspector の <b>Pick Locator</b>（VS Code では Pick locator）で要素をクリックすると、その要素のロケーターが出る</li>
+    <li><b>途中から記録</b>: テストやスクリプトで <code>await page.pause()</code> を呼ぶと、そこで止まって記録用の窓が開く。<code>route</code> などで準備した状態から記録できる（headed で動かす）</li>
+  </ul>
+  <p class="note">AI エージェントにテストを書かせたいときは、v1.56 から入った Test Agents（planner・generator・healer）がある。<code>npx playwright init-agents --loop=claude</code> のように使う AI ツールを指定して定義を入れる。</p>
+
+  <h2 id="write">テストの書き方</h2>
+<pre><code>import { test, expect } from '@playwright/test';
+
+test.describe('ログイン', () =&gt; {
+  test.beforeEach(async ({ page }) =&gt; {
+    await page.goto('/login');            // baseURL からの相対パス
+  });
+
+  test('正しいパスワードで入れる', { tag: '@smoke' }, async ({ page }) =&gt; {
+    await page.getByLabel('メールアドレス').fill('a@example.com');
+    await page.getByLabel('パスワード').fill(process.env.TEST_PASSWORD!);
+    await page.getByRole('button', { name: 'ログイン' }).click();
+
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByRole('heading', { name: 'ダッシュボード' })).toBeVisible();
+  });
+});</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>test.only(...)</code></td><td data-l="意味">このテストだけ実行（CI では <code>--forbid-only</code> で検出）</td></tr>
+        <tr><td><code>test.skip(...)</code> / <code>test.fixme(...)</code></td><td data-l="意味">飛ばす／直すまで飛ばす。<code>test.skip(browserName === 'webkit', '理由')</code> のように条件も書ける</td></tr>
+        <tr><td><code>test.fail(...)</code></td><td data-l="意味">失敗するのが正しいテスト（通ると失敗になる）</td></tr>
+        <tr><td><code>test.slow()</code></td><td data-l="意味">タイムアウトを 3 倍にする</td></tr>
+        <tr><td><code>await test.step('名前', async () =&gt; {...})</code></td><td data-l="意味">レポート・トレースに段落として出る</td></tr>
+        <tr><td><code>test.describe.configure({ mode: 'serial' })</code></td><td data-l="意味">グループ内を順番に実行。1 つ失敗すると残りは飛ばす</td></tr>
+        <tr><td><code>test.use({ locale: 'ja-JP' })</code></td><td data-l="意味">そのファイル・グループだけ設定（<code>use</code>）を上書き</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="locators">ロケーター（要素の探し方）</h2>
+  <p>上から順に優先する。ユーザーが見るもの（役割・ラベル・文字）で探すと、CSS やマークアップが変わっても壊れにくい。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>探すもの・例</th></tr></thead>
+      <tbody>
+        <tr><td><code>getByRole(role, { name })</code></td><td data-l="探すもの">ARIA の役割と名前。<code>getByRole('button', { name: '送信' })</code>・<code>getByRole('checkbox', { checked: true })</code></td></tr>
+        <tr><td><code>getByLabel(text)</code></td><td data-l="探すもの"><code>&lt;label&gt;</code>・<code>aria-label</code> で結び付いた入力欄</td></tr>
+        <tr><td><code>getByPlaceholder(text)</code></td><td data-l="探すもの">placeholder の文字</td></tr>
+        <tr><td><code>getByText(text)</code></td><td data-l="探すもの">表示された文字。既定は部分一致・大文字小文字無視。<code>{ exact: true }</code> で完全一致、正規表現も可</td></tr>
+        <tr><td><code>getByAltText(text)</code></td><td data-l="探すもの">画像などの alt</td></tr>
+        <tr><td><code>getByTitle(text)</code></td><td data-l="探すもの">title 属性</td></tr>
+        <tr><td><code>getByTestId(id)</code></td><td data-l="探すもの">既定は <code>data-testid</code>。属性名は設定の <code>use.testIdAttribute</code> で変える</td></tr>
+        <tr><td><code>locator('css') / locator('xpath=…')</code></td><td data-l="探すもの">最後の手段。DOM の構造に依存するので壊れやすい</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>絞り込み・組み合わせ</h3>
+<pre><code>// 行（listitem）のうち「りんご」を含むものの中のボタン
+page.getByRole('listitem').filter({ hasText: 'りんご' }).getByRole('button', { name: '削除' });
+
+// 子に見出しを持つカード / 持たないカード
+page.locator('.card').filter({ has: page.getByRole('heading', { name: '料金' }) });
+page.locator('.card').filter({ hasNot: page.getByText('売り切れ') });
+
+page.getByRole('button').filter({ visible: true });          // 見えているものだけ
+page.getByRole('button').and(page.getByTitle('購読'));       // 両方に当てはまる
+page.getByRole('button', { name: '新規' }).or(page.getByText('確認')); // どちらか
+page.getByRole('listitem').nth(2);                           // 0 始まり。first() / last() も
+page.frameLocator('#payment').getByLabel('カード番号');       // iframe の中</code></pre>
+  <p class="note">ロケーターは作った時点では探さず、操作やアサーションのたびに探し直す。条件に当てはまる要素が複数あるまま <code>click()</code> などをするとエラー（strict モード）になるので、絞り込むか <code>first()</code> などで 1 つに決める。</p>
+
+  <h2 id="actions">操作</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td><code>page.goto(url)</code></td><td data-l="やること">移動。<code>load</code> イベントまで待つ</td></tr>
+        <tr><td><code>click()</code> / <code>dblclick()</code></td><td data-l="やること">クリック。<code>{ button: 'right' }</code>・<code>{ modifiers: ['Shift'] }</code></td></tr>
+        <tr><td><code>fill(value)</code></td><td data-l="やること">入力欄の中身を置き換える（ふつうはこれ）</td></tr>
+        <tr><td><code>pressSequentially(text)</code></td><td data-l="やること">1 文字ずつキー入力。キー入力ごとの処理を確かめるときだけ</td></tr>
+        <tr><td><code>press('Enter')</code></td><td data-l="やること">キーを押す。<code>'Control+A'</code> のような組み合わせも</td></tr>
+        <tr><td><code>check()</code> / <code>uncheck()</code> / <code>setChecked(bool)</code></td><td data-l="やること">チェックボックス・ラジオ</td></tr>
+        <tr><td><code>selectOption('blue')</code></td><td data-l="やること"><code>&lt;select&gt;</code> を value かラベルで選ぶ。配列で複数</td></tr>
+        <tr><td><code>setInputFiles('a.pdf')</code></td><td data-l="やること">ファイル選択。<code>[]</code> で解除</td></tr>
+        <tr><td><code>hover()</code> / <code>focus()</code></td><td data-l="やること">ホバー・フォーカス</td></tr>
+        <tr><td><code>dragTo(target)</code></td><td data-l="やること">ドラッグ＆ドロップ</td></tr>
+        <tr><td><code>page.waitForURL('**/done')</code></td><td data-l="やること">URL が変わるまで待つ</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">操作の前に、要素が 1 つに決まり・見えていて・動いておらず・ほかの要素に隠れておらず・有効（入力なら編集可）になるまで自動で待つ。v1.65 からは inert の間も待つ。</p>
+  <h3>新しいタブ・ダイアログ・ダウンロード</h3>
+<pre><code>// 起きるのを待つ Promise を、きっかけの操作より先に作る
+const popupPromise = page.waitForEvent('popup');
+await page.getByRole('link', { name: '別タブで開く' }).click();
+const popup = await popupPromise;
+
+page.once('dialog', (dialog) =&gt; dialog.accept());   // alert / confirm（何もしないと自動で閉じる）
+
+const downloadPromise = page.waitForEvent('download');
+await page.getByText('CSV をダウンロード').click();
+const download = await downloadPromise;
+await download.saveAs('./out/' + download.suggestedFilename());</code></pre>
+
+  <h2 id="assertions">アサーション</h2>
+  <p><code>await expect(locator).…</code> の形（web-first）は、条件を満たすまで既定 5 秒再試行する。<code>.not</code> で否定。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>アサーション</th><th>確かめること</th></tr></thead>
+      <tbody>
+        <tr><td><code>toBeVisible()</code> / <code>toBeHidden()</code></td><td data-l="確かめること">見えている／見えていない（存在しないも含む）</td></tr>
+        <tr><td><code>toHaveText(text)</code></td><td data-l="確かめること">文字が一致（文字列は完全一致・空白は正規化。正規表現も可）</td></tr>
+        <tr><td><code>toContainText(text)</code></td><td data-l="確かめること">文字を含む</td></tr>
+        <tr><td><code>toHaveValue(v)</code> / <code>toHaveValues([…])</code></td><td data-l="確かめること">入力欄・複数選択の値</td></tr>
+        <tr><td><code>toBeChecked()</code> / <code>toBeEnabled()</code> / <code>toBeDisabled()</code></td><td data-l="確かめること">チェック・有効・無効</td></tr>
+        <tr><td><code>toHaveCount(n)</code></td><td data-l="確かめること">当てはまる要素の数</td></tr>
+        <tr><td><code>toHaveAttribute(name, v)</code> / <code>toHaveClass(…)</code> / <code>toContainClass(…)</code></td><td data-l="確かめること">属性・クラス</td></tr>
+        <tr><td><code>toHaveAccessibleName(…)</code> / <code>toHaveRole(…)</code></td><td data-l="確かめること">アクセシビリティ上の名前・役割</td></tr>
+        <tr><td><code>expect(page).toHaveURL(…)</code> / <code>toHaveTitle(…)</code></td><td data-l="確かめること">ページの URL・タイトル</td></tr>
+        <tr><td><code>toHaveScreenshot()</code></td><td data-l="確かめること">見た目の比較。初回は基準画像を書いて失敗する（以後は差分で判定）</td></tr>
+        <tr><td><code>toMatchAriaSnapshot(`…`)</code></td><td data-l="確かめること">アクセシビリティツリーを YAML 形式の見本と比べる</td></tr>
+        <tr><td><code>expect(response).toBeOK()</code></td><td data-l="確かめること">API レスポンスが 2xx</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>await expect.soft(page.getByTestId('status')).toHaveText('完了'); // 失敗しても続ける（テストは失敗扱い）
+await expect(locator).toBeVisible({ timeout: 10_000 });          // このアサーションだけ待ち時間を変える
+
+// 画面以外の値を再試行で待つ
+await expect.poll(async () =&gt; (await request.get('/api/jobs/1')).status()).toBe(200);
+
+// ブロックごと通るまでやり直す（既定のタイムアウトは 0 = 無制限なので指定する）
+await expect(async () =&gt; {
+  const res = await page.request.get('/api/ready');
+  expect(res.status()).toBe(200);
+}).toPass({ timeout: 30_000 });</code></pre>
+  <p class="note"><code>toBe</code>・<code>toEqual</code> など <code>await</code> の付かないアサーションは 1 回しか確かめない。画面の状態に使うと不安定になる。</p>
+
+  <h2 id="config">設定ファイルの例</h2>
+<pre><code>// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,                 // ファイル内のテストも並列に
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',  // page.goto('/login') が使える
+    trace: 'on-first-retry',           // 1 回目のやり直しでトレースを取る
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+  projects: [
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+  ],
+  webServer: {                         // テストの前にアプリを起動して URL が応答するまで待つ
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>タイムアウト</th><th>既定</th><th>変える場所</th></tr></thead>
+      <tbody>
+        <tr><td>テスト 1 本（フック・フィクスチャ込み）</td><td data-l="既定">30 秒</td><td data-l="変える場所"><code>timeout</code>・<code>test.setTimeout()</code></td></tr>
+        <tr><td>web-first アサーション</td><td data-l="既定">5 秒</td><td data-l="変える場所"><code>expect: { timeout }</code></td></tr>
+        <tr><td>操作（click など）・移動（goto など）</td><td data-l="既定">なし（テストのタイムアウトまで）</td><td data-l="変える場所"><code>use: { actionTimeout, navigationTimeout }</code></td></tr>
+        <tr><td>実行全体</td><td data-l="既定">なし</td><td data-l="変える場所"><code>globalTimeout</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="auth">ログイン状態の使い回し</h2>
+  <p>テストは 1 本ごとに新しいブラウザコンテキスト（Cookie・localStorage が空）で始まる。ログインを毎回 UI でやらないよう、setup プロジェクトで 1 回ログインして状態をファイルに保存し、ほかのプロジェクトが <code>storageState</code> で読み込む（設定は上の例）。</p>
+<pre><code>// tests/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
+
+const authFile = 'playwright/.auth/user.json';
+
+setup('ログイン', async ({ page }) =&gt; {
+  await page.goto('/login');
+  await page.getByLabel('メールアドレス').fill(process.env.TEST_USER!);
+  await page.getByLabel('パスワード').fill(process.env.TEST_PASSWORD!);
+  await page.getByRole('button', { name: 'ログイン' }).click();
+  await page.waitForURL('/dashboard');      // リダイレクトで Cookie が揃うまで待つ
+  await page.context().storageState({ path: authFile });
+});</code></pre>
+  <ul>
+    <li><code>playwright/.auth</code> は <code>.gitignore</code> に入れる（Cookie やトークンが入っている）</li>
+    <li>ログインしていない状態で始めたいテストは <code>test.use({ storageState: { cookies: [], origins: [] } })</code></li>
+    <li>テストがサーバー側の状態を書き換えるなら、ワーカーごとに別アカウントにする（<code>test.info().parallelIndex</code> で選ぶ）</li>
+  </ul>
+
+  <h2 id="fixtures">フィクスチャ</h2>
+  <p>テストの引数 <code>{ page }</code> などがフィクスチャ。使うものだけが用意され、テストごとに作り直される。組み込みは <code>page</code>・<code>context</code>・<code>browser</code>・<code>browserName</code>・<code>request</code> など。自分のものは <code>test.extend</code> で足す。</p>
+<pre><code>// fixtures.ts
+import { test as base } from '@playwright/test';
+import { TodoPage } from './todo-page';     // ページオブジェクト
+
+export const test = base.extend&lt;{ todoPage: TodoPage }&gt;({
+  todoPage: async ({ page }, use) =&gt; {
+    const todoPage = new TodoPage(page);
+    await todoPage.goto();                  // 準備
+    await use(todoPage);                    // ここでテストが走る
+    await todoPage.removeAll();             // 後片付け
+  },
+});
+export { expect } from '@playwright/test';
+
+// テスト側: import { test, expect } from './fixtures';
+test('追加できる', async ({ todoPage }) =&gt; { /* ... */ });</code></pre>
+  <p class="note">ワーカーごとに 1 回だけ作るもの（DB 接続など）は <code>{ scope: 'worker' }</code> を付ける。全テストの前後に 1 回だけ動かしたい処理は、setup プロジェクトか設定の <code>globalSetup</code> に書く。</p>
+
+  <h2 id="network">ネットワークのモックと API テスト</h2>
+<pre><code>// 返事を差し替える
+await page.route('**/api/todos', (route) =&gt;
+  route.fulfill({ json: [{ id: 1, title: 'モック' }] }));
+
+// 画像を読み込ませない
+await page.route('**/*.{png,jpg,jpeg}', (route) =&gt; route.abort());
+
+// 本物の返事を一部だけ書き換える
+await page.route('**/api/user', async (route) =&gt; {
+  const response = await route.fetch();
+  const json = await response.json();
+  await route.fulfill({ response, json: { ...json, plan: 'pro' } });
+});
+
+// 送ったリクエストの返事を待つ（Promise は操作の前に作る）
+const saved = page.waitForResponse('**/api/save');
+await page.getByRole('button', { name: '保存' }).click();
+expect((await saved).status()).toBe(200);</code></pre>
+<pre><code>// ブラウザを使わない API テスト（request フィクスチャ。baseURL が効く）
+test('作成できる', async ({ request }) =&gt; {
+  const res = await request.post('/api/items', { data: { name: 'りんご' } });
+  await expect(res).toBeOK();
+  expect(await res.json()).toMatchObject({ name: 'りんご' });
+});</code></pre>
+  <p class="note">そのほか: <code>route.continue({ headers })</code> で書き換えて送る、<code>route.fallback()</code> で次のハンドラーに回す、<code>context.route()</code> でコンテキスト内の全ページに効かせる、<code>routeFromHAR()</code> で記録した HAR から返す。</p>
+
+  <h2 id="changes">最近の版で変わったこと</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>版</th><th>変わったこと</th></tr></thead>
+      <tbody>
+        <tr><td>1.65（2026-11）</td><td data-l="変わったこと">Node.js 22・24・26 が対象（20 はテスト対象外）。<code>bunx --bun playwright test</code> で Bun でも動く。<code>failures</code> reporter と、html・json・junit の <code>onlyFailures</code>。click・fill などは inert が外れるまで待つ。シャード実行で全シャードを通じて該当が 0 件だと失敗（空のシャードは成功のまま）。Cookie の照合が RFC 6265 どおりに</td></tr>
+        <tr><td>1.64（2026-10）</td><td data-l="変わったこと"><code>--shuffle</code>、<code>locator.within()</code>、<code>testProject.default</code>（既定の実行から外すプロジェクト）。<code>--update-snapshots=missing</code> は成功で終わるように。動画が VP8 から VP9 に</td></tr>
+        <tr><td>1.63（2026-09）</td><td data-l="変わったこと">テストのロック <code>{ lock: '名前' }</code>。同じロック名を持つテストは、ファイル・ワーカー・プロジェクトをまたいでも同時に走らない。<code>--add-reporter</code>。実験的なコンポーネントテスト（<code>@playwright/experimental-ct-react</code> など）は更新終了</td></tr>
+        <tr><td>1.62（2026-07）</td><td data-l="変わったこと">MCP と CLI を同梱（<code>npx playwright mcp</code>・<code>npx playwright cli</code>）。<code>retryStrategy: 'isolated'</code> でやり直しを最後にまとめて実行</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>waitForTimeout で数秒待たせればテストは安定する</summary><p>固定の待ち時間は遅い環境では足りず、速い環境では無駄になる。操作は自動で待ち、<code>await expect(locator)</code> は条件を満たすまで再試行するので、待ちたい状態をアサーションで書く。公式も <code>page.waitForTimeout()</code> は本番のテストで使わないよう書いている。</p></details>
+  <details class="myth"><summary>expect(await locator.textContent()).toBe() でも toHaveText() と同じ</summary><p><code>textContent()</code> はその瞬間の値を 1 回取るだけで、再試行しない。表示が少し遅れると失敗する。画面の状態は <code>await expect(locator).toHaveText()</code> のような web-first アサーションで確かめる。</p></details>
+  <details class="myth"><summary>前のテストでログインしていれば次のテストもログイン済みで始まる</summary><p>テストは 1 本ごとに新しいブラウザコンテキストで始まり、Cookie も localStorage も引き継がない。並び順に頼らず、setup プロジェクトで保存した <code>storageState</code> を読み込む。</p></details>
+  <details class="myth"><summary>npm install で @playwright/test を入れればブラウザも入る</summary><p>パッケージにはブラウザが入っていない。<code>npx playwright install</code>（CI では <code>--with-deps</code>）でブラウザを入れる。Playwright を上げたときも、対応するブラウザの版が変わるのでもう一度実行する。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="vitest.html">Vitest 使い方</a> — 単体テストは Vitest、画面を通した E2E は Playwright と分ける。Vitest のブラウザモードは Playwright をプロバイダーに使える</li>
+    <li><a href="storybook.html">Storybook 使い方</a> — <code>@storybook/addon-vitest</code> がストーリーを Playwright の Chromium で描画してテストする</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://playwright.dev/docs/intro">Installation | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-cli">Command line | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/codegen">Test generator | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-agents">Agents | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/locators">Locators | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/actionability">Auto-waiting | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-assertions">Assertions | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-configuration">Test configuration | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-timeouts">Timeouts | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/auth">Authentication | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/test-fixtures">Fixtures | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/mock">Mock APIs | Playwright</a></li>
+    <li><a href="https://playwright.dev/docs/release-notes">Release notes | Playwright</a></li>
+  </ul>
+  <p class="note">2026-11-24 に確認（Playwright 1.65 時点）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

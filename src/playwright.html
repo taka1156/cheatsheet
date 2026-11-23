@@ -542,6 +542,7 @@ test('作成できる', async ({ request }) =&gt; {
   expect(await res.json()).toMatchObject({ name: 'りんご' });
 });</code></pre>
   <p class="note">そのほか: <code>route.continue({ headers })</code> で書き換えて送る、<code>route.fallback()</code> で次のハンドラーに回す、<code>context.route()</code> でコンテキスト内の全ページに効かせる、<code>routeFromHAR()</code> で記録した HAR から返す。</p>
+  <p class="note"><code>page.route()</code> のモックは Playwright のテストの中だけで使える。同じモックを Vitest や開発中の画面でも使い回したいなら、<a href="msw.html">MSW</a> のハンドラーに書いて <code>@msw/playwright</code> で読み込む。</p>
 
   <h2 id="changes">最近の版で変わったこと</h2>
   <div class="table-wrap stack">
@@ -565,6 +566,7 @@ test('作成できる', async ({ request }) =&gt; {
   <h2 id="related">関連メモ</h2>
   <ul class="related">
     <li><a href="vitest.html">Vitest 使い方</a> — 単体テストは Vitest、画面を通した E2E は Playwright と分ける。Vitest のブラウザモードは Playwright をプロバイダーに使える</li>
+    <li><a href="msw.html">MSW 使い方</a> — Vitest・開発中の画面・E2E で同じ API モックを使い回す</li>
     <li><a href="storybook.html">Storybook 使い方</a> — <code>@storybook/addon-vitest</code> がストーリーを Playwright の Chromium で描画してテストする</li>
   </ul>
 

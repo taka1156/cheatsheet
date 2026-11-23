@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSW 使い方</title>
+<meta name="description" content="MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 1 つのハンドラーを各環境に配る図 */
+.hub { margin: 10px 0; }
+.hub .src {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  padding: 8px 12px; text-align: center; max-width: 420px; margin: 0 auto;
+  font-size: 0.82rem;
+}
+.hub .src b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.hub .src span { color: var(--fg-2); }
+.hub .down { text-align: center; color: var(--fg-2); font-size: 0.78rem; margin: 4px 0; }
+.hub .down::before { content: '↓ '; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.hub .envs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.hub .env {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  padding: 8px 10px; font-size: 0.8rem; min-width: 0;
+}
+.hub .env b { display: block; }
+.hub .env span { color: var(--fg-2); }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MSW 使い方</h1>
+  <p class="subtitle">ネットワークの層でリクエストを横取りして、モックの返事を返す API モックライブラリ Mock Service Worker のチートシート（v3.0 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>fetch や axios をそのまま使ったまま、HTTP・GraphQL・WebSocket・SSE の返事をモックに差し替えるライブラリ。</li>
+      <li>ハンドラーを 1 回書けば、Vitest・開発中のブラウザ・Storybook・Playwright で同じモックを使い回せる。</li>
+      <li>v3 は ESM のみ・Node.js 22.12 以上で、<code>http</code> は <code>msw/http</code> から読み込むなど v2 から書き方が変わった。</li>
+    </ul>
+  </div>
+
+  <h2 id="where">どこで動かすか</h2>
+  <div class="hub">
+    <div class="src"><b>src/mocks/handlers.ts</b><span><code>http.get(...)</code> などのハンドラーの配列。環境に依存しない</span></div>
+    <p class="down">同じハンドラーを、それぞれの入口に渡す</p>
+    <div class="envs">
+      <div class="env"><b>Vitest・Node</b><span><code>setupServer</code>（<code>msw/node</code>）</span></div>
+      <div class="env"><b>開発中のブラウザ</b><span><code>setupWorker</code>（<code>msw/browser</code>）。Service Worker を使う</span></div>
+      <div class="env"><b>Vite のアプリ</b><span><code>msw/vite</code> プラグインと <code>virtual:msw</code></span></div>
+      <div class="env"><b>Playwright</b><span><code>@msw/playwright</code> のフィクスチャ</span></div>
+      <div class="env"><b>Storybook</b><span><code>msw-storybook-addon</code> とストーリーの <code>parameters.msw</code></span></div>
+    </div>
+  </div>
+  <p class="note">要件（v3.0.7）: Node.js 22.12 以上（22・24・26 でテスト）、TypeScript 5.9 以上。パッケージは ESM のみ。</p>
+
+  <h2 id="setup">導入</h2>
+  <ol class="steps">
+    <li><b>入れる</b><code>npm install msw --save-dev</code></li>
+    <li><b>ハンドラーを書く</b><code>src/mocks/handlers.ts</code> にハンドラーの配列を書いて export する（下の「ハンドラーの書き方」）</li>
+    <li><b>環境ごとに組み込む</b>Node なら <code>setupServer(...handlers)</code>、ブラウザなら <code>setupWorker(...handlers)</code> を作り、有効にする（下の「組み込み方」）</li>
+    <li><b>ブラウザで使うなら</b>Service Worker のファイルを公開フォルダに置く: <code>npx msw init ./public --save</code>。Vite の <code>msw/vite</code> プラグインを使うときは不要</li>
+  </ol>
+
+  <h2 id="handlers">ハンドラーの書き方</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="h-basic">基本</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="h-req">リクエストを読む</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="h-res">返事の作り方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="h-flow">遅延・素通し</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="h-gql">GraphQL</button>
+  </div>
+  <div class="panel" id="h-basic">
+<pre><code>// src/mocks/handlers.ts
+import { http, HttpResponse } from 'msw/http'
+
+export const handlers = [
+  http.get('https://api.example.com/user', () =&gt; {
+    return HttpResponse.json({ id: 'abc-123', name: 'John' })
+  }),
+  http.post('/api/todos', async ({ request }) =&gt; {
+    const todo = await request.json()
+    return HttpResponse.json({ id: 1, ...todo }, { status: 201 })
+  }),
+]</code></pre>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>http.get</code> / <code>post</code> / <code>put</code> / <code>patch</code> / <code>delete</code> / <code>head</code> / <code>options</code></td><td data-l="意味">メソッドごとのハンドラー</td></tr>
+          <tr><td><code>http.all('/api/*', …)</code></td><td data-l="意味">メソッドを問わない（独自メソッドもこれ）</td></tr>
+          <tr><td><code>'/user/:id'</code></td><td data-l="意味">パスパラメーター。<code>params.id</code> で読む</td></tr>
+          <tr><td><code>'https://api.example.com/*'</code></td><td data-l="意味"><code>*</code> はワイルドカード。正規表現も渡せる</td></tr>
+          <tr><td>相対 URL（<code>'/api/user'</code>）</td><td data-l="意味">ブラウザでは <code>location.href</code> 基準で解決。Node では基準がないので絶対 URL で書くか、ベース URL を設定する</td></tr>
+          <tr><td><code>{ once: true }</code>（第 3 引数）</td><td data-l="意味">最初の 1 回だけ使うハンドラー</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">クエリ文字列はパスに書かない（書いても取り除かれる）。中身はハンドラーの中で <code>new URL(request.url).searchParams</code> から読む。</p>
+  </div>
+  <div class="panel" id="h-req" hidden>
+<pre><code>http.post('/api/posts/:postId/comments', async ({ request, params, cookies }) =&gt; {
+  params.postId                                  // パスパラメーター（文字列）
+  new URL(request.url).searchParams.get('sort')  // クエリ
+  request.headers.get('authorization')           // ヘッダー
+  cookies.session                                // Cookie
+  const body = await request.json()              // 本文（text() / formData() も）
+  return HttpResponse.json({ ok: true })
+})</code></pre>
+    <p>ハンドラーが受け取る <code>request</code> は Fetch API の <code>Request</code> そのもの。<code>requestId</code> も渡される。</p>
+    <h3>型を付ける</h3>
+<pre><code>http.post&lt;{ postId: string }, { comment: string }, { url: string }&gt;(
+  '/api/posts/:postId/comments',
+  async ({ params, request }) =&gt; {
+    const { comment } = await request.json()   // { comment: string }
+    return HttpResponse.json({ url: `/posts/${params.postId}` })
+  },
+)
+// ジェネリクスの順番: パスパラメーター, リクエスト本文, レスポンス本文</code></pre>
+  </div>
+  <div class="panel" id="h-res" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>書き方</th><th>返すもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>HttpResponse.json(data, init)</code></td><td data-l="返すもの">JSON。<code>init</code> は <code>{ status, headers }</code></td></tr>
+          <tr><td><code>HttpResponse.text('ok')</code></td><td data-l="返すもの">テキスト</td></tr>
+          <tr><td><code>HttpResponse.html(…)</code> / <code>xml(…)</code></td><td data-l="返すもの">HTML・XML</td></tr>
+          <tr><td><code>HttpResponse.formData(fd)</code> / <code>arrayBuffer(buf)</code></td><td data-l="返すもの">フォーム・バイナリ</td></tr>
+          <tr><td><code>new HttpResponse(null, { status: 404 })</code></td><td data-l="返すもの">本文なしのエラー応答</td></tr>
+          <tr><td><code>HttpResponse.json({ message }, { status: 500 })</code></td><td data-l="返すもの">本文つきのエラー応答</td></tr>
+          <tr><td><code>HttpResponse.error()</code></td><td data-l="返すもの">ネットワークエラー（オフライン・DNS 失敗など）。fetch が reject される</td></tr>
+          <tr><td>何も返さない</td><td data-l="返すもの">このハンドラーでは決めず、次に当てはまるハンドラーへ回す</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><code>HttpResponse</code> は標準の <code>Response</code> を広げたもの。<code>Set-Cookie</code> をモックの返事に付けられるなど、標準の <code>Response</code> ではできないことに対応している。</p>
+  </div>
+  <div class="panel" id="h-flow" hidden>
+<pre><code>import { delay } from 'msw/utils/delay'
+import { passthrough } from 'msw/utils/passthrough'
+import { bypass } from 'msw/utils/bypass'
+
+http.get('/api/slow', async () =&gt; {
+  await delay()            // 実際のサーバーらしい待ち時間（ランダム）
+  await delay(1000)        // 1 秒
+  // await delay('infinite') でずっと返さない（読み込み中の表示を確かめる）
+  return HttpResponse.json({ ok: true })
+})
+
+// 条件によって本物に送る
+http.get('/api/user', ({ request }) =&gt; {
+  if (request.headers.has('x-real')) return passthrough()
+  return HttpResponse.json({ name: 'mock' })
+})
+
+// 本物の返事を取ってきて一部だけ書き換える
+http.get('/api/user', async ({ request }) =&gt; {
+  const real = await fetch(bypass(request)).then((r) =&gt; r.json())
+  return HttpResponse.json({ ...real, plan: 'pro' })
+})</code></pre>
+    <p class="note">ハンドラーの中で同じ URL を普通に <code>fetch</code> すると、自分自身に横取りされる。本物に送るときは <code>bypass(request)</code> で包む。</p>
+  </div>
+  <div class="panel" id="h-gql" hidden>
+<pre><code>import { HttpResponse } from 'msw/http'
+import { graphql } from 'msw/graphql'
+
+const api = graphql.link('https://api.example.com/graphql')   // v3 はエンドポイントを先に決める
+
+export const handlers = [
+  api.query('GetUser', ({ variables }) =&gt;
+    HttpResponse.json({ data: { user: { id: variables.id, name: 'John' } } })),
+
+  api.mutation('Login', () =&gt;
+    HttpResponse.json({ errors: [{ message: 'Invalid credentials' }] })),
+
+  api.subscription('OnMessage', ({ subscription }) =&gt; {     // v3 から
+    subscription.publish({ data: { message: { text: 'hi' } } })
+  }),
+]</code></pre>
+    <p class="note">v2 の <code>graphql.query()</code> などは v3 で削除された。<code>graphql.link(url)</code> で作ったリンクにハンドラーを付ける。WebSocket は <code>msw/ws</code> の <code>ws.link()</code>、Server-Sent Events は <code>msw/sse</code> の <code>sse()</code> で書く。</p>
+  </div>
+
+  <h2 id="integrations">組み込み方</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="i-vitest">Vitest・Node</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-browser">ブラウザ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-vite">Vite プラグイン</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-pw">Playwright</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-sb">Storybook</button>
+  </div>
+  <div class="panel" id="i-vitest">
+<pre><code>// src/mocks/node.ts
+import { setupServer } from 'msw/node'
+import { handlers } from './handlers'
+export const server = setupServer(...handlers)
+
+// vitest.setup.ts
+import { beforeAll, afterEach, afterAll } from 'vitest'
+import { server } from './src/mocks/node'
+
+beforeAll(() =&gt; server.listen({ onUnhandledFrame: 'error' }))
+afterEach(() =&gt; server.resetHandlers())   // テストで足した差し替えを消す
+afterAll(() =&gt; server.close())
+
+// vitest.config.ts
+export default defineConfig({ test: { setupFiles: ['./vitest.setup.ts'] } })</code></pre>
+    <p class="note">Node 側は Service Worker を使わず、プロセス内で通信を横取りする。テストランナーに依存しないので、Jest やふつうの Node スクリプトでも同じ <code>setupServer</code> を使う。</p>
+  </div>
+  <div class="panel" id="i-browser" hidden>
+<pre><code>// npx msw init ./public --save   （mockServiceWorker.js を公開フォルダに置く）
+
+// src/mocks/browser.ts
+import { setupWorker } from 'msw/browser'
+import { handlers } from './handlers'
+export const worker = setupWorker(...handlers)
+
+// src/main.tsx
+async function enableMocking() {
+  if (process.env.NODE_ENV !== 'development') return
+  const { worker } = await import('./mocks/browser')
+  return worker.start()          // 登録が終わるまで待ってから描画する
+}
+enableMocking().then(() =&gt; { /* アプリを描画 */ })</code></pre>
+    <p class="note">成功すると開発者ツールのコンソールに <code>[MSW] Mocking enabled.</code> と出る。<code>/mockServiceWorker.js</code> が 404 になるなら、<code>init</code> で指定したフォルダが公開されていない。<code>--save</code> を付けると <code>package.json</code> の <code>msw.workerDirectory</code> に記録される。v3 はインストールしても自動では更新しないので、<code>msw</code> を上げたら <code>npx msw init</code>（引数なしなら記録したフォルダ全部）を実行し直す。</p>
+  </div>
+  <div class="panel" id="i-vite" hidden>
+<pre><code>// vite.config.ts
+import { defineConfig } from 'vite'
+import { msw } from 'msw/vite'
+export default defineConfig({ plugins: [msw()] })
+
+// src/main.ts（アプリ本体は src/app.ts に移す）
+if (import.meta.env.DEV) {
+  const { network } = await import('virtual:msw')
+  const { handlers } = await import('./mocks/handlers')
+  network.configure({ handlers })
+  await network.enable()
+}
+await import('./app')
+
+// src/vite-env.d.ts（型が見つからないとき）
+/// &lt;reference types="msw/vite/client" /&gt;</code></pre>
+    <ul>
+      <li>v3 で追加。開発中だけ <code>/mockServiceWorker.js</code> を配信するので、<code>npx msw init</code> も公開フォルダへのコピーも要らない</li>
+      <li><code>virtual:msw</code> はブラウザでも SSR のサーバー側でも同じ書き方で有効になる</li>
+      <li>本番に含めないよう、セットアップは <code>import.meta.env.DEV</code> で囲む。囲めば <code>virtual:msw</code> の読み込みが消え、ワーカーも出力されない（囲まないと本番にもワーカーが出力される）</li>
+      <li>今の <code>setupWorker</code> の書き方を残したいなら <code>msw({ mode: 'worker-only' })</code>（ワーカーの配信だけ）</li>
+    </ul>
+  </div>
+  <div class="panel" id="i-pw" hidden>
+<pre><code>// npm i -D msw @msw/playwright
+// tests/fixtures.ts
+import { test as base } from '@playwright/test'
+import type { AnyHandler } from 'msw'
+import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright'
+import { handlers } from '../src/mocks/handlers'
+
+export const test = base.extend&lt;{ handlers: AnyHandler[]; network: NetworkFixture }&gt;({
+  handlers: [handlers, { option: true }],
+  network: [
+    async ({ context, handlers }, use) =&gt; {
+      const network = defineNetworkFixture({ context, handlers })
+      await network.enable()
+      await use(network)
+      await network.disable()
+    },
+    { auto: true },
+  ],
+})
+
+// テスト側
+test('ダッシュボードを表示', async ({ network, page }) =&gt; {
+  network.use(http.get('/user', () =&gt; HttpResponse.json({ name: 'John' })))
+  await page.goto('/dashboard')
+})</code></pre>
+    <p class="note"><code>@msw/playwright</code>（0.x）は中で Playwright の <code>context.route()</code>・<code>context.routeWebSocket()</code> を使うので、Service Worker のファイルは要らない。テスト（Node）からブラウザ側のモックを直接差し替えられる。</p>
+  </div>
+  <div class="panel" id="i-sb" hidden>
+<pre><code>// npm i -D msw msw-storybook-addon && npx msw init ./public --save
+
+// .storybook/main.ts
+export default { addons: ['msw-storybook-addon'] }
+
+// .storybook/preview.ts
+import { mswLoader } from 'msw-storybook-addon/csf3'
+export default { loaders: [mswLoader()] }
+
+// UserProfile.stories.ts
+export const Default = {
+  parameters: {
+    msw: [http.get('/user', () =&gt; HttpResponse.json({ name: 'John Maverick' }))],
+  },
+}</code></pre>
+    <p class="note"><code>./public</code> は Storybook の静的ファイルのフォルダ（<code>staticDirs</code>）に合わせる。</p>
+  </div>
+
+  <h2 id="override">テストの中で差し替える</h2>
+<pre><code>test('取得に失敗したらエラーを出す', async () =&gt; {
+  server.use(                                          // 先頭に足す（初期のハンドラーより優先）
+    http.get('https://api.example.com/user', () =&gt; new HttpResponse(null, { status: 500 })),
+  )
+  // ...
+})</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td><code>server.use(...handlers)</code></td><td data-l="やること">ハンドラーを先頭に足す。ブラウザでは <code>worker.use()</code></td></tr>
+        <tr><td><code>server.resetHandlers()</code></td><td data-l="やること"><code>use()</code> で足したものを消し、初期のハンドラーに戻す。引数を渡すと初期のハンドラーもそれに置き換える</td></tr>
+        <tr><td><code>server.restoreHandlers()</code></td><td data-l="やること"><code>once</code> のハンドラーを使う前の状態に戻す</td></tr>
+        <tr><td><code>server.listHandlers()</code></td><td data-l="やること">今のハンドラーの一覧</td></tr>
+        <tr><td><code>server.boundary(fn)</code></td><td data-l="やること"><code>fn</code> の中で行った <code>use()</code> などをその中だけに閉じ込める（Node のみ）。並列テストで差し替えがほかのテストに漏れないように</td></tr>
+        <tr><td><code>server.events.on('request:start', …)</code></td><td data-l="やること">リクエストの開始・一致・終了などを見る（デバッグ用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">ハンドラーは先頭から順に照らし合わされ、最初に返事を返したものが使われる。<code>use()</code> で足したものは先頭に入るので、初期のハンドラーより先に当たる。</p>
+
+  <h2 id="unhandled">ハンドラーがないリクエスト</h2>
+  <p>ハンドラーに当てはまらないリクエストは、既定ではそのまま本物に送られ、警告が出る。<code>server.listen()</code>・<code>worker.start()</code> の <code>onUnhandledFrame</code>（v2 の <code>onUnhandledRequest</code>）で変える。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>値</th><th>動き</th></tr></thead>
+      <tbody>
+        <tr><td><code>'warn'</code>（既定）</td><td data-l="動き">警告を出して、そのまま送る</td></tr>
+        <tr><td><code>'error'</code></td><td data-l="動き">エラーを出して止める。テストでモック漏れを見つけたいとき</td></tr>
+        <tr><td><code>'bypass'</code></td><td data-l="動き">何も出さずにそのまま送る</td></tr>
+        <tr><td><code>({ frame, defaults }) =&gt; {…}</code></td><td data-l="動き">自分で判断し、<code>defaults.warn()</code> / <code>defaults.error()</code> を呼ぶ。この形にすると画像などの静的ファイルを無視する既定の動きも外れる</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="cli">CLI・ユーティリティ</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>コマンド・関数</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td><code>npx msw init &lt;PUBLIC_DIR&gt; --save</code></td><td data-l="やること"><code>mockServiceWorker.js</code> を公開フォルダにコピーし、場所を <code>package.json</code> に記録</td></tr>
+        <tr><td><code>npx msw init &lt;PUBLIC_DIR&gt; --no-save</code></td><td data-l="やること">記録せずにコピー（CI など、聞き返されたくないとき）</td></tr>
+        <tr><td><code>delay()</code>（<code>msw/utils/delay</code>）</td><td data-l="やること">返事を遅らせる。引数なし・ミリ秒・<code>'infinite'</code></td></tr>
+        <tr><td><code>passthrough()</code>（<code>msw/utils/passthrough</code>）</td><td data-l="やること">ハンドラーの中から、そのリクエストを本物に送る</td></tr>
+        <tr><td><code>bypass(request)</code>（<code>msw/utils/bypass</code>）</td><td data-l="やること">横取りされないリクエストを作る（本物の返事を取りたいとき）</td></tr>
+        <tr><td><code>getResponse(handlers, request)</code>（<code>msw</code>）</td><td data-l="やること">ハンドラーに照らしてモックの返事を得る（自前の仕組みに組み込むとき）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="v3">v2 から v3 で変わったこと</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>項目</th><th>v2</th><th>v3</th></tr></thead>
+      <tbody>
+        <tr><td>読み込み元</td><td data-l="v2"><code>import { http, HttpResponse, delay } from 'msw'</code></td><td data-l="v3"><code>msw/http</code>・<code>msw/graphql</code>・<code>msw/ws</code>・<code>msw/sse</code>・<code>msw/utils/delay</code> など。<code>http</code>・<code>delay</code> などは互換のため <code>msw</code> からも読み込めるが、次のメジャーで外す予定と発表されている。<code>graphql</code> は <code>msw/graphql</code> からだけ</td></tr>
+        <tr><td>GraphQL</td><td data-l="v2"><code>graphql.query('GetUser', …)</code></td><td data-l="v3"><code>graphql.link(url).query('GetUser', …)</code>。subscription に対応</td></tr>
+        <tr><td>当てはまらないリクエスト</td><td data-l="v2"><code>onUnhandledRequest</code>。コールバックは <code>(request, print)</code></td><td data-l="v3"><code>onUnhandledFrame</code>（WebSocket も対象）。コールバックは <code>({ frame, defaults })</code></td></tr>
+        <tr><td>止める</td><td data-l="v2"><code>worker.stop()</code></td><td data-l="v3"><code>await worker.stop()</code>（Promise を返す）</td></tr>
+        <tr><td>二重の開始・停止</td><td data-l="v2">エラーにならない</td><td data-l="v3">開始済みで <code>listen()</code>・<code>start()</code> を呼ぶとエラー（停止も同じ）</td></tr>
+        <tr><td>イベント名</td><td data-l="v2"><code>'connection'</code></td><td data-l="v3"><code>'websocket:connection'</code>。<code>'websocket:error'</code> が増えた</td></tr>
+        <tr><td>環境</td><td data-l="v2">CJS・ESM、Node.js 18 以上</td><td data-l="v3">ESM のみ、Node.js 22.12 以上、TypeScript 5.9 以上。<code>graphql</code> は任意の peer 依存に</td></tr>
+        <tr><td>Vite</td><td data-l="v2">ワーカーを <code>public/</code> にコピー</td><td data-l="v3"><code>msw/vite</code> プラグインが配信</td></tr>
+        <tr><td>React Native</td><td data-l="v2"><code>msw/native</code></td><td data-l="v3"><code>@msw/react-native</code> に分離</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">移行用の codemod が公式に用意されている（移行ガイドからリンク）。</p>
+
+  <h2 id="vs-route">Playwright の page.route() との使い分け</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>観点</th><th>MSW</th><th>Playwright の <code>page.route()</code></th></tr></thead>
+      <tbody>
+        <tr><td>使える場所</td><td data-l="MSW">Vitest・ブラウザでの開発・Storybook・Playwright</td><td data-l="page.route()">Playwright のテストの中だけ</td></tr>
+        <tr><td>書き方</td><td data-l="MSW"><code>http.get(url, resolver)</code> のハンドラーの配列</td><td data-l="page.route()"><code>route.fulfill()</code> などをテストごとに書く</td></tr>
+        <tr><td>向いている場面</td><td data-l="MSW">同じモックを単体テスト・画面の開発・E2E で使い回したい</td><td data-l="page.route()">E2E だけで、そのテストの中で少し差し替えたい</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>MSW を使うにはアプリの fetch を書き換える必要がある</summary><p>アプリのコードは変えない。ブラウザでは Service Worker、Node ではプロセス内の横取りで、送られたリクエストに返事を返す。fetch・axios などどのクライアントでもそのまま動く。</p></details>
+  <details class="myth"><summary>Node のテストでも npx msw init で Service Worker を置く必要がある</summary><p><code>mockServiceWorker.js</code> が要るのはブラウザの <code>setupWorker</code> だけ。Vitest などの Node では <code>setupServer</code> を使い、ファイルは要らない。Vite のプラグインや <code>@msw/playwright</code> を使うときも置かなくてよい。</p></details>
+  <details class="myth"><summary>ハンドラーがないリクエストはエラーになるのでモック漏れにすぐ気づける</summary><p>既定（<code>'warn'</code>）では警告を出して本物に送るだけで、テストは止まらない。モック漏れを失敗にしたいなら <code>server.listen({ onUnhandledFrame: 'error' })</code> にする。</p></details>
+  <details class="myth"><summary>server.use() で足したハンドラーはそのテストが終わると自動で消える</summary><p>消えない。<code>afterEach</code> で <code>server.resetHandlers()</code> を呼んで戻す。呼ばないと、次のテストにも差し替えが残る。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="playwright.html">Playwright 使い方</a> — E2E では <code>@msw/playwright</code> で同じハンドラーを使うか、<code>page.route()</code> で直接差し替える</li>
+    <li><a href="vitest.html">Vitest 使い方</a> — <code>setupFiles</code> で <code>setupServer</code> を有効にする場所</li>
+    <li><a href="storybook.html">Storybook 使い方</a> — <code>msw-storybook-addon</code> でストーリーごとに API の返事を変える</li>
+    <li><a href="hey-api-openapi-ts.html">Hey API openapi-ts 使い方</a> — OpenAPI から MSW のハンドラーを作るプラグインがある</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://mswjs.io/docs/quick-start">Quick start | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/docs/migrations/2.x-to-3.x">2.x → 3.x | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/blog/introducing-msw-3.0">Introducing MSW 3.0</a></li>
+    <li><a href="https://mswjs.io/docs/defaults">Default behaviors | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/docs/api/http">http | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/docs/api/http-response">HttpResponse | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/docs/api/setup-server/listen">listen() | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/guides/integrations/browser">Browser integration | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/guides/integrations/vite">Vite integration | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/guides/integrations/storybook">Storybook integration | Mock Service Worker</a></li>
+    <li><a href="https://mswjs.io/guides/best-practices/typescript">TypeScript | Mock Service Worker</a></li>
+    <li><a href="https://github.com/mswjs/playwright">@msw/playwright（GitHub）</a></li>
+  </ul>
+  <p class="note">2026-11-24 に確認（msw 3.0.7・@msw/playwright 0.7.0 時点）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

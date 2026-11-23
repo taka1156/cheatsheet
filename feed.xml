@@ -291,6 +291,16 @@
     <category term="開発ツール"/>
   </entry>
   <entry>
+    <title>bubblewrap と socat</title>
+    <id>https://cs.taka1156.site/bubblewrap-socat.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/bubblewrap-socat.html"/>
+    <published>2026-11-14T00:00:00+09:00</published>
+    <updated>2026-11-14T00:00:00+09:00</updated>
+    <summary>bwrap でコマンドを閉じ込め、socat とプロキシで許可した通信だけ通す仕組みを、AI エージェントでの使われ方とともに図解。</summary>
+    <category term="Linux"/>
+    <category term="セキュリティ"/>
+  </entry>
+  <entry>
     <title>Void チートシート</title>
     <id>https://cs.taka1156.site/void.html</id>
     <link rel="alternate" type="text/html" href="https://cs.taka1156.site/void.html"/>
@@ -334,5 +344,69 @@
     <updated>2026-11-07T00:00:00+09:00</updated>
     <summary>Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。</summary>
     <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>vinext と Next.js の比較</title>
+    <id>https://cs.taka1156.site/vinext.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/vinext.html"/>
+    <published>2026-11-03T00:00:00+09:00</published>
+    <updated>2026-11-03T00:00:00+09:00</updated>
+    <summary>Cloudflare の vinext と本家 Next.js の違いと、Workers・Node.js・SSG の 3 つのデプロイパターンを図解。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Dockerfile と Compose の書き方</title>
+    <id>https://cs.taka1156.site/docker-files.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/docker-files.html"/>
+    <published>2026-11-03T00:00:00+09:00</published>
+    <updated>2026-11-03T00:00:00+09:00</updated>
+    <summary>Dockerfile・マルチステージビルド・compose.yaml・devcontainer.json の書き方を、注釈付きの例と落とし穴で整理。</summary>
+    <category term="インフラ"/>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Spec Kit の流れと役割</title>
+    <id>https://cs.taka1156.site/spec-kit.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/spec-kit.html"/>
+    <published>2026-11-01T00:00:00+09:00</published>
+    <updated>2026-11-01T00:00:00+09:00</updated>
+    <summary>Spec Kit の仕様駆動開発の流れ、各コマンドと人間・AI の役割、生成ファイルを図解。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>OpenTofu 概念図</title>
+    <id>https://cs.taka1156.site/opentofu.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/opentofu.html"/>
+    <published>2026-11-01T00:00:00+09:00</published>
+    <updated>2026-11-01T00:00:00+09:00</updated>
+    <summary>設定ファイル(.tf)からState・Providerを経てインフラに反映されるまでの流れと、役割ごとのファイル名を図解。</summary>
+    <category term="インフラ"/>
+  </entry>
+  <entry>
+    <title>GitHub サービス</title>
+    <id>https://cs.taka1156.site/github-services.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/github-services.html"/>
+    <published>2026-11-01T00:00:00+09:00</published>
+    <updated>2026-11-01T00:00:00+09:00</updated>
+    <summary>Actions・Pages・Codespaces など GitHub の 9 サービスを、開発の流れに沿った図と使い分けで整理。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Cloudflare サービス</title>
+    <id>https://cs.taka1156.site/cloudflare-services.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/cloudflare-services.html"/>
+    <published>2026-11-01T00:00:00+09:00</published>
+    <updated>2026-11-01T00:00:00+09:00</updated>
+    <summary>Workers・Pages・R2・D1 など Cloudflare の 9 サービスを、リクエストの流れに沿った図と使い分けで整理。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Ansible 概念図</title>
+    <id>https://cs.taka1156.site/ansible.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/ansible.html"/>
+    <published>2026-11-01T00:00:00+09:00</published>
+    <updated>2026-11-01T00:00:00+09:00</updated>
+    <summary>Control NodeからManaged Nodesまでの流れと、役割ごとのファイル名の対応を図解。</summary>
+    <category term="インフラ"/>
   </entry>
 </feed>

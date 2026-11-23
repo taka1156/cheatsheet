@@ -34,8 +34,16 @@
 - [tsconfig 設定例](https://cs.taka1156.site/md/tsconfig.md): TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で（TypeScript / 2026-11-16）
 - [Rolldown 使い方](https://cs.taka1156.site/md/rolldown.md): Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解（開発ツール / 2026-11-16）
 - [oxlint・oxfmt 使い方](https://cs.taka1156.site/md/oxlint-oxfmt.md): ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧（開発ツール / 2026-11-16）
+- [bubblewrap と socat](https://cs.taka1156.site/md/bubblewrap-socat.md): bwrap でコマンドを閉じ込め、socat とプロキシで許可した通信だけ通す仕組みを、AI エージェントでの使われ方とともに図解。（Linux, セキュリティ / 2026-11-14）
 - [Void チートシート](https://cs.taka1156.site/md/void.md): VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。（Cloudflare / 2026-11-13）
 - [Void Platform チートシート](https://cs.taka1156.site/md/void-platform.md): 会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。（Cloudflare / 2026-11-13）
 - [Void のデプロイ先：直接 Cloudflare vs Void Platform](https://cs.taka1156.site/md/void-deploy-targets.md): Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。（Cloudflare / 2026-11-13）
 - [cf/config チートシート](https://cs.taka1156.site/md/cf-config.md): Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。（Cloudflare / 2026-11-13）
 - [Vite+ と vp コマンド チートシート](https://cs.taka1156.site/md/vite-plus.md): Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。（開発ツール / 2026-11-07）
+- [vinext と Next.js の比較](https://cs.taka1156.site/md/vinext.md): Cloudflare の vinext と本家 Next.js の違いと、Workers・Node.js・SSG の 3 つのデプロイパターンを図解。（Cloudflare / 2026-11-03）
+- [Dockerfile と Compose の書き方](https://cs.taka1156.site/md/docker-files.md): Dockerfile・マルチステージビルド・compose.yaml・devcontainer.json の書き方を、注釈付きの例と落とし穴で整理。（インフラ, 開発ツール / 2026-11-03）
+- [Spec Kit の流れと役割](https://cs.taka1156.site/md/spec-kit.md): Spec Kit の仕様駆動開発の流れ、各コマンドと人間・AI の役割、生成ファイルを図解。（開発ツール / 2026-11-01）
+- [OpenTofu 概念図](https://cs.taka1156.site/md/opentofu.md): 設定ファイル(.tf)からState・Providerを経てインフラに反映されるまでの流れと、役割ごとのファイル名を図解。（インフラ / 2026-11-01）
+- [GitHub サービス](https://cs.taka1156.site/md/github-services.md): Actions・Pages・Codespaces など GitHub の 9 サービスを、開発の流れに沿った図と使い分けで整理。（開発ツール / 2026-11-01）
+- [Cloudflare サービス](https://cs.taka1156.site/md/cloudflare-services.md): Workers・Pages・R2・D1 など Cloudflare の 9 サービスを、リクエストの流れに沿った図と使い分けで整理。（Cloudflare / 2026-11-01）
+- [Ansible 概念図](https://cs.taka1156.site/md/ansible.md): Control NodeからManaged Nodesまでの流れと、役割ごとのファイル名の対応を図解。（インフラ / 2026-11-01）

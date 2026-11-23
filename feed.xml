@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ja">
+  <title>CheatSheet</title>
+  <subtitle>特定のツールやライブラリの使い方を、わかりやすくまとめたチートシート置き場</subtitle>
+  <id>https://cs.taka1156.site/</id>
+  <link rel="alternate" type="text/html" href="https://cs.taka1156.site/"/>
+  <link rel="self" type="application/atom+xml" href="https://cs.taka1156.site/feed.xml"/>
+  <updated>2026-11-23T00:00:00+09:00</updated>
+  <author><name>CheatSheet</name></author>
+  <icon>https://cs.taka1156.site/assets/icon-192.png</icon>
+  <entry>
+    <title>ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）</title>
+    <id>https://cs.taka1156.site/oxc-migration.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/oxc-migration.html"/>
+    <published>2026-11-23T00:00:00+09:00</published>
+    <updated>2026-11-23T00:00:00+09:00</updated>
+    <summary>ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Homebrew 使い方</title>
+    <id>https://cs.taka1156.site/homebrew.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/homebrew.html"/>
+    <published>2026-11-23T00:00:00+09:00</published>
+    <updated>2026-11-23T00:00:00+09:00</updated>
+    <summary>macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Trivy 使い方</title>
+    <id>https://cs.taka1156.site/trivy.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/trivy.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>Trivy のターゲットとスキャナー、主要コマンド、CI 向けオプション、設定と除外、DB、2026 年 3 月の侵害を踏まえた安全な使い方をまとめたチートシート</summary>
+    <category term="セキュリティ"/>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>クラウド・SaaS ステータスページ早見表</title>
+    <id>https://cs.taka1156.site/status-pages.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/status-pages.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>AWS・GCP・Azure・Cloudflare・GitHub・Slack・M365・Google Workspace・npm などの公式ステータスページと通知の受け方をまとめた障害時の早見表</summary>
+    <category term="セキュリティ"/>
+  </entry>
+  <entry>
+    <title>Skills CLI（npx skills）使い方</title>
+    <id>https://cs.taka1156.site/skills-cli.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/skills-cli.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>エージェントスキルを入れる・更新する・消す Vercel Labs の CLI、npx skills のコマンド・オプション・置き場所・ロックファイルをまとめた。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Security Audit Skill 使い方</title>
+    <id>https://cs.taka1156.site/security-audit-skill.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/security-audit-skill.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>Cloudflare のコーディングエージェント用スキル security-audit の入れ方・頼み方・6 フェーズ・出力ファイル・判定と重大度をまとめた。</summary>
+    <category term="セキュリティ"/>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Renovate 使い方</title>
+    <id>https://cs.taka1156.site/renovate.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/renovate.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>依存関係の更新 PR を自動で作る Renovate の導入方法・renovate.json の書き方・packageRules・automerge・スケジュールをまとめたチートシート</summary>
+    <category term="開発ツール"/>
+    <category term="セキュリティ"/>
+  </entry>
+  <entry>
+    <title>OSV-Scanner 使い方</title>
+    <id>https://cs.taka1156.site/osv-scanner.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/osv-scanner.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>OSV-Scanner v2 のソース・イメージのスキャン、出力形式と終了コード、osv-scanner.toml、CI、fix をまとめたチートシート</summary>
+    <category term="セキュリティ"/>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Downdetector 使い方</title>
+    <id>https://cs.taka1156.site/downdetector.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/downdetector.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>Downdetector の仕組み、障害かどうかを確かめる手順、画面の読み方、他の情報源との組み合わせ、プランをまとめたチートシート</summary>
+    <category term="セキュリティ"/>
+  </entry>
+  <entry>
+    <title>Cloudflare Radar 使い方</title>
+    <id>https://cs.taka1156.site/cloudflare-radar.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/cloudflare-radar.html"/>
+    <published>2026-11-22T00:00:00+09:00</published>
+    <updated>2026-11-22T00:00:00+09:00</updated>
+    <summary>Cloudflare Radar の画面ごとの見どころ、URL Scanner、Radar API、通知、AI からの使い方をセキュリティ調査の目線でまとめたチートシート</summary>
+    <category term="Cloudflare"/>
+    <category term="セキュリティ"/>
+  </entry>
+  <entry>
+    <title>zap 使い方</title>
+    <id>https://cs.taka1156.site/zap.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/zap.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>Go の構造化ロガー zap の Logger と SugaredLogger、フィールド、Config、zapcore、レベル変更、テストをまとめたチートシート</summary>
+    <category term="Go"/>
+    <category term="API・バックエンド"/>
+  </entry>
+  <entry>
+    <title>Storybook 使い方</title>
+    <id>https://cs.taka1156.site/storybook.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/storybook.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>Storybook 10 のストーリーの書き方・設定・CLI・play テスト・モックをまとめた早見表</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>sqlc 使い方</title>
+    <id>https://cs.taka1156.site/sqlc.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/sqlc.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>sqlc の sqlc.yaml・クエリの注釈・マクロ・生成コードの使い方・コマンドをまとめたチートシート</summary>
+    <category term="Go"/>
+    <category term="データベース"/>
+  </entry>
+  <entry>
+    <title>Skeema 使い方</title>
+    <id>https://cs.taka1156.site/skeema.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/skeema.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>Skeema のフォルダ構成と .skeema・diff/push/pull・安全装置・lint・workspace をまとめたチートシート</summary>
+    <category term="データベース"/>
+  </entry>
+  <entry>
+    <title>Gin 使い方</title>
+    <id>https://cs.taka1156.site/gin.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/gin.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>Gin のルーティング・Context・バインディングと検証・ミドルウェア・終了処理・テストをまとめたチートシート</summary>
+    <category term="Go"/>
+    <category term="API・バックエンド"/>
+  </entry>
+  <entry>
+    <title>ent 使い方</title>
+    <id>https://cs.taka1156.site/ent.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/ent.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>ent のスキーマ定義（Fields・Edges）・CRUD・トランザクション・Atlas でのマイグレーションをまとめたチートシート</summary>
+    <category term="Go"/>
+    <category term="データベース"/>
+  </entry>
+  <entry>
+    <title>Drizzle ORM 使い方</title>
+    <id>https://cs.taka1156.site/drizzle.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/drizzle.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>Drizzle ORM のスキーマ定義・クエリ・リレーション・drizzle-kit のマイグレーションと、v1 での変更点をまとめたチートシート</summary>
+    <category term="API・バックエンド"/>
+  </entry>
+  <entry>
+    <title>Colima 使い方</title>
+    <id>https://cs.taka1156.site/colima.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/colima.html"/>
+    <published>2026-11-20T00:00:00+09:00</published>
+    <updated>2026-11-20T00:00:00+09:00</updated>
+    <summary>macOS で Docker Desktop の代わりに Colima を使う方法。仕組み、コマンド、start のオプション、設定ファイル、つまずきどころをまとめたチートシート。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Zod 使い方</title>
+    <id>https://cs.taka1156.site/zod.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/zod.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>Zod v4 でスキーマを定義して実行時に検証し、型を推論する方法と、エラー処理・変換・codec・compile のチートシート</summary>
+    <category term="TypeScript"/>
+  </entry>
+  <entry>
+    <title>vi / Vim チートシート</title>
+    <id>https://cs.taka1156.site/vi.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/vi.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>vi・Vim のモード切り替え、移動、編集、検索・置換、画面分割、設定をキー操作で引くチートシート</summary>
+    <category term="Linux"/>
+  </entry>
+  <entry>
+    <title>Swagger 使い方</title>
+    <id>https://cs.taka1156.site/swagger.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/swagger.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>OpenAPI 定義の書き方と、Swagger UI・Swagger Editor の導入方法・主な設定をまとめたチートシート</summary>
+    <category term="API・バックエンド"/>
+  </entry>
+  <entry>
+    <title>Linux よく使うコマンド</title>
+    <id>https://cs.taka1156.site/linux-commands.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/linux-commands.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>ファイル操作・検索・プロセス・ネットワーク・サービス管理・タイムゾーン確認など、Linux の日常でよく使うコマンドを用途別にまとめたチートシート</summary>
+    <category term="Linux"/>
+  </entry>
+  <entry>
+    <title>Hono 使い方</title>
+    <id>https://cs.taka1156.site/hono.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/hono.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>Hono のルーティング・Context・ミドルウェア・バリデーション・RPC・エラー処理をまとめたチートシート</summary>
+    <category term="API・バックエンド"/>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Hey API openapi-ts 使い方</title>
+    <id>https://cs.taka1156.site/hey-api-openapi-ts.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/hey-api-openapi-ts.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>@hey-api/openapi-ts で OpenAPI 定義から TypeScript の型・SDK・クライアントを生成する手順と設定・プラグインのチートシート</summary>
+    <category term="API・バックエンド"/>
+    <category term="TypeScript"/>
+  </entry>
+  <entry>
+    <title>Better Auth 使い方</title>
+    <id>https://cs.taka1156.site/better-auth.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/better-auth.html"/>
+    <published>2026-11-19T00:00:00+09:00</published>
+    <updated>2026-11-19T00:00:00+09:00</updated>
+    <summary>Better Auth のセットアップ（DB・ハンドラー・クライアント）、よく使う API、設定、プラグイン、CLI のチートシート</summary>
+    <category term="API・バックエンド"/>
+  </entry>
+  <entry>
+    <title>Vitest 使い方</title>
+    <id>https://cs.taka1156.site/vitest.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/vitest.html"/>
+    <published>2026-11-16T00:00:00+09:00</published>
+    <updated>2026-11-16T00:00:00+09:00</updated>
+    <summary>Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>tsconfig 設定例</title>
+    <id>https://cs.taka1156.site/tsconfig.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/tsconfig.html"/>
+    <published>2026-11-16T00:00:00+09:00</published>
+    <updated>2026-11-16T00:00:00+09:00</updated>
+    <summary>TypeScript の tsconfig.json の書き方と主要オプション、実行環境ごとの選び方を 1 枚で</summary>
+    <category term="TypeScript"/>
+  </entry>
+  <entry>
+    <title>Rolldown 使い方</title>
+    <id>https://cs.taka1156.site/rolldown.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/rolldown.html"/>
+    <published>2026-11-16T00:00:00+09:00</published>
+    <updated>2026-11-16T00:00:00+09:00</updated>
+    <summary>Rust 製バンドラー Rolldown の基本と、Vite 8 での使われ方を図解</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>oxlint・oxfmt 使い方</title>
+    <id>https://cs.taka1156.site/oxlint-oxfmt.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/oxlint-oxfmt.html"/>
+    <published>2026-11-16T00:00:00+09:00</published>
+    <updated>2026-11-16T00:00:00+09:00</updated>
+    <summary>ESLint・Prettier の代わりになる Rust 製の linter と formatter の使い方と、プラグイン一覧</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Void チートシート</title>
+    <id>https://cs.taka1156.site/void.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/void.html"/>
+    <published>2026-11-13T00:00:00+09:00</published>
+    <updated>2026-11-13T00:00:00+09:00</updated>
+    <summary>VoidZero 製の Vite フルスタックフレームワーク Void の、ファイル規約・API・void CLI を用途別にまとめたチートシート。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Void Platform チートシート</title>
+    <id>https://cs.taka1156.site/void-platform.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/void-platform.html"/>
+    <published>2026-11-13T00:00:00+09:00</published>
+    <updated>2026-11-13T00:00:00+09:00</updated>
+    <summary>会社の Cloudflare に入れる Void の共有デプロイ基盤 Void Platform の仕組み、インストール、開発者と管理者の使い方。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Void のデプロイ先：直接 Cloudflare vs Void Platform</title>
+    <id>https://cs.taka1156.site/void-deploy-targets.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/void-deploy-targets.html"/>
+    <published>2026-11-13T00:00:00+09:00</published>
+    <updated>2026-11-13T00:00:00+09:00</updated>
+    <summary>Void アプリを自分の Cloudflare に直接出す場合と Void Platform に出す場合の違い、メリット・デメリット、選び方。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>cf/config チートシート</title>
+    <id>https://cs.taka1156.site/cf-config.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/cf-config.html"/>
+    <published>2026-11-13T00:00:00+09:00</published>
+    <updated>2026-11-13T00:00:00+09:00</updated>
+    <summary>Cloudflare の新 CLI cf の設定ファイル cloudflare.config.ts の書き方（bindings・triggers・mode）をまとめた。</summary>
+    <category term="Cloudflare"/>
+  </entry>
+  <entry>
+    <title>Vite+ と vp コマンド チートシート</title>
+    <id>https://cs.taka1156.site/vite-plus.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/vite-plus.html"/>
+    <published>2026-11-07T00:00:00+09:00</published>
+    <updated>2026-11-07T00:00:00+09:00</updated>
+    <summary>Vite・Vitest・Oxlint などを 1 つにまとめた Vite+ の機能と、vp コマンドの使い方を用途別に一覧にしたチートシート。</summary>
+    <category term="開発ツール"/>
+  </entry>
+</feed>

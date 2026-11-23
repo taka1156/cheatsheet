@@ -1,6 +1,8 @@
 """メモの見た目の決まり（memo-style の「共通部品」「色のルール」）のチェック。lint から呼ぶ。
 
-- 共通部品（src/assets/memo-parts.css）の形: ざっくり言うと・よくある誤解
+- 共通部品（src/assets/memo-parts.css）の形: ざっくり言うと・よくある誤解・番号付きの手順
+- memo.config.json の strict_parts が true のサイトだけ: 関連メモ・参考・補足の文・凡例の形と、表の箱（.table-wrap）。
+  false なら、これらの部品は使ってもよい（CSS はどのサイトにもある）が形は強制せず、表の箱がないことだけ [注意] にする
 - アクセント色を付けてよい場所（h1・h2 の左線・段落のリンク・ボタンやタブの操作状態）以外で var(--accent) を使っていないか
 - 共通部品が決める色（--c-ok など）をページで上書きしていないか、飾り用の色やアクセント色に近い色を使っていないか
 
@@ -11,7 +13,7 @@ from __future__ import annotations
 import html
 import re
 
-from .config import accents
+from .config import CONFIG, accents
 
 # トップページと揃えるトークン（memo-style の「デザイントークン」）。--accent の値は build が上書きする
 TOKENS = {"--bg", "--surface", "--fg", "--fg-2", "--line", "--accent", "--chip"}
@@ -32,6 +34,8 @@ CODE_RE = re.compile(r"<pre\b.*?</pre>|<code\b.*?</code>", re.S | re.I)
 
 # 共通部品のセレクタ（ページの CSS で書き直さない）。番号付きの手順は基本形だけ（中に置く独自の要素の装飾はよい）
 PARTS_SELECTOR_RE = re.compile(r"\.summary\b|\.myth\b|ol\.steps(\s*>?\s*li(::?before)?|\s+b)?\s*$")
+# strict_parts のサイトだけ書き直しを禁じる共通部品のセレクタ（.note などはよくある名前なので、ほかのサイトでは自由に使える）
+STRICT_PARTS_SELECTOR_RE = re.compile(r"^\.(note|muted|legend|sources)$|\.related\b|\.table-wrap\s*$")
 # 操作の状態（ここに付くアクセント色は「操作できる」目印として許す）
 STATE_RE = re.compile(r":(hover|focus|focus-visible|focus-within|active|checked)\b"
                       r"|\[aria-(selected|pressed|current|expanded)\b|\.(on|active|is-active|selected|current)\b")
@@ -96,11 +100,17 @@ def _rules(text: str):
             yield sel, body
 
 
-def css_problems(text: str) -> list[str]:
+def strict_parts(strict: bool | None = None) -> bool:
+    """共通部品の形を強制するか（引数がなければ memo.config.json の strict_parts）。"""
+    return bool(CONFIG["strict_parts"]) if strict is None else strict
+
+
+def css_problems(text: str, strict: bool | None = None) -> list[str]:
     probs: list[str] = []
     accent_bad, parts_rules, parts_vars, odd_vars, near = [], [], set(), set(), set()
+    selectors = [PARTS_SELECTOR_RE] + ([STRICT_PARTS_SELECTOR_RE] if strict_parts(strict) else [])
     for sel, body in _rules(text):
-        if any(PARTS_SELECTOR_RE.search(s.strip()) for s in sel.split(",")):
+        if any(r.search(s.strip()) for s in sel.split(",") for r in selectors):
             parts_rules.append(sel)
         for prop, value in DECL_RE.findall(body):
             prop = prop.strip().lower()
@@ -222,7 +232,99 @@ def myth_problems(text: str) -> list[str]:
     return probs
 
 
-def design_check(text: str) -> tuple[list[str], list[str]]:
-    """(problems, notes)。"""
+RELATED_HEADING_RE = re.compile(r"<h2\b([^>]*)>((?:(?!</h2>).)*)</h2>", re.S)
+RELATED_TITLE = "関連メモ"
+RELATED_LI_RE = re.compile(r"<li\b[^>]*>(.*?)</li>", re.S)
+
+
+def related_problems(text: str) -> list[str]:
+    """関連メモ: <h2 id="related">関連メモ</h2><ul class="related"><li><a>名前</a> — つながり</li></ul> の形か。
+    本文の文の中に置いたリンクは対象にしない。"""
+    probs = []
+    for m in re.finditer(r"<(\w+)\b[^>]*\bclass=\"([^\"]*)\"", text):
+        if "related" in m.group(2).split() and m.group(1).lower() != "ul":
+            probs.append(f"class=\"related\" は <ul> にだけ付ける（今は <{m.group(1)}>）。"
+                         "<h2 id=\"related\">関連メモ</h2><ul class=\"related\"><li><a>名前</a> — つながり</li></ul>")
+            break
+    for m in re.finditer(r"<p\b[^>]*>(.*?)</p>", text, re.S):
+        if re.match(r"関連(メモ)?\s*[:：]", _plain(m.group(1))):
+            probs.append("「関連:」の段落ではなく、関連メモの節（<h2 id=\"related\">関連メモ</h2><ul class=\"related\">）にする")
+            break
+    heads = [h for h in RELATED_HEADING_RE.finditer(text) if re.fullmatch(r"関連(メモ|するメモ)?", _plain(h.group(2)))]
+    if not heads:
+        if re.search(r"<ul\b[^>]*\bclass=\"related\"", text):
+            probs.append(f"<ul class=\"related\"> の前に <h2 id=\"related\">{RELATED_TITLE}</h2> を置く")
+        return probs
+    h = heads[0]
+    if len(heads) > 1:
+        probs.append("関連メモの節が 2 つ以上ある")
+    if _plain(h.group(2)) != RELATED_TITLE or not re.search(r'\bid="related"', h.group(1)):
+        probs.append(f"関連メモの見出しは <h2 id=\"related\">{RELATED_TITLE}</h2> にする")
+    lm = re.match(r"\s*<ul\b[^>]*\bclass=\"related\"[^>]*>(.*?)</ul>", text[h.end():], re.S)
+    if not lm:
+        probs.append("関連メモの見出しのすぐ下は <ul class=\"related\"> にする")
+        return probs
+    for i, li in enumerate(RELATED_LI_RE.findall(lm.group(1)), 1):
+        mm = re.match(r"\s*<a\b[^>]*>(.*?)</a>(.*)", li, re.S)
+        if not mm:
+            probs.append(f"関連メモ {i} 項目目: リンク（<a>）から始める")
+            continue
+        name, rest = _plain(mm.group(1)), _plain(mm.group(2))
+        if re.search(r"[→←]", name):
+            probs.append(f"関連メモ {i} 項目目: リンクの文字に → や ← を付けない")
+        # 2 つのメモを「・」でまとめて 1 行にしてもよい（<a>A</a>・<a>B</a> — つながり）
+        if not re.search(r"(^|\s)—\s*\S", rest):
+            probs.append(f"関連メモ {i} 項目目: リンクの後に「 — このメモとどうつながるか」を書く")
+    return probs
+
+
+def table_problems(text: str) -> list[str]:
+    """表は <div class="table-wrap"> のすぐ内側に置く（スマホで表だけが横に動くように）。JS の中の表は見ない。"""
+    body = SCRIPT_RE.sub("", text)
+    bare = 0
+    for m in re.finditer(r"<table\b", body):
+        w = re.search(r"<div\b[^>]*\bclass=\"([^\"]*)\"[^>]*>\s*$", body[:m.start()])
+        if not (w and "table-wrap" in w.group(1).split()):
+            bare += 1
+    if bare:
+        return [f"表を <div class=\"table-wrap\"> に入れていない（{bare} 個）。<div class=\"table-wrap\"><table>…</table></div>"]
+    return []
+
+
+def note_problems(text: str) -> list[str]:
+    """補足の文は class="note" 1 つにそろえる（muted は使わない）。"""
+    if re.search(r"\bclass=\"[^\"]*\bmuted\b", text):
+        return ["補足の文は class=\"note\" にする（class=\"muted\" は使わない）"]
+    return []
+
+
+def sources_problems(text: str) -> list[str]:
+    """参考: <h2 id="sources">参考</h2> のすぐ下に <ul class="sources">。"""
+    probs = []
+    for m in re.finditer(r"<(\w+)\b[^>]*\bclass=\"([^\"]*)\"", text):
+        if "sources" in m.group(2).split() and m.group(1).lower() != "ul":
+            probs.append(f"class=\"sources\" は <ul> にだけ付ける（今は <{m.group(1)}>）")
+            break
+    for m in re.finditer(r"<p\b[^>]*>(.*?)</p>", text, re.S):
+        if re.match(r"(参考|出典)\s*[:：]", _plain(m.group(1))):
+            probs.append("「参考:」「出典:」の段落ではなく、<h2 id=\"sources\">参考</h2><ul class=\"sources\"> にする")
+            break
+    for h in RELATED_HEADING_RE.finditer(text):
+        if re.fullmatch(r"参考(文献|資料)?|出典", _plain(h.group(2))):
+            if _plain(h.group(2)) != "参考" or not re.search(r'\bid="sources"', h.group(1)):
+                probs.append("参考の見出しは <h2 id=\"sources\">参考</h2> にする")
+            if not re.match(r"\s*<ul\b[^>]*\bclass=\"sources\"", text[h.end():]):
+                probs.append("参考の見出しのすぐ下は <ul class=\"sources\"> にする")
+    return probs
+
+
+def design_check(text: str, strict: bool | None = None) -> tuple[list[str], list[str]]:
+    """(problems, notes)。strict（省略時は memo.config.json の strict_parts）が false なら、
+    関連メモ・参考・補足の文・凡例の形は見ず、表の箱がないことは notes（[注意]）にする。"""
     s_probs, notes = summary_problems(text)
-    return s_probs + myth_problems(text) + css_problems(text) + markup_problems(text), notes
+    probs = s_probs + myth_problems(text)
+    if strict_parts(strict):
+        probs += related_problems(text) + table_problems(text) + note_problems(text) + sources_problems(text)
+    else:
+        notes = notes + table_problems(text)
+    return probs + css_problems(text, strict) + markup_problems(text), notes

@@ -1,5 +1,15 @@
 [
  {
+  "file": "playwright.html",
+  "title": "Playwright 使い方",
+  "desc": "Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
   "file": "secretlint.html",
   "title": "secretlint 使い方",
   "desc": "API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート",

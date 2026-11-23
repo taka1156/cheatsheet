@@ -4,6 +4,7 @@
 
 ## Memos
 
+- [Playwright 使い方](https://cs.taka1156.site/md/playwright.md): Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。（開発ツール / 2026-11-24）
 - [secretlint 使い方](https://cs.taka1156.site/md/secretlint.md): API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート（セキュリティ, 開発ツール / 2026-11-23）
 - [ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）](https://cs.taka1156.site/md/oxc-migration.md): ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト（開発ツール / 2026-11-23）
 - [Homebrew 使い方](https://cs.taka1156.site/md/homebrew.md): macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。（開発ツール / 2026-11-23）

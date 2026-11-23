@@ -1,5 +1,16 @@
 [
  {
+  "file": "secretlint.html",
+  "title": "secretlint 使い方",
+  "desc": "API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート",
+  "tags": [
+   "セキュリティ",
+   "開発ツール"
+  ],
+  "date": "2026-11-23",
+  "quizzes": 0
+ },
+ {
   "file": "oxc-migration.html",
   "title": "ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）",
   "desc": "ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト",
@@ -263,7 +274,7 @@
  {
   "file": "vitest.html",
   "title": "Vitest 使い方",
-  "desc": "Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法",
+  "desc": "Vite の設定で動くテストランナー Vitest 5 の書き方・モック・CLI・設定と、v4 からの移行で落ちる点を用途別にまとめたチートシート",
   "tags": [
    "開発ツール"
   ],

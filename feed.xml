@@ -9,6 +9,16 @@
   <author><name>CheatSheet</name></author>
   <icon>https://cs.taka1156.site/assets/icon-192.png</icon>
   <entry>
+    <title>secretlint 使い方</title>
+    <id>https://cs.taka1156.site/secretlint.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/secretlint.html"/>
+    <published>2026-11-23T00:00:00+09:00</published>
+    <updated>2026-11-23T00:00:00+09:00</updated>
+    <summary>API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート</summary>
+    <category term="セキュリティ"/>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
     <title>ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）</title>
     <id>https://cs.taka1156.site/oxc-migration.html</id>
     <link rel="alternate" type="text/html" href="https://cs.taka1156.site/oxc-migration.html"/>
@@ -250,7 +260,7 @@
     <link rel="alternate" type="text/html" href="https://cs.taka1156.site/vitest.html"/>
     <published>2026-11-16T00:00:00+09:00</published>
     <updated>2026-11-16T00:00:00+09:00</updated>
-    <summary>Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法</summary>
+    <summary>Vite の設定で動くテストランナー Vitest 5 の書き方・モック・CLI・設定と、v4 からの移行で落ちる点を用途別にまとめたチートシート</summary>
     <category term="開発ツール"/>
   </entry>
   <entry>

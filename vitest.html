@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vitest 使い方</title>
-<meta name="description" content="Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法">
+<meta name="description" content="Vite の設定で動くテストランナー Vitest 5 の書き方・モック・CLI・設定と、v4 からの移行で落ちる点を用途別にまとめたチートシート">
 <meta name="memo:tags" content="開発ツール">
 <meta name="memo:date" content="2026-11-16">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
@@ -29,10 +29,6 @@
     --chip: #18222f;
   }
 }
-/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
-   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
-   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
-   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   background: var(--bg);
@@ -56,44 +52,88 @@ h2 {
   padding-left: 10px;
   border-left: 3px solid var(--accent);
 }
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
 p { margin: 8px 0; }
 a { color: var(--accent); }
 code {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.85em;
+  font-size: max(0.85em, 0.68rem);
   background: var(--chip);
   padding: 1px 5px;
   border-radius: 4px;
+  overflow-wrap: anywhere;
 }
 pre {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.8rem;
+  line-height: 1.6;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px 14px;
+  margin: 8px 0;
   overflow-x: auto;
 }
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 16px 18px;
 }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; margin: 10px 0; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.8rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* 比較 */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.vs > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); font-size: 0.84rem; }
+.vs b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
 
 /* タブ */
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .tab {
   border: 1px solid var(--line);
   background: var(--chip);
   color: var(--fg-2);
   border-radius: 999px;
   padding: 5px 14px;
+  min-height: 30px;
   font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
   cursor: pointer;
 }
 .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
 
 footer#memo-backlink {
   margin-top: 40px;
@@ -112,12 +152,6 @@ footer#memo-backlink a {
   text-decoration: none;
 }
 footer#memo-backlink a:hover { color: var(--accent); }
-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
-th { background: var(--chip); font-weight: 600; }
-td code, th code { word-break: break-all; }
-ul, ol { padding-left: 1.4em; margin: 8px 0; }
-li { margin: 2px 0; }
 </style>
 <!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
 <link rel="icon" href="assets/favicon.ico" sizes="any">
@@ -128,7 +162,7 @@ li { margin: 2px 0; }
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="CheatSheet">
 <meta property="og:title" content="Vitest 使い方">
-<meta property="og:description" content="Vite と設定を共有するテストランナー Vitest の基本的な書き方と実行方法">
+<meta property="og:description" content="Vite の設定で動くテストランナー Vitest 5 の書き方・モック・CLI・設定と、v4 からの移行で落ちる点を用途別にまとめたチートシート">
 <meta property="og:url" content="https://cs.taka1156.site/vitest.html">
 <meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
 <meta property="og:image:width" content="1200">
@@ -142,52 +176,245 @@ li { margin: 2px 0; }
 <body>
 <div class="wrap">
   <h1>Vitest 使い方</h1>
-  <p class="subtitle">Vite と設定を共有するテストランナー。Jest に近い書き方で、Vite+ には組み込み済み</p>
+  <p class="subtitle">Vite の設定・プラグインでテストを変換して動かすテストランナー。Jest とほぼ同じ書き方（v5.1 系・2026-11 時点）</p>
 
   <div class="card summary">
     <strong>ざっくり言うと</strong>
-    <ul><li>テストは <code>describe</code>・<code>it</code>・<code>expect</code> で書き、Jest とほぼ同じ書き方</li><li>Vite+ では <code>vp test</code> で実行でき、別途インストールしなくてよい</li><li>対象ファイルは <code>vite.config.ts</code> の <code>test.include</code> で決める</li></ul>
+    <ul>
+      <li>Vite と同じ設定・プラグインでテストファイルを変換して実行する、Jest 互換 API のテストランナー。</li>
+      <li><code>vitest</code> は端末ではウォッチ、CI や非 TTY では 1 回だけ実行。Vite+ では <code>vp test</code>（1 回）を使う。</li>
+      <li>v5 は <code>clearMocks</code> が既定で有効、<code>vi.mock</code> はトップレベル必須など、v4 から上げると落ちる点がある。</li>
+    </ul>
   </div>
 
-  <h2 id="example">テストの書き方</h2>
+  <h2 id="flow">動く仕組み</h2>
+  <div class="pipe">
+    <div class="st"><b>設定を読む</b><span><code>vitest.config.*</code> か <code>vite.config.*</code> の <code>test</code>（v5 は親ディレクトリを探さない）</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>Vite で変換</b><span>TS・JSX・エイリアス・プラグインをアプリと同じように処理</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>ワーカーで実行</b><span>既定は <code>pool: 'forks'</code>。ファイルごとに分離（<code>isolate</code>）</span></div>
+    <div class="ar" aria-hidden="true"></div>
+    <div class="st"><b>レポート</b><span>端末に表示。html・json・junit などは <code>.vitest/</code> に書く（v5）</span></div>
+  </div>
+  <p class="note">要件（v5）: Node.js 22.12.0 以上・Vite 6.4.0 以上。<code>vite</code> は peer 依存になったので、Yarn では <code>vite</code> を自分で入れる。</p>
 
-<pre>// src/sum.ts
-export function sum(a: number, b: number): number {
-  return a + b;
-}
+  <h2 id="write">テストの書き方</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="w-basic">基本</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="w-async">非同期</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="w-mod">each・修飾子</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="w-snap">スナップショット</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="w-type">型テスト</button>
+  </div>
+  <div class="panel" id="w-basic">
+<pre><code>// src/sum.test.ts（既定の対象は **/*.{test,spec}.?(c|m)[jt]s?(x)）
+import { describe, test, expect, beforeEach } from 'vitest'
+import { sum } from './sum'
 
-// src/sum.test.ts
-import { describe, it, expect } from &#x27;vitest&#x27;;
-import { sum } from &#x27;./sum&#x27;;
+describe('sum', () =&gt; {
+  beforeEach(() =&gt; { /* 各テストの前 */ })
 
-describe(&#x27;sum&#x27;, () =&gt; {
-  it(&#x27;2 つの数を足す&#x27;, () =&gt; {
-    expect(sum(1, 2)).toBe(3);
-  });
+  test('2 つの数を足す', () =&gt; {
+    expect(sum(1, 2)).toBe(3)              // === で比較
+    expect({ a: 1 }).toEqual({ a: 1 })     // 中身で比較
+    expect(() =&gt; sum()).toThrow('引数')    // 文字列はメッセージの部分一致
+  })
+})</code></pre>
+    <p class="note"><code>describe</code>・<code>test</code>・<code>expect</code> は既定では import が要る。<code>globals: true</code> にすると Jest のように import なしで使える（TS では <code>types: ["vitest/globals"]</code> も足す）。</p>
+  </div>
+  <div class="panel" id="w-async" hidden>
+<pre><code>test('取得できる', async () =&gt; {
+  await expect(fetchUser(1)).resolves.toMatchObject({ id: 1 })
+  await expect(fetchUser(-1)).rejects.toThrow('not found')
+})
 
-  it.each([
-    [0, 0, 0],
-    [-1, 1, 0],
-  ])(&#x27;sum(%i, %i) は %i&#x27;, (a, b, expected) =&gt; {
-    expect(sum(a, b)).toBe(expected);
-  });
-});</pre>
+test('いずれ true になる', async () =&gt; {
+  await expect.poll(() =&gt; queue.size).toBe(0)   // v5: 時間切れで失敗
+})</code></pre>
+    <p class="note">v5 では <code>resolves</code>・<code>rejects</code>・<code>toMatchFileSnapshot</code> を <code>await</code> し忘れるとテストが失敗する（v4 は警告だけ）。</p>
+  </div>
+  <div class="panel" id="w-mod" hidden>
+<pre><code>test.each([
+  [1, 1, 2],
+  [-1, 1, 0],
+])('sum(%i, %i) は %i', (a, b, expected) =&gt; {
+  expect(sum(a, b)).toBe(expected)
+})
 
-  <h2 id="cmd">実行コマンドと設定</h2>
+test.only('これだけ動かす', () =&gt; {})      // CI では allowOnly が false なので失敗する
+test.skip('飛ばす', () =&gt; {})
+test.todo('あとで書く')
+test.concurrent('並行に動かす', async () =&gt; {})
+test('並行にしない', { concurrent: false }, async () =&gt; {})  // v5 で .sequential の代わり</code></pre>
+  </div>
+  <div class="panel" id="w-snap" hidden>
+<pre><code>expect(render(&lt;Button /&gt;)).toMatchSnapshot()          // __snapshots__/*.snap に保存
+expect(format(data)).toMatchInlineSnapshot()          // 初回にテストの中へ書き込まれる
+await expect(html).toMatchFileSnapshot('./out.html')  // 任意のファイルと比べる</code></pre>
+    <p class="note">意図して変えたときは <code>vitest -u</code>（<code>--update</code>）で更新。ウォッチ中は <code>u</code> キー。</p>
+  </div>
+  <div class="panel" id="w-type" hidden>
+<pre><code>// src/types.test-d.ts（*.test-d.ts が型テストの既定の対象）
+import { expectTypeOf, assertType, test } from 'vitest'
 
-<div class="table-wrap"><table>
-<tr><th>やりたいこと</th><th>コマンド・設定</th></tr>
-<tr><td>テストを実行</td><td><code>vp test</code></td></tr>
-<tr><td>対象ファイル</td><td><code>vite.config.ts</code> の <code>test.include</code></td></tr>
-<tr><td>実行環境</td><td><code>test.environment</code>（例: <code>'node'</code>、DOM は <code>'jsdom'</code> など）</td></tr>
-</table></div>
-<pre>test: {
-  include: [&#x27;src/**/*.test.ts&#x27;],
-  environment: &#x27;node&#x27;,
-},</pre>
+test('型', () =&gt; {
+  expectTypeOf(mount).toBeFunction()
+  expectTypeOf(mount).parameter(0).toExtend&lt;{ name: string }&gt;()
+  // @ts-expect-error name は string
+  assertType(mount({ name: 42 }))
+})</code></pre>
+    <p class="note">実行は <code>vitest --typecheck</code>（中で <code>tsc</code> か <code>vue-tsc</code> を呼ぶ）。</p>
+  </div>
 
-  <h2 id="sources">出典と確認日</h2>
-  <div class="card"><ul><li><a href="https://vitest.dev/">Vitest 公式</a></li><li><a href="https://vitest.dev/config/">Vitest: 設定</a></li><li><a href="https://viteplus.dev/config/">Vite+ 設定（test）</a></li></ul><p>確認日: 2026-11-16。Vite+ は 2026年9月に 1.0 の安定版となった。機能は発展途上のため、Vitest を含め版ごとに公式で確かめる。</p></div>
+  <h2 id="mock">モック（<code>vi</code>）</h2>
+  <div class="table-wrap stack"><table>
+    <thead><tr><th>API</th><th>やること</th></tr></thead>
+    <tbody>
+      <tr><td data-l="API"><code>vi.fn(impl?)</code></td><td data-l="やること">呼び出しを記録する関数を作る。<code>.mockReturnValue()</code>・<code>.mockResolvedValue()</code>・<code>.mockImplementationOnce()</code> で振る舞いを決める</td></tr>
+      <tr><td data-l="API"><code>vi.spyOn(obj, 'method')</code></td><td data-l="やること">既存のメソッドを包んで記録する。元に戻せる</td></tr>
+      <tr><td data-l="API"><code>vi.mock('./mod', factory?)</code></td><td data-l="やること">モジュールを差し替える。ファイルの先頭に巻き上げられる（hoist）。factory なしなら自動モック</td></tr>
+      <tr><td data-l="API"><code>vi.hoisted(() =&gt; …)</code></td><td data-l="やること"><code>vi.mock</code> の factory から使う値を、巻き上げより前に用意する</td></tr>
+      <tr><td data-l="API"><code>vi.importActual('./mod')</code></td><td data-l="やること">factory の中で本物を読み、一部だけ差し替える</td></tr>
+      <tr><td data-l="API"><code>vi.mocked(fn)</code></td><td data-l="やること">TS でモックの型を付けるだけ（実行時は何もしない）</td></tr>
+      <tr><td data-l="API"><code>vi.when(spy).calledWith(…).thenReturn(…)</code></td><td data-l="やること">引数ごとに返す値を決める（v5 で追加）。<code>thenResolve</code>・<code>thenThrow</code> などもある</td></tr>
+      <tr><td data-l="API"><code>vi.useFakeTimers()</code></td><td data-l="やること">タイマーと日時を偽物にする。<code>vi.advanceTimersByTime(ms)</code>・<code>vi.runAllTimers()</code>・<code>vi.setSystemTime(date)</code> で進める。v5 は <code>Temporal</code> も対象</td></tr>
+      <tr><td data-l="API"><code>vi.stubEnv</code>・<code>vi.stubGlobal</code></td><td data-l="やること">環境変数・グローバル変数を差し替える。<code>vi.unstubAllEnvs()</code> などで戻す</td></tr>
+    </tbody>
+  </table></div>
+<pre><code>import { vi, test, expect } from 'vitest'
+import { getUser } from './api'
+import { greet } from './greet'
+
+vi.mock('./api', async (importOriginal) =&gt; ({
+  ...(await importOriginal&lt;typeof import('./api')&gt;()),
+  getUser: vi.fn(),               // getUser だけ差し替え
+}))
+
+test('名前で挨拶する', async () =&gt; {
+  vi.mocked(getUser).mockResolvedValue({ name: 'taka' })
+  expect(await greet(1)).toBe('こんにちは taka')
+  expect(getUser).toHaveBeenCalledWith(1)
+})</code></pre>
+
+  <h3>後片付けの 3 段階</h3>
+  <div class="table-wrap stack"><table>
+    <thead><tr><th>メソッド</th><th>呼び出し履歴</th><th>実装</th><th>自動でやる設定（既定）</th></tr></thead>
+    <tbody>
+      <tr><td data-l="メソッド"><code>mockClear()</code> / <code>vi.clearAllMocks()</code></td><td data-l="履歴">消す</td><td data-l="実装">そのまま</td><td data-l="設定"><code>clearMocks</code>（v5 から <b>true</b>）</td></tr>
+      <tr><td data-l="メソッド"><code>mockReset()</code> / <code>vi.resetAllMocks()</code></td><td data-l="履歴">消す</td><td data-l="実装">作ったときの実装に戻す（<code>vi.fn()</code> なら <code>undefined</code> を返す）</td><td data-l="設定"><code>mockReset</code>（false）</td></tr>
+      <tr><td data-l="メソッド"><code>mockRestore()</code> / <code>vi.restoreAllMocks()</code></td><td data-l="履歴"><code>mockRestore</code> は消す。<code>vi.restoreAllMocks</code> は消さない</td><td data-l="実装"><code>vi.spyOn</code> したものを本物に戻す</td><td data-l="設定"><code>restoreMocks</code>（false）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cli">CLI</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="c-cmd">コマンド</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-filter">絞り込み</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-ci">CI・レポート</button>
+  </div>
+  <div class="panel" id="c-cmd">
+    <div class="table-wrap stack"><table>
+      <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td data-l="コマンド"><code>vitest</code></td><td data-l="意味">端末ならウォッチ、CI・非 TTY なら 1 回実行（<code>vitest watch</code>・<code>vitest dev</code> も同じ）</td></tr>
+        <tr><td data-l="コマンド"><code>vitest run</code></td><td data-l="意味">ウォッチせず 1 回だけ</td></tr>
+        <tr><td data-l="コマンド"><code>vitest related src/a.ts</code></td><td data-l="意味">そのソースを（静的 import で）使うテストだけ。lint-staged では <code>--run</code> を付ける</td></tr>
+        <tr><td data-l="コマンド"><code>vitest list</code></td><td data-l="意味">対象のテスト名を一覧。v5 は実行せず静的に解析（<code>--filesOnly</code>・<code>--json</code>）</td></tr>
+        <tr><td data-l="コマンド"><code>vitest doctor</code></td><td data-l="意味">pool・isolate などを変えて実測し、速くなる設定を勧める（v5 で追加）</td></tr>
+        <tr><td data-l="コマンド"><code>vitest bench</code></td><td data-l="意味">ベンチマーク（<code>bench()</code>）だけ実行</td></tr>
+        <tr><td data-l="コマンド"><code>vitest init browser</code></td><td data-l="意味">ブラウザモードの設定を作る</td></tr>
+        <tr><td data-l="コマンド"><code>vitest --ui</code></td><td data-l="意味">ブラウザの UI。v5 は表示された <code>?token=…</code> 付きの URL で開く</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="c-filter" hidden>
+<pre><code>vitest user                       # パスに "user" を含むファイル（正規表現・glob ではない）
+vitest src/user.test.ts:10        # 10 行目のテスト（フルのファイル名が要る）
+vitest -t 'login'                 # テスト名で絞る
+vitest -t 'auth &gt; login'          # v5: describe とテスト名は ' &gt; ' でつないだ名前に一致
+vitest --project unit             # projects の名前で絞る（--project='!e2e' で除外）
+vitest run --changed              # git で変わったファイルに関係するテスト
+vitest run --last-failed          # 前回失敗したテストだけ（v5.1）
+vitest run --since-last-run       # 前回から依存が変わったテストだけ（v5.1・実験的）</code></pre>
+  </div>
+  <div class="panel" id="c-ci" hidden>
+<pre><code>vitest run --coverage                          # カバレッジ（既定の provider は v8）
+vitest run --reporter=junit --outputFile=junit.xml
+vitest run --bail 1                            # 1 件失敗したら止める
+vitest run --repeats 20                        # 結果に関係なく各テストを繰り返す（不安定なテスト探し）
+vitest run --passWithNoTests                   # テストが無くても成功
+
+# シャード: 分けて実行 → blob を集めてまとめる（既定の置き場所は .vitest/blob/）
+vitest run --shard=1/3 --reporter=blob
+vitest --merge-reports --reporter=junit</code></pre>
+  </div>
+
+  <h2 id="config">設定</h2>
+<pre><code>// vitest.config.ts（vite.config.ts の test に書いてもよい）
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    include: ['src/**/*.test.ts'],
+    environment: 'node',        // DOM が要るなら 'jsdom' か 'happy-dom'（別途インストール）
+    globals: false,             // true で describe などを import なしで使える
+    setupFiles: ['./test/setup.ts'],
+    // clearMocks: false,       // v4 と同じにしたいとき
+    coverage: {
+      provider: 'v8',           // または 'istanbul'（@vitest/coverage-* を入れる）
+      include: ['src/**'],
+      thresholds: { lines: 80 },
+    },
+    projects: [                 // 種類ごとに設定を分ける
+      { test: { name: 'unit', include: ['**/*.unit.test.ts'] } },
+      { test: { name: 'dom', environment: 'happy-dom', include: ['**/*.dom.test.ts'] } },
+    ],
+  },
+})</code></pre>
+  <p class="note">v5 では、インラインで書いた project はルートの設定（plugins・<code>resolve.alias</code>・<code>setupFiles</code> など）を既定で引き継ぐ（<code>extends: true</code>）。配列は上書きではなく足される。引き継がないなら <code>extends: false</code>。</p>
+
+  <h3>Vite+ で使うとき</h3>
+  <div class="vs">
+    <div><b>Vitest 単体</b><code>vitest</code> はウォッチ、<code>vitest run</code> で 1 回。import は <code>'vitest'</code>。設定は <code>vitest.config.ts</code> でもよい</div>
+    <div><b>Vite+</b><code>vp test</code> は 1 回、<code>vp test watch</code> でウォッチ。import は <code>'vite-plus/test'</code>。設定は <code>vite.config.ts</code> の <code>test</code></div>
+  </div>
+
+  <h2 id="migrate">v4 → v5 で落ちやすい所</h2>
+  <div class="table-wrap stack"><table>
+    <thead><tr><th>変更</th><th>症状</th><th>直し方</th></tr></thead>
+    <tbody>
+      <tr><td data-l="変更"><code>clearMocks</code> が既定で true</td><td data-l="症状">トップレベルや <code>beforeAll</code> で記録した呼び出しが回数に入らなくなる</td><td data-l="直し方">各テストの中で呼ぶ。一時しのぎは <code>clearMocks: false</code></td></tr>
+      <tr><td data-l="変更"><code>vi.mock</code>・<code>vi.hoisted</code> はトップレベルだけ</td><td data-l="症状"><code>describe</code> の中などに書くとエラー（v4 は警告）</td><td data-l="直し方">ファイルの一番外に移す</td></tr>
+      <tr><td data-l="変更">非同期アサーションの await 忘れ</td><td data-l="症状">テストが失敗する</td><td data-l="直し方"><code>await expect(…).resolves</code></td></tr>
+      <tr><td data-l="変更"><code>-t</code> の名前のつなぎ方</td><td data-l="症状"><code>-t 'math adds'</code> が一致しない</td><td data-l="直し方"><code>-t 'math &gt; adds'</code> か 1 区切りだけで書く</td></tr>
+      <tr><td data-l="変更"><code>.sequential</code> の削除</td><td data-l="症状"><code>test.sequential</code> が無い</td><td data-l="直し方"><code>{ concurrent: false }</code></td></tr>
+      <tr><td data-l="変更">設定ファイルを親ディレクトリで探さない</td><td data-l="症状">サブディレクトリで実行すると設定が読まれない</td><td data-l="直し方"><code>--config</code> で渡し、<code>--dir</code> で範囲を決める</td></tr>
+      <tr><td data-l="変更">出力先が <code>.vitest/</code> に集約</td><td data-l="症状">CI のアーティファクトのパスが空</td><td data-l="直し方">パスを <code>.vitest/</code> に。<code>.gitignore</code> も 1 行で済む</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>vitest コマンドはいつもウォッチモードで止まらない</summary><p>CI や非 TTY（パイプ・lint-staged など）では自動で 1 回実行になる。ただし lint-staged から <code>vitest related</code> を呼ぶときは、公式も <code>--run</code> を付けるよう勧めている。</p></details>
+  <details class="myth"><summary>describe の中に vi.mock を書けば、そのブロックだけ差し替わる</summary><p><code>vi.mock</code> はファイルの先頭に巻き上げられるので、ファイル全体に効く。v5 ではトップレベル以外に書くとエラーになる。テストごとに変えたいなら、モックした関数の振る舞いをテストの中で <code>mockReturnValue</code> などで決める。</p></details>
+  <details class="myth"><summary>v5 で clearMocks が既定になったので、モックの実装も毎回リセットされる</summary><p>消えるのは呼び出しの履歴だけで、<code>mockReturnValue</code> などで決めた実装は残る。実装も戻すなら <code>mockReset: true</code>、<code>vi.spyOn</code> を本物に戻すなら <code>restoreMocks: true</code>。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="vite-plus.html">Vite+ と vp コマンド チートシート</a> — Vitest を <code>vp test</code> として同梱する統合ツールチェーン</li>
+    <li><a href="tsconfig.html">tsconfig 設定例</a> — <code>globals: true</code> のときに足す <code>types</code> の書き場所</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://vitest.dev/guide/">Vitest Guide</a></li>
+    <li><a href="https://vitest.dev/guide/cli">Vitest: Command Line Interface</a></li>
+    <li><a href="https://vitest.dev/api/vi">Vitest: vi API</a></li>
+    <li><a href="https://vitest.dev/guide/migration">Vitest: Migrating to Vitest 5.0</a></li>
+    <li><a href="https://vitest.dev/blog/vitest-5">Vitest 5.0 is out!</a>・<a href="https://vitest.dev/blog/vitest-5-1">Vitest 5.1 is out!</a></li>
+    <li><a href="https://viteplus.dev/config/">Vite+ 設定（test）</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-23（Vitest 5.1.1）。</p>
 
   <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
 </div>

@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -255,7 +254,7 @@ export default defineConfig({
   </div>
 
   <h3>CLI オプション</h3>
-  <div class="tbl">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>オプション</th><th>意味</th></tr></thead>
       <tbody>
@@ -305,7 +304,7 @@ input: {
     <p class="note">自己署名証明書の HTTPS から読むときは、環境変数 <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code> が要る（開発時のみ）。</p>
   </div>
   <div class="panel" id="cf-output" hidden>
-    <div class="tbl">
+    <div class="table-wrap">
       <table>
         <thead><tr><th>キー</th><th>意味</th></tr></thead>
         <tbody>
@@ -425,7 +424,7 @@ client.interceptors.request.eject(id);   // 外す（ID か関数の参照で）
     <button class="tab" role="tab" aria-selected="false" data-panel="pl-state">状態管理</button>
   </div>
   <div class="panel" id="pl-core">
-    <div class="tbl">
+    <div class="table-wrap">
       <table>
         <thead><tr><th>プラグイン</th><th>生成物・主なオプション</th></tr></thead>
         <tbody>
@@ -437,7 +436,7 @@ client.interceptors.request.eject(id);   // 外す（ID か関数の参照で）
     </div>
   </div>
   <div class="panel" id="pl-client" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
         <thead><tr><th>プラグイン</th><th>使う場面</th></tr></thead>
         <tbody>
           <tr><td data-l="プラグイン"><code>@hey-api/client-fetch</code></td><td data-l="使う場面">既定。Fetch API の薄いラッパー</td></tr>
@@ -455,7 +454,7 @@ client.interceptors.request.eject(id);   // 外す（ID か関数の参照で）
   { name: '@hey-api/sdk', validator: 'zod', transformer: true },
   { name: '@hey-api/transformers', dates: true },   // 日付文字列を Date に変換
 ],</code></pre>
-    <div class="tbl">
+    <div class="table-wrap">
       <table>
         <thead><tr><th>プラグイン</th><th>生成物・用途</th></tr></thead>
         <tbody>

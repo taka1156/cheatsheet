@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -417,7 +416,7 @@ docker run -p 80:8080 -e BASE_URL=/swagger ... docker.swagger.io/swaggerapi/swag
 
   <h2 id="config">Swagger UI の主な設定</h2>
   <p><code>SwaggerUIBundle({ ... })</code>・<code>&lt;SwaggerUI ... /&gt;</code> の props・Docker の環境変数で同じ設定を渡せる。</p>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>キー</th><th>Docker 変数</th><th>既定値</th><th>用途</th></tr></thead>
       <tbody>

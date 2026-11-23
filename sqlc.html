@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -232,7 +231,7 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"</code></pre>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>キー（<code>gen.go</code> の下）</th><th>意味</th></tr></thead>
       <tbody>
@@ -262,7 +261,7 @@ INSERT INTO authors (name, bio) VALUES ($1, $2) RETURNING *;
 
 -- name: DeleteAuthor :exec
 DELETE FROM authors WHERE id = $1;</code></pre>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>注釈</th><th>生成される関数の戻り値</th></tr></thead>
       <tbody>
@@ -279,7 +278,7 @@ DELETE FROM authors WHERE id = $1;</code></pre>
   </div>
 
   <h2 id="macros">マクロ</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>マクロ</th><th>用途</th></tr></thead>
       <tbody>
@@ -336,7 +335,7 @@ return tx.Commit(ctx)</code></pre>
   </div>
 
   <h2 id="cli">コマンド</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
       <tbody>

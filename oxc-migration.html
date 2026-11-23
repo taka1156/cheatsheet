@@ -116,7 +116,6 @@ table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9re
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; }
 td code, th code { word-break: break-all; }
-.tbl { overflow-x: auto; }
 ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 .note { color: var(--fg-2); font-size: 0.85rem; }
@@ -207,7 +206,7 @@ details.script-box > summary { cursor: pointer; font-weight: 700; margin-bottom:
   </div>
   <div class="panel card" id="f-solo" hidden>
     <p>Vite+ を使わず、oxlint・oxfmt を単体で入れるときの手順。設定は <code>.oxlintrc.json</code>・<code>.oxfmtrc.json</code> に出る（Vite+ に移すときは <code>vp migrate</code> が <code>vite.config.ts</code> にまとめる）。</p>
-    <div class="tbl"><table>
+    <div class="table-wrap"><table>
       <tr><th>やること</th><th>コマンド</th></tr>
       <tr><td>ESLint の flat config を変換</td><td><code>npx @oxlint/migrate</code>（パスを渡すなら <code>npx @oxlint/migrate ./eslint.config.mjs</code>）</td></tr>
       <tr><td>変換できなかったルールを見る</td><td><code>npx @oxlint/migrate --details</code></td></tr>
@@ -222,7 +221,7 @@ details.script-box > summary { cursor: pointer; font-weight: 700; margin-bottom:
   </div>
 
   <h2 id="vp-migrate">vp migrate が変換するもの・しないもの</h2>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>対象</th><th>扱い</th></tr>
     <tr><td>ESLint の flat config</td><td>Oxlint の設定（<code>lint</code>）に変換。ESLint の依存・設定・スクリプトは置き換え</td></tr>
     <tr><td>旧形式の <code>.eslintrc</code></td><td>ESLint とその lint スクリプトを残す</td></tr>
@@ -272,7 +271,7 @@ export default defineConfig({
     '*': 'vp check --fix',          // 公式の既定。glob ごとに分けてもよい
   },
 });</pre>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>やりたいこと</th><th>コマンド・設定</th></tr>
     <tr><td>フックの状態を見る</td><td><code>vp hooks status</code></td></tr>
     <tr><td>この clone だけフックを止める</td><td><code>vp hooks disable</code>（戻すときは <code>vp hooks enable</code>）</td></tr>
@@ -287,7 +286,7 @@ export default defineConfig({
 <pre>bash migrate-husky-to-vp.sh --dry-run          # 変わる内容を表示するだけ
 bash migrate-husky-to-vp.sh                    # 実行（未コミットの変更があると止まる）
 bash migrate-husky-to-vp.sh --default-staged   # lint-staged を変換せず '*': 'vp check --fix' にする</pre>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>やること</th><th>中身</th></tr>
     <tr><td>lint-staged → <code>staged</code></td><td><code>package.json</code> の <code>lint-staged</code>・<code>.lintstagedrc(.json)</code> を読み、<code>eslint</code>・<code>oxlint</code> → <code>vp lint --fix</code>、<code>prettier</code>・<code>oxfmt</code> → <code>vp fmt</code>、両方あれば <code>vp check --fix</code> にまとめる。それ以外のコマンドは残す。<code>defineConfig({</code> の直後に挿入</td></tr>
     <tr><td><code>.husky/*</code> → <code>.vite-hooks/*</code></td><td>husky v8 以前の shebang と <code>husky.sh</code> の読み込みを消し、<code>npx lint-staged</code> などを <code>vp staged</code> に置き換える</td></tr>

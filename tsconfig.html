@@ -112,7 +112,7 @@ footer#memo-backlink a {
   text-decoration: none;
 }
 footer#memo-backlink a:hover { color: var(--accent); }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; }
 td code, th code { word-break: break-all; }
@@ -171,7 +171,7 @@ li { margin: 2px 0; }
 
   <h2 id="opts">主要オプション</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>オプション</th><th>意味</th></tr>
 <tr><td><code>target</code></td><td>出力する JS の版（例: <code>ES2022</code>）</td></tr>
 <tr><td><code>lib</code></td><td>使える標準ライブラリの型（例: <code>ES2022</code>、ブラウザ向けなら <code>DOM</code> を追加）</td></tr>
@@ -183,16 +183,16 @@ li { margin: 2px 0; }
 <tr><td><code>noEmit</code></td><td>JS を出力せず型チェックだけ行う</td></tr>
 <tr><td><code>verbatimModuleSyntax</code></td><td>型だけの import を <code>import type</code> と明示させる（公式の推奨設定に含まれる）</td></tr>
 <tr><td><code>include</code> / <code>exclude</code></td><td>対象に含める・除くファイル</td></tr>
-</table>
+</table></div>
 
 
   <h2 id="env">実行環境ごとの選び方</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>実行環境</th><th>module</th><th>moduleResolution</th></tr>
 <tr><td>Node.js（ESM）</td><td><code>NodeNext</code></td><td><code>NodeNext</code></td></tr>
 <tr><td>バンドラー経由（Vite・webpack・esbuild など）</td><td><code>ESNext</code></td><td><code>bundler</code></td></tr>
-</table>
+</table></div>
 
 
   <h2 id="plus">+α: バンドラー固有の設定例</h2>

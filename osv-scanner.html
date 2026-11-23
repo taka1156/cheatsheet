@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -231,7 +230,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="cm-out">出力・その他</button>
   </div>
   <div class="panel" id="cm-src">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="コマンド"><code>osv-scanner scan source -r .</code></td><td data-l="意味">ディレクトリを再帰的にたどり、ロックファイルなどを見つけて照合（<code>scan source</code> は省略でき、<code>osv-scanner -r .</code> と書いても同じ。<code>-r</code> がないとサブディレクトリに入らない）</td></tr>
@@ -247,7 +246,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     </table></div>
   </div>
   <div class="panel" id="cm-img" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="コマンド"><code>osv-scanner scan image my-app:1.2.3</code></td><td data-l="意味">ローカルになければ pull し、<code>docker save</code> した中身を調べる。コンテナは起動しない</td></tr>
@@ -258,7 +257,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <p class="note">層を意識して調べ、OS パッケージ（Alpine・Debian・Ubuntu など）と言語の依存（Go・Java・Node・Python など）を見る。ソースのディレクトリと同時には指定できない。</p>
   </div>
   <div class="panel" id="cm-out" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="コマンド"><code>--format json --output-file result.json</code></td><td data-l="意味">形式を選んでファイルへ（旧名 <code>--output</code> は非推奨）。JSON のときは結果だけが標準出力に出る</td></tr>
@@ -270,7 +269,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
 
   <h2 id="output">出力形式と終了コード</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th><code>--format</code></th><th>使いどころ</th></tr></thead>
     <tbody>
       <tr><td data-l="形式"><code>table</code>（既定）・<code>vertical</code></td><td data-l="使いどころ">端末で読む</td></tr>
@@ -281,7 +280,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td data-l="形式"><code>cyclonedx-1-4</code>〜<code>1-7</code>・<code>spdx-2-3</code></td><td data-l="使いどころ">SBOM として出す</td></tr>
     </tbody>
   </table></div>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>終了コード</th><th>意味</th><th>CI での扱い</th></tr></thead>
     <tbody>
       <tr><td data-l="コード"><code>0</code></td><td data-l="意味">依存は見つかり、検出なし</td><td data-l="扱い">通す</td></tr>

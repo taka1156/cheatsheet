@@ -112,7 +112,7 @@ footer#memo-backlink a {
   text-decoration: none;
 }
 footer#memo-backlink a:hover { color: var(--accent); }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; }
 td code, th code { word-break: break-all; }
@@ -179,12 +179,12 @@ await bundle.close();</pre>
 
   <h2 id="vite">Vite 8 から使うとき</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>やりたいこと</th><th>書く場所</th></tr>
 <tr><td>開発サーバー</td><td><code>vp dev</code>（または <code>vite</code>）</td></tr>
 <tr><td>本番ビルド</td><td><code>vp build</code>（または <code>vite build</code>）。Rolldown が使われる</td></tr>
 <tr><td>出力先の変更</td><td><code>vite.config.ts</code> の <code>build.outDir</code></td></tr>
-</table>
+</table></div>
 <p>Vite の設定を変えれば Rolldown の設定も変わる。Vite 8 ではバンドラー単体の設定を別に書く場面は少ない。</p>
 
 

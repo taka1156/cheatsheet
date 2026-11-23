@@ -146,7 +146,6 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
 @media (max-width: 480px) { .tree div { grid-template-columns: 1fr; gap: 0; padding: 4px 0; } }
 
 /* 表 */
-.tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
@@ -320,7 +319,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <text class="t-sub" x="450" y="904">UI アダプター（@void/react など）・任意の void.config.ts ・ ビルドは Vite / Vite+</text>
     </svg>
   </div>
-  <div class="tbl-wrap card" style="margin-top:10px">
+  <div class="table-wrap card" style="margin-top:10px">
     <table>
       <tr><th>図の段</th><th>中身</th></tr>
       <tr><td><strong>Void SDK</strong></td><td><code>routes/</code>・<code>pages/</code> は Hono ＋ Vite でルーティングと SSR、<code>void/db</code> は Drizzle、<code>void/auth</code> は Better Auth を通る。<code>void/kv</code>・<code>void/storage</code>・<code>void/ai</code>・<code>queues/</code>・<code>crons/</code> は推論で Cloudflare のリソースに直接つながる</td></tr>
@@ -363,7 +362,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
 
   <h2 id="apptypes">3 種類のアプリ</h2>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>種類</th><th>中身・判定</th></tr>
       <tr><td><strong>Void アプリ</strong></td><td>Void がルーティングとデプロイを担当。API だけ（<code>routes/</code>）／SPA ＋ API（<code>src/</code> ＋ <code>routes/</code>）／ページモード（<code>pages/</code> で SSR）のどれでもよい</td></tr>
@@ -418,7 +417,7 @@ void deploy --platform void --project my-app</code></pre>
     <div><span>.void/</span><span>自動生成の型とローカル状態（gitignore）。<code>void prepare</code> で作る</span></div>
   </div>
   <h3 style="margin-top:14px">ルーティングの書き方（routes/ と pages/ 共通）</h3>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>ファイル名</th><th>意味</th></tr>
       <tr><td><code>users/[id].ts</code></td><td>動的セグメント → <code>/users/:id</code>。値は <code>c.req.param('id')</code></td></tr>
@@ -508,7 +507,7 @@ export default defineConfig({ plugins: [voidPlugin(), voidReact()] });</code></p
 import { db } from 'void/db';
 import { users } from '@schema';
 const rows = await db.select().from(users);</code></pre>
-    <div class="tbl-wrap">
+    <div class="table-wrap">
       <table>
         <tr><th>やること</th><th>コマンド</th></tr>
         <tr><td>スキーマとルートのひな形を作る</td><td><code>void gen model &lt;name&gt; [cols...]</code></td></tr>
@@ -525,7 +524,7 @@ const rows = await db.select().from(users);</code></pre>
   </div>
 
   <div class="panel card" id="a-res" hidden>
-    <div class="tbl-wrap">
+    <div class="table-wrap">
       <table>
         <tr><th>import</th><th>推論されるバインディング・使い方</th></tr>
         <tr><td><code>import { kv } from 'void/kv'</code></td><td><code>KV</code>（KVNamespace）。<code>kv.get&lt;User&gt;('user:1')</code>・<code>kv.put(key, value, { ttl: 3600 })</code>・<code>kv.delete(key)</code>。値は自動で JSON に変換される</td></tr>
@@ -590,7 +589,7 @@ import { env } from 'void/env';</code></pre>
   <h2 id="cli">void CLI チートシート</h2>
   <p class="note">パッケージスクリプト以外では <code>npx void</code>・<code>pnpm void</code>・<code>vpx void</code> などで実行。<code>void &lt;command&gt; --help</code> はサインインなしで見られる。</p>
   <input class="filter" type="search" placeholder="絞り込み（例: db、ログ、secret）" aria-label="コマンドを絞り込み" data-target="cli-table">
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table id="cli-table">
       <tr><th>コマンド</th><th>やること</th></tr>
       <tr><td><code>void init</code></td><td>新規・既存プロジェクトのセットアップ（コーディングエージェント用の <code>AGENTS.md</code> とスキルも）</td></tr>

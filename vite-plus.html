@@ -223,7 +223,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="t-run">タスク・キャッシュ</button>
     <button class="tab" role="tab" aria-selected="false" data-panel="t-env">環境・Git フック</button>
   </div>
-  <div class="panel card" id="t-setup">
+  <div class="panel card table-wrap" id="t-setup">
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>curl -fsSL https://vite.plus | bash</code></td><td>グローバル CLI を入れる（macOS / Linux）。入れたら新しいシェルで <code>vp help</code></td></tr>
 <tr><td><code>irm https://vite.plus/ps1 | iex</code></td><td>グローバル CLI を入れる（Windows PowerShell）</td></tr>
@@ -239,7 +239,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <tr><td><code>pnpm exec vp check</code></td><td>グローバル CLI を入れず、プロジェクトの vite-plus 経由で使う</td></tr>
 </tbody></table>
   </div>
-  <div class="panel card" id="t-pkg" hidden>
+  <div class="panel card table-wrap" id="t-pkg" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>vp install</code></td><td>package.json とロックファイルどおりに入れる（パッケージマネージャーは自動で選ばれる）</td></tr>
 <tr><td><code>vp install --frozen-lockfile</code></td><td>ロックファイルの変更が必要なら失敗させる（CI 向け）</td></tr>
@@ -255,7 +255,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <tr><td><code>vp pm audit --json</code></td><td><code>vp pm &lt;command&gt;</code> で、検出したパッケージマネージャーに合わせてコマンドを実行（追加のオプションは <code>--</code> の後ろに書くと、そのマネージャーへ渡る）</td></tr>
 </tbody></table>
   </div>
-  <div class="panel card" id="t-dev" hidden>
+  <div class="panel card table-wrap" id="t-dev" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>vp dev</code></td><td>Vite の開発サーバーを起動（HMR）</td></tr>
 <tr><td><code>vp build</code></td><td>本番ビルド。<code>--watch</code>・<code>--sourcemap</code></td></tr>
@@ -266,7 +266,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <tr><td><code>vp pack --exe</code></td><td>単体で動く実行ファイルを作る（Node.js 25.7.0 以上。<code>vp env use 26</code>）</td></tr>
 </tbody></table>
   </div>
-  <div class="panel card" id="t-check" hidden>
+  <div class="panel card table-wrap" id="t-check" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>vp check</code></td><td>フォーマット → lint → 型チェックをまとめて実行</td></tr>
 <tr><td><code>vp check --fix</code></td><td>フォーマットと自動修正をかける（ファイルが変わる）</td></tr>
@@ -281,7 +281,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <tr><td><code>vp staged</code></td><td>ステージしたファイルにだけチェック（設定は <code>staged</code>）。<code>--fail-on-changes</code></td></tr>
 </tbody></table>
   </div>
-  <div class="panel card" id="t-run" hidden>
+  <div class="panel card table-wrap" id="t-run" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>vp run build</code></td><td>タスク（vite.config.ts の <code>run.tasks</code> か package.json の scripts）を実行。省略形 <code>vpr build</code></td></tr>
 <tr><td><code>vp run -r build</code></td><td>全ワークスペースで依存の順に実行</td></tr>
@@ -300,7 +300,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 <tr><td><code>vp dlx create-vite</code></td><td>依存に追加せずにパッケージを取ってきて 1 回だけ実行</td></tr>
 </tbody></table>
   </div>
-  <div class="panel card" id="t-env" hidden>
+  <div class="panel card table-wrap" id="t-env" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>vp env setup</code></td><td>Node.js とパッケージマネージャーの切り替え用シム・シェル設定を作る</td></tr>
 <tr><td><code>vp env pin lts pnpm@10</code></td><td>プロジェクトの版を固定（既にある <code>.node-version</code>・<code>packageManager</code> はそこを更新し、無ければ package.json の <code>devEngines</code> に書く。<code>--target</code> で書き込み先を選べる）</td></tr>
@@ -347,13 +347,13 @@ export default defineConfig({
 
   <h2 id="migrate">従来のツールからの置き換え</h2>
   <p>既存のプロジェクトは <code>vp migrate</code> で、依存・import・設定・スクリプトをまとめて書き換えられる。</p>
-  <table class="cheat"><thead><tr><th>従来のツール（設定ファイル）</th><th>Vite+ での置き換え</th></tr></thead><tbody>
+  <div class="table-wrap"><table class="cheat"><thead><tr><th>従来のツール（設定ファイル）</th><th>Vite+ での置き換え</th></tr></thead><tbody>
 <tr><td>Vite の npm スクリプト（<code>vite dev</code> / <code>vite build</code>）</td><td><code>vp dev</code> / <code>vp build</code></td></tr>
 <tr><td>Vitest（<code>vitest.config.ts</code>）</td><td><code>vp test</code>。設定は <code>vite.config.ts</code> の <code>test</code></td></tr>
 <tr><td>ESLint（<code>.eslintrc</code> / <code>eslint.config.js</code>）</td><td><code>vp lint</code>（Oxlint）。設定は <code>lint</code></td></tr>
 <tr><td>Prettier（<code>.prettierrc</code>）</td><td><code>vp fmt</code>（Oxfmt）。設定は <code>fmt</code></td></tr>
 <tr><td>型チェック</td><td><code>vp check</code> に含まれる（tsgo）</td></tr>
-  </tbody></table>
+  </tbody></table></div>
 
   <h2 id="myths">よくある誤解</h2>
   <details class="myth"><summary>vp test はウォッチし続ける</summary><p>Vitest 単体と違い、<code>vp test</code> は 1 回実行して終わる。ウォッチは <code>vp test watch</code>。</p></details>

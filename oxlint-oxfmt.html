@@ -112,7 +112,7 @@ footer#memo-backlink a {
   text-decoration: none;
 }
 footer#memo-backlink a:hover { color: var(--accent); }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; }
 td code, th code { word-break: break-all; }
@@ -163,11 +163,11 @@ table.plugin-table tr[hidden] { display: none; }
 
   <h2 id="lint">oxlint（リンター）</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>やりたいこと</th><th>Vite+ でのコマンド</th></tr>
 <tr><td>リント</td><td><code>vp check</code></td></tr>
 <tr><td>自動修正を付ける</td><td><code>vp check --fix</code></td></tr>
-</table>
+</table></div>
 <h3>設定（vite.config.ts の lint）</h3>
 <pre>lint: {
   ignorePatterns: [&#x27;dist/**&#x27;],
@@ -177,11 +177,11 @@ table.plugin-table tr[hidden] { display: none; }
 
   <h2 id="fmt">oxfmt（フォーマッター）</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>やりたいこと</th><th>Vite+ でのコマンド</th></tr>
 <tr><td>整形する</td><td><code>vp fmt</code></td></tr>
 <tr><td>整形と lint と型チェックを一度に</td><td><code>vp check</code></td></tr>
-</table>
+</table></div>
 <h3>設定（vite.config.ts の fmt）</h3>
 <pre>fmt: {
   semi: true,
@@ -192,21 +192,21 @@ table.plugin-table tr[hidden] { display: none; }
 
   <h2 id="migrate">ESLint・Prettier からの置き換え</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>今まで</th><th>置き換え先</th></tr>
 <tr><td><code>.eslintrc</code> / <code>eslint.config.js</code></td><td>oxlint（設定は <code>lint</code> に統合）</td></tr>
 <tr><td><code>.prettierrc</code></td><td>oxfmt（設定は <code>fmt</code> に統合）</td></tr>
-</table>
+</table></div>
 <p>ESLint のカスタムプラグインを使っている場合は、移行前に <code>lint.jsPlugins</code> で同じルールが動くかを確かめる。</p>
 
 
   <h2 id="plugins">Oxlint のプラグイン一覧</h2>
   <p>Oxlint の組み込みプラグインは <code>plugins</code> に名前を書いて有効にする。既定で有効なのは <code>eslint</code>・<code>typescript</code>・<code>unicorn</code>・<code>oxc</code>。分野で絞り込める。</p>
   <div class="filters" role="group" aria-label="分野で絞り込む"><button class="tab" type="button" aria-selected="true" data-cat="all">すべて</button><button class="tab" type="button" aria-selected="false" data-cat="fw">フレームワーク</button><button class="tab" type="button" aria-selected="false" data-cat="test">テスト</button><button class="tab" type="button" aria-selected="false" data-cat="style">スタイル・書き方</button><button class="tab" type="button" aria-selected="false" data-cat="quality">品質・バグ検出</button><button class="tab" type="button" aria-selected="false" data-cat="lang">言語</button><button class="tab" type="button" aria-selected="false" data-cat="import">インポート・Node.js</button><button class="tab" type="button" aria-selected="false" data-cat="a11y">アクセシビリティ</button><button class="tab" type="button" aria-selected="false" data-cat="doc">ドキュメント</button></div>
-  <div class="stack"><table class="plugin-table">
+  <div class="stack"><div class="table-wrap"><table class="plugin-table">
     <tr><th>分野</th><th>プラグイン</th><th>対象</th><th>内容</th><th>備考</th></tr>
     <tr data-cat="fw"><td data-l="分野">フレームワーク</td><td data-l="プラグイン"><code>react</code></td><td data-l="対象">React</td><td data-l="内容">React と hooks のルール</td><td data-l="備考">—</td></tr><tr data-cat="fw"><td data-l="分野">フレームワーク</td><td data-l="プラグイン"><code>react-perf</code></td><td data-l="対象">React</td><td data-l="内容">React の性能に関するルール</td><td data-l="備考">—</td></tr><tr data-cat="fw"><td data-l="分野">フレームワーク</td><td data-l="プラグイン"><code>nextjs</code></td><td data-l="対象">Next.js</td><td data-l="内容">Next.js 向けのルール</td><td data-l="備考">—</td></tr><tr data-cat="fw"><td data-l="分野">フレームワーク</td><td data-l="プラグイン"><code>vue</code></td><td data-l="対象">Vue</td><td data-l="内容">Vue の script ブロック向けのルール</td><td data-l="備考">—</td></tr><tr data-cat="test"><td data-l="分野">テスト</td><td data-l="プラグイン"><code>jest</code></td><td data-l="対象">Jest</td><td data-l="内容">テストファイル向けのルール</td><td data-l="備考">—</td></tr><tr data-cat="test"><td data-l="分野">テスト</td><td data-l="プラグイン"><code>vitest</code></td><td data-l="対象">Vitest</td><td data-l="内容">テストファイル向けのルール</td><td data-l="備考">—</td></tr><tr data-cat="style"><td data-l="分野">スタイル・書き方</td><td data-l="プラグイン"><code>unicorn</code></td><td data-l="対象">汎用</td><td data-l="内容">コード品質のルール（eslint-plugin-unicorn）</td><td data-l="備考">既定で有効</td></tr><tr data-cat="quality"><td data-l="分野">品質・バグ検出</td><td data-l="プラグイン"><code>eslint</code></td><td data-l="対象">JavaScript</td><td data-l="内容">ESLint 本体のルール</td><td data-l="備考">既定で有効</td></tr><tr data-cat="quality"><td data-l="分野">品質・バグ検出</td><td data-l="プラグイン"><code>oxc</code></td><td data-l="対象">汎用</td><td data-l="内容">Oxc 独自のルール</td><td data-l="備考">既定で有効</td></tr><tr data-cat="quality"><td data-l="分野">品質・バグ検出</td><td data-l="プラグイン"><code>promise</code></td><td data-l="対象">Promise</td><td data-l="内容">Promise の使い方のルール</td><td data-l="備考">—</td></tr><tr data-cat="lang"><td data-l="分野">言語</td><td data-l="プラグイン"><code>typescript</code></td><td data-l="対象">TypeScript</td><td data-l="内容">@typescript-eslint のルール</td><td data-l="備考">既定で有効</td></tr><tr data-cat="import"><td data-l="分野">インポート・Node.js</td><td data-l="プラグイン"><code>import</code></td><td data-l="対象">import / export</td><td data-l="内容">import / export に関するルール</td><td data-l="備考">—</td></tr><tr data-cat="import"><td data-l="分野">インポート・Node.js</td><td data-l="プラグイン"><code>node</code></td><td data-l="対象">Node.js</td><td data-l="内容">Node.js 固有のルール</td><td data-l="備考">—</td></tr><tr data-cat="a11y"><td data-l="分野">アクセシビリティ</td><td data-l="プラグイン"><code>jsx-a11y</code></td><td data-l="対象">JSX</td><td data-l="内容">アクセシビリティのルール</td><td data-l="備考">—</td></tr><tr data-cat="doc"><td data-l="分野">ドキュメント</td><td data-l="プラグイン"><code>jsdoc</code></td><td data-l="対象">JSDoc コメント</td><td data-l="内容">JSDoc のルール</td><td data-l="備考">—</td></tr>
-  </table></div>
+  </table></div></div>
   <p class="empty" hidden>この分野のプラグインはない。</p>
   <h3>Oxfmt のプラグイン</h3>
   <p>Oxfmt には現時点で Prettier プラグインの仕組みがない。ロードマップ（beta）には入っている。</p>

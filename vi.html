@@ -211,12 +211,12 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <span class="box">範囲<small>w 単語</small></span><span class="op">=</span>
       <span class="box">3dw<small>3 単語を削除</small></span>
     </div>
-    <table class="redir"><tbody>
+    <div class="table-wrap"><table class="redir"><tbody>
       <tr><td>オペレータ</td><td><code>d</code> 削除・<code>c</code> 削除して挿入・<code>y</code> コピー（ヤンク）・<code>&gt;</code> <code>&lt;</code> インデント・<code>gU</code> <code>gu</code> 大文字／小文字（Vim）</td></tr>
       <tr><td>範囲</td><td><code>w</code> 次の単語まで・<code>$</code> 行末まで・<code>0</code> 行頭まで・<code>G</code> ファイル末尾まで・<code>t)</code> <code>)</code> の手前まで</td></tr>
       <tr><td>テキストオブジェクト（Vim）</td><td><code>iw</code> 単語・<code>i"</code> 引用符の中・<code>a"</code> 引用符ごと・<code>i(</code> 括弧の中・<code>it</code> HTML タグの中・<code>ip</code> 段落</td></tr>
       <tr><td>同じキー 2 回</td><td>行全体が対象: <code>dd</code> 行削除・<code>yy</code> 行コピー・<code>cc</code> 行を書き直す・<code>&gt;&gt;</code> 行をインデント</td></tr>
-    </tbody></table>
+    </tbody></table></div>
     <p class="note">例: <code>ci"</code> で引用符の中を消して書き直す、<code>dap</code> で段落ごと消す、<code>yiw</code> でカーソル下の単語をコピー。</p>
   </div>
 
@@ -234,7 +234,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="t-set">設定</button>
   </div>
 
-  <div class="panel card" id="t-file">
+  <div class="panel card table-wrap" id="t-file">
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">起動（シェルで）</td></tr>
 <tr><td><code>vi file.txt</code></td><td>ファイルを開く（無ければ保存したときに作られる）</td></tr>
@@ -254,7 +254,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-move" hidden>
+  <div class="panel card table-wrap" id="t-move" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">文字・単語</td></tr>
 <tr><td><code>h</code> <code>j</code> <code>k</code> <code>l</code></td><td>左・下・上・右（<code>5j</code> で 5 行下）</td></tr>
@@ -284,7 +284,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-ins" hidden>
+  <div class="panel card table-wrap" id="t-ins" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">挿入モードに入る</td></tr>
 <tr><td><code>i</code> / <code>a</code></td><td>カーソルの前に／後ろに挿入</td></tr>
@@ -306,7 +306,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-edit" hidden>
+  <div class="panel card table-wrap" id="t-edit" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">削除（消したものはレジスタに入り、p で貼れる＝切り取り）</td></tr>
 <tr><td><code>x</code> / <code>X</code></td><td>カーソル下の 1 文字／前の 1 文字を削除</td></tr>
@@ -338,7 +338,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-search" hidden>
+  <div class="panel card table-wrap" id="t-search" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">検索</td></tr>
 <tr><td><code>/word</code></td><td>下向きに検索（<code>Enter</code> で実行）</td></tr>
@@ -362,7 +362,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-visual" hidden>
+  <div class="panel card table-wrap" id="t-visual" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">選ぶ（Vim）</td></tr>
 <tr><td><code>v</code></td><td>文字単位で選択開始。移動キーで範囲を広げる</td></tr>
@@ -380,7 +380,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-win" hidden>
+  <div class="panel card table-wrap" id="t-win" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">ファイル（バッファ）</td></tr>
 <tr><td><code>:e other.txt</code></td><td>別のファイルを開く</td></tr>
@@ -402,7 +402,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-set" hidden>
+  <div class="panel card table-wrap" id="t-set" hidden>
 <table class="cheat"><thead><tr><th>キー</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">その場で切り替える（:set）</td></tr>
 <tr><td><code>:set number</code> / <code>:set nu</code></td><td>行番号を表示（<code>:set nonu</code> で消す）</td></tr>

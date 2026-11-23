@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -311,7 +310,7 @@ export type NewUser = typeof users.$inferInsert;  // INSERT の入力（既定�
   <p>列名を省くとキー名がそのまま DB の列名になる。キーは camelCase・DB は snake_case にしたいときは、列ごとに名前を渡すか、<code>drizzle(url, { casing: 'snake_case' })</code> と <code>drizzle.config.ts</code> の <code>casing: 'snake_case'</code> を両方に書く（v1 では書き方が変わる）。</p>
 
   <h3>列の型（DB ごとの import 元）</h3>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>用途</th><th>PostgreSQL（<code>pg-core</code>）</th><th>SQLite（<code>sqlite-core</code>）</th><th>MySQL（<code>mysql-core</code>）</th></tr></thead>
       <tbody>
@@ -327,7 +326,7 @@ export type NewUser = typeof users.$inferInsert;  // INSERT の入力（既定�
   </div>
 
   <h3>列の修飾子</h3>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>書き方</th><th>意味</th></tr></thead>
       <tbody>
@@ -443,7 +442,7 @@ await db.execute(sql`select * from ${users} where ${users.id} = ${id}`); // PG�
   </div>
 
   <h3>条件の演算子（<code>drizzle-orm</code> から import）</h3>
-  <div class="tbl">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>関数</th><th>SQL</th></tr></thead>
       <tbody>
@@ -518,7 +517,7 @@ const list = await db.query.users.findMany({
   </div>
 
   <h2 id="kit">drizzle-kit コマンド</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>コマンド</th><th>やること</th></tr></thead>
       <tbody>
@@ -559,7 +558,7 @@ export const updateUserSchema = createUpdateSchema(users);   // 全項目が省�
 
   <h2 id="v1">v1 RC での主な変更</h2>
   <p>v1 は <code>npm i drizzle-orm@rc</code>・<code>npm i -D drizzle-kit@rc</code> で入り、最初に <code>npx drizzle-kit up</code> で既存のマイグレーションを新しい形式に変える。RC の間も破壊的変更が入るので、上げるたびに変更点を読む。</p>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>項目</th><th>0.x</th><th>v1</th></tr></thead>
       <tbody>

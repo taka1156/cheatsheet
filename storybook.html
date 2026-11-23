@@ -101,7 +101,6 @@ pre code { background: none; padding: 0; font-size: inherit; }
 .panel > pre:first-child { margin-top: 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -226,7 +225,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="cli">セットアップと CLI</h2>
   <p>Storybook 10 は ESM のみで配布され、Node.js 20.16+ / 22.19+ / 24+ が必要。<code>npm run storybook -- -p 9009</code> のように、npm 経由でオプションを渡すときは <code>--</code> を挟む。</p>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>やりたいこと</th><th>コマンド</th><th>補足</th></tr>
     <tr><td>導入する</td><td><code>npm create storybook@latest</code></td><td>フレームワークを自動判別し、<code>.storybook/</code>・サンプル・npm スクリプトを作る</td></tr>
     <tr><td>開発サーバー</td><td><code>storybook dev -p 6006</code></td><td><code>--no-open</code>（ブラウザを開かない）、<code>--ci</code>（対話なし）、<code>--docs</code>（Docs だけのモード）</td></tr>
@@ -305,7 +304,7 @@ export const Primary = meta.story({
   </div>
 
   <h3>meta とストーリーに書けるキー</h3>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>キー</th><th>置き場所</th><th>役割</th></tr>
     <tr><td><code>component</code></td><td>meta</td><td>対象コンポーネント。props 表や Controls の型推論に使う</td></tr>
     <tr><td><code>title</code></td><td>meta</td><td>サイドバーの階層（<code>/</code> 区切り）。静的に読める文字列で書く</td></tr>
@@ -333,7 +332,7 @@ export const Primary = meta.story({
   <div class="layers-cap"><span>強い（最後に勝つ）</span></div>
 
   <h3>よく使う tags と parameters</h3>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>書き方</th><th>効果</th></tr>
     <tr><td><code>tags: ['autodocs']</code></td><td>そのコンポーネントの Docs ページを自動生成（<code>@storybook/addon-docs</code> が必要）。preview に書けば全部に付く</td></tr>
     <tr><td><code>tags: ['!autodocs']</code></td><td>preview で付けた <code>autodocs</code> を、そのファイル・ストーリーだけ外す。<code>!</code> は打ち消し</td></tr>
@@ -416,7 +415,7 @@ export const Submitted: Story = {
 };</code></pre>
 
   <h3>要素の探し方（canvas のクエリ）</h3>
-  <div class="tbl"><table class="q">
+  <div class="table-wrap"><table class="q">
     <tr><th>形</th><th>見つからない</th><th>2 つ以上</th><th>使いどころ</th></tr>
     <tr><td><code>getBy…</code></td><td>例外</td><td>例外</td><td>すでに表示されているはずの要素</td></tr>
     <tr><td><code>queryBy…</code></td><td><code>null</code></td><td>例外</td><td>「無いこと」を確かめる</td></tr>
@@ -458,7 +457,7 @@ export default defineConfig({
 
   <h2 id="mock">モジュールのモック（sb.mock）</h2>
   <p>Storybook 9.1 から、コンポーネントが import する関数を <code>preview.ts</code> で差し替えられる（10 でも同じ）。Vite と webpack の両方で、開発サーバーにもビルドにも効く。</p>
-  <div class="tbl"><table>
+  <div class="table-wrap"><table>
     <tr><th>書き方</th><th>動き</th></tr>
     <tr><td><code>sb.mock(import('../lib/session.ts'), { spy: true })</code></td><td>本物の処理はそのまま動かし、呼び出しだけ記録する</td></tr>
     <tr><td><code>sb.mock(import('../lib/session.ts'))</code></td><td>すべての export を何もしないモック関数に置き換える</td></tr>

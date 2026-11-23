@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -193,7 +192,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="model">ターゲットとスキャナー</h2>
   <p>書き方は <code>trivy &lt;ターゲット&gt; [--scanners vuln,secret,...] &lt;対象&gt;</code>。ターゲットごとに既定で動くスキャナーが違う。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>ターゲット</th><th>対象</th><th>既定のスキャナー</th></tr></thead>
     <tbody>
       <tr><td data-l="ターゲット"><code>image</code></td><td data-l="対象">コンテナイメージ（レジストリ・ローカル・<code>--input</code> で tar）</td><td data-l="既定">vuln・secret</td></tr>
@@ -244,7 +243,7 @@ trivy k8s --include-namespaces prod --report all               # 名前空間を
   </div>
 
   <h2 id="filter">絞り込みと CI 向けのオプション</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>オプション</th><th>意味</th></tr></thead>
     <tbody>
       <tr><td data-l="オプション"><code>--severity CRITICAL,HIGH</code></td><td data-l="意味">表示・判定する深刻度（UNKNOWN・LOW・MEDIUM・HIGH・CRITICAL）</td></tr>
@@ -307,7 +306,7 @@ AVD-DS-0002</code></pre>
   </div>
 
   <h2 id="db">データベースとキャッシュ</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>やりたいこと</th><th>方法</th></tr></thead>
     <tbody>
       <tr><td data-l="やりたいこと">DB の取得元</td><td data-l="方法">初回とその後定期的に、脆弱性 DB を OCI レジストリから取る（既定は <code>mirror.gcr.io/aquasec/trivy-db</code> が先で、だめなら <code>ghcr.io/aquasecurity/trivy-db</code>）。社内ミラーは <code>--db-repository</code></td></tr>
@@ -320,7 +319,7 @@ AVD-DS-0002</code></pre>
 
   <h2 id="incident">2026 年 3 月の侵害と、安全な使い方</h2>
   <p>認証情報を盗まれ、配布物と公式 Action に認証情報を盗むマルウェアが仕込まれた（<code>CVE-2026-33634</code> / <code>GHSA-69fq-xp46-6x23</code>）。2 月末からの攻撃の続き（Aqua などは TeamPCP というグループによるものとしている）。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>侵害されたもの</th><th>期間（UTC）</th></tr></thead>
     <tbody>
       <tr><td data-l="もの">Trivy v0.69.4（GitHub・コンテナ・deb・rpm。その間の <code>latest</code> も）</td><td data-l="期間">2026-03-19 18:22 から約 3 時間</td></tr>

@@ -118,7 +118,7 @@ pre {
   padding: 4px 10px; font: 600 0.8rem 'JetBrains Mono', ui-monospace, monospace;
 }
 .op { font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); }
-.redir { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 10px; }
+.redir { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
 .redir td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .redir td:first-child { white-space: nowrap; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
@@ -208,7 +208,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="t-sys">システム・サービス</button>
   </div>
 
-  <div class="panel card" id="t-nav">
+  <div class="panel card table-wrap" id="t-nav">
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">pwd / cd</td></tr>
 <tr><td><code>pwd</code></td><td>今いるディレクトリ（カレントディレクトリ）の絶対パスを表示</td></tr>
@@ -232,7 +232,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-file" hidden>
+  <div class="panel card table-wrap" id="t-file" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">作る：mkdir / touch</td></tr>
 <tr><td><code>mkdir dir</code></td><td>ディレクトリを作る</td></tr>
@@ -258,7 +258,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-view" hidden>
+  <div class="panel card table-wrap" id="t-view" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">cat / less</td></tr>
 <tr><td><code>cat file</code></td><td>ファイルの中身を全部表示</td></tr>
@@ -278,7 +278,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-search" hidden>
+  <div class="panel card table-wrap" id="t-search" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">grep（中身を探す）</td></tr>
 <tr><td><code>grep 'error' app.log</code></td><td>文字列を含む行を表示</td></tr>
@@ -313,7 +313,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-perm" hidden>
+  <div class="panel card table-wrap" id="t-perm" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">chmod（権限を変える）</td></tr>
 <tr><td><code>chmod +x script.sh</code></td><td>実行権限を付ける</td></tr>
@@ -330,7 +330,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-proc" hidden>
+  <div class="panel card table-wrap" id="t-proc" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">見る</td></tr>
 <tr><td><code>ps aux</code></td><td>全プロセスの一覧（PID・CPU・メモリ・コマンド）</td></tr>
@@ -357,7 +357,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-net" hidden>
+  <div class="panel card table-wrap" id="t-net" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">ping（届くか）</td></tr>
 <tr><td><code>ping example.com</code></td><td>相手に届くか・応答時間を確かめる（Linux は止めるまで続く。<code>Ctrl + C</code>）</td></tr>
@@ -382,7 +382,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-arc" hidden>
+  <div class="panel card table-wrap" id="t-arc" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">tar（c 作る・x 展開・t 一覧、z gzip・f ファイル指定・v 詳細）</td></tr>
 <tr><td><code>tar -czvf out.tar.gz dir/</code></td><td>ディレクトリを gzip 圧縮でまとめる</td></tr>
@@ -398,7 +398,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-sys" hidden>
+  <div class="panel card table-wrap" id="t-sys" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">systemctl（サービス管理・systemd）</td></tr>
 <tr><td><code>systemctl status nginx</code></td><td>状態（動いているか・直近のログ）を表示</td></tr>
@@ -448,7 +448,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <span class="box">wc -l</span>
     </div>
     <p class="note">アクセスログから 404 の行を取り出して数える。左の出力が右の入力になる。</p>
-    <table class="redir"><tbody>
+    <div class="table-wrap"><table class="redir"><tbody>
       <tr><td>cmd &gt; out.txt</td><td>stdout をファイルに書き出す（上書き）</td></tr>
       <tr><td>cmd &gt;&gt; out.txt</td><td>stdout をファイルの末尾に追記</td></tr>
       <tr><td>cmd 2&gt; err.txt</td><td>stderr だけをファイルへ</td></tr>
@@ -456,7 +456,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td>cmd &gt; /dev/null 2&gt;&amp;1</td><td>出力を全部捨てる（cron でよく使う）</td></tr>
       <tr><td>cmd | tee out.txt</td><td>画面に出しつつファイルにも保存</td></tr>
       <tr><td>cmd1 &amp;&amp; cmd2</td><td>cmd1 が成功したときだけ cmd2 を実行（<code>||</code> は失敗したときだけ）</td></tr>
-    </tbody></table>
+    </tbody></table></div>
   </div>
 
   <h2 id="chmod">chmod の数字の読み方</h2>

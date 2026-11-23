@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -254,7 +253,7 @@ sugar.Infoln("user", "alice")                          // fmt.Sprintln 風（間
 plain := sugar.Desugar()   // Logger に戻す（コストはほぼ無い）</code></pre>
   </div>
   <div class="panel" id="k-cmp" hidden>
-    <div class="tbl stack">
+    <div class="table-wrap stack">
       <table>
         <thead><tr><th>観点</th><th>Logger</th><th>SugaredLogger</th></tr></thead>
         <tbody>
@@ -269,7 +268,7 @@ plain := sugar.Desugar()   // Logger に戻す（コストはほぼ無い）</co
   </div>
 
   <h2 id="presets">用意されたロガー</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>関数</th><th>形式</th><th>最低レベル</th><th>スタックトレース</th><th>そのほか</th></tr></thead>
       <tbody>
@@ -302,7 +301,7 @@ if ce := logger.Check(zap.DebugLevel, "dump"); ce != nil {
 lvl, _ := zapcore.ParseLevel("warn")         // 文字列から（"debug" "info" "warn" "error" "dpanic" "panic" "fatal"）</code></pre>
 
   <h2 id="fields">フィールド</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>関数</th><th>用途</th></tr></thead>
       <tbody>
@@ -339,7 +338,7 @@ quiet := logger.WithOptions(zap.IncreaseLevel(zap.WarnLevel))   // この子だ�
   <p class="note"><code>With</code> したフィールドはその場で一度だけエンコードされ、毎回のログでは使い回される。リクエストごとの値は <code>With</code> で付けた子ロガーを <code>context.Context</code> などで渡すとよい（zap 自体には context から取り出す仕組みは無い）。</p>
 
   <h2 id="options">オプション（zap.Option）</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>オプション</th><th>効果</th></tr></thead>
       <tbody>
@@ -369,7 +368,7 @@ cfg.Sampling = nil                                          // サンプリン�
 cfg.InitialFields = map[string]any{"service": "api"}
 
 logger, err := cfg.Build()   // ここにも zap.Option を渡せる</code></pre>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>フィールド（JSON キー）</th><th>意味</th></tr></thead>
       <tbody>
@@ -386,7 +385,7 @@ logger, err := cfg.Build()   // ここにも zap.Option を渡せる</code></pre
     </table>
   </div>
   <h3>EncoderConfig でよく変えるもの</h3>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>項目</th><th>選べる値の例</th></tr></thead>
       <tbody>
@@ -429,7 +428,7 @@ core := zapcore.NewTee(
 	zapcore.NewCore(zapcore.NewConsoleEncoder(encCfg), zapcore.Lock(os.Stdout), zap.DebugLevel),
 )
 logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))</code></pre>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>関数</th><th>用途</th></tr></thead>
       <tbody>

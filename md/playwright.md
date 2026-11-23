@@ -390,6 +390,8 @@ test('作成できる', async ({ request }) => {
 
 そのほか: `route.continue({ headers })` で書き換えて送る、 `route.fallback()` で次のハンドラーに回す、 `context.route()` でコンテキスト内の全ページに効かせる、 `routeFromHAR()` で記録した HAR から返す。
 
+`page.route()` のモックは Playwright のテストの中だけで使える。同じモックを Vitest や開発中の画面でも使い回したいなら、 [MSW](https://cs.taka1156.site/md/msw.md) のハンドラーに書いて `@msw/playwright` で読み込む。
+
 ## 最近の版で変わったこと
 
 | 版 | 変わったこと |
@@ -420,6 +422,7 @@ test('作成できる', async ({ request }) => {
 ## 関連メモ
 
 - [Vitest 使い方](https://cs.taka1156.site/md/vitest.md) — 単体テストは Vitest、画面を通した E2E は Playwright と分ける。Vitest のブラウザモードは Playwright をプロバイダーに使える
+- [MSW 使い方](https://cs.taka1156.site/md/msw.md) — Vitest・開発中の画面・E2E で同じ API モックを使い回す
 - [Storybook 使い方](https://cs.taka1156.site/md/storybook.md) — `@storybook/addon-vitest` がストーリーを Playwright の Chromium で描画してテストする
 
 ## 参考

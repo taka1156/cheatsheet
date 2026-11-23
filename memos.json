@@ -10,6 +10,16 @@
   "quizzes": 0
  },
  {
+  "file": "msw.html",
+  "title": "MSW 使い方",
+  "desc": "MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。",
+  "tags": [
+   "開発ツール"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
   "file": "secretlint.html",
   "title": "secretlint 使い方",
   "desc": "API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート",

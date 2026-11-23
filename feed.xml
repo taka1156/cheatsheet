@@ -18,6 +18,15 @@
     <category term="開発ツール"/>
   </entry>
   <entry>
+    <title>MSW 使い方</title>
+    <id>https://cs.taka1156.site/msw.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/msw.html"/>
+    <published>2026-11-24T00:00:00+09:00</published>
+    <updated>2026-11-24T00:00:00+09:00</updated>
+    <summary>MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。</summary>
+    <category term="開発ツール"/>
+  </entry>
+  <entry>
     <title>secretlint 使い方</title>
     <id>https://cs.taka1156.site/secretlint.html</id>
     <link rel="alternate" type="text/html" href="https://cs.taka1156.site/secretlint.html"/>

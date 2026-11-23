@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -226,7 +225,7 @@ default-collation=utf8mb4_0900_ai_ci</code></pre>
   <p class="note">設定は親フォルダの <code>.skeema</code> から子へ引き継がれる。環境名を省くと <code>production</code> の節が使われる。パスワードはファイルに書かず、環境変数 <code>MYSQL_PWD</code> か、<code>-p</code>（値なしで入力を求める）で渡す。</p>
 
   <h2 id="commands">コマンド</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
       <tbody>
@@ -250,7 +249,7 @@ default-collation=utf8mb4_0900_ai_ci</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="o-osc">オンライン変更</button>
   </div>
   <div class="panel" id="o-safe">
-    <div class="tbl stack">
+    <div class="table-wrap stack">
       <table>
         <thead><tr><th>オプション</th><th>意味</th></tr></thead>
         <tbody>
@@ -265,7 +264,7 @@ default-collation=utf8mb4_0900_ai_ci</code></pre>
   </div>
   <div class="panel" id="o-ws" hidden>
     <p>Skeema はファイルの CREATE 文を一度どこかの DB で実際に流し、その結果と比べる。その場所が workspace。</p>
-    <div class="tbl stack">
+    <div class="table-wrap stack">
       <table>
         <thead><tr><th>設定</th><th>動き</th></tr></thead>
         <tbody>
@@ -278,7 +277,7 @@ default-collation=utf8mb4_0900_ai_ci</code></pre>
   </div>
   <div class="panel" id="o-lint" hidden>
     <p>各ルールは <code>lint-ルール名=ignore|warning|error</code> で強さを決める（<code>.skeema</code> に書ける）。<code>error</code> のルールに当たると <code>push</code> も止まる。</p>
-    <div class="tbl stack">
+    <div class="table-wrap stack">
       <table>
         <thead><tr><th>ルール</th><th>見るもの（既定）</th></tr></thead>
         <tbody>

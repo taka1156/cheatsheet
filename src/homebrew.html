@@ -193,7 +193,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
 
   <h3>prefix（インストール先）の既定</h3>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat prefix"><thead><tr><th>環境</th><th>prefix</th><th>補足</th></tr></thead><tbody>
 <tr><td>macOS<br>Apple Silicon</td><td><code>/opt/<wbr>homebrew</code></td><td>macOS 15 Sequoia 以降で Tier 1（公式サポート）</td></tr>
 <tr><td>macOS<br>Intel</td><td><code>/usr/<wbr>local</code></td><td>7.0 で Tier 3（サポート外・新しい bottle なし）。2027 年 9 月に動かなくなる予定</td></tr>
@@ -227,7 +227,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="t-diag">診断・場所</button>
   </div>
 
-  <div class="panel card" id="t-find">
+  <div class="panel card table-wrap" id="t-find">
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew search jq</code></td><td>formula 名と cask 名を部分一致で探す。<code>/^jq$/</code> のように <code>/</code> で囲むと正規表現</td></tr>
 <tr><td><code>brew search --desc json</code></td><td>説明文（cask は名前も）から探す</td></tr>
@@ -243,7 +243,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-inst" hidden>
+  <div class="panel card table-wrap" id="t-inst" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew install jq</code></td><td>formula を入れる。古い版が入っていれば更新する。依存などほかのパッケージも入るときは計画を表示して確認を求める</td></tr>
 <tr><td><code>brew install -y jq</code></td><td>確認なしで入れる（<code>--no-ask</code>・<code>--yes</code> と同じ）</td></tr>
@@ -260,7 +260,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-up" hidden>
+  <div class="panel card table-wrap" id="t-up" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew update</code></td><td>Homebrew 本体とパッケージ定義を最新にする（入っているパッケージは更新しない）</td></tr>
 <tr><td><code>brew outdated</code></td><td>新しい版がある formula と cask を一覧</td></tr>
@@ -274,7 +274,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-deps" hidden>
+  <div class="panel card table-wrap" id="t-deps" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew deps --tree jq</code></td><td>依存をツリーで表示</td></tr>
 <tr><td><code>brew deps --installed</code></td><td>入っている formula ごとの依存を一覧</td></tr>
@@ -289,7 +289,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-tap" hidden>
+  <div class="panel card table-wrap" id="t-tap" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew tap</code></td><td>取り込んでいる tap の一覧</td></tr>
 <tr><td><code>brew tap user/repo</code></td><td><code>https://github.com/user/homebrew-repo</code> を tap として取り込む</td></tr>
@@ -303,7 +303,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-svc" hidden>
+  <div class="panel card table-wrap" id="t-svc" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew services</code></td><td>管理しているサービスの一覧（<code>list</code> と同じ）</td></tr>
 <tr><td><code>brew services start postgresql@17</code></td><td>すぐ起動し、ログイン時に自動起動するよう登録する</td></tr>
@@ -315,7 +315,7 @@ eval "$(/opt/homebrew/bin/brew shellenv zsh)"</code></pre>
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-diag" hidden>
+  <div class="panel card table-wrap" id="t-diag" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew doctor</code></td><td>環境の問題を調べる（<code>dr</code> でも可）。7.0 で <code>--json</code> 出力が加わった</td></tr>
 <tr><td><code>brew config</code></td><td>バージョン・prefix・OS などの設定を表示（問題を報告するときに貼る）</td></tr>
@@ -342,7 +342,7 @@ mas "Xcode", id: 497799835
 vscode "editorconfig.editorconfig"
 <span class="cm"># Ruby なので条件も書ける</span>
 brew "glibc" if OS.linux?</code></pre>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>brew bundle</code></td><td>今のフォルダの <code>Brewfile</code> にあるものを入れる（<code>brew bundle install</code> と同じ。入っていて古ければ更新する）</td></tr>
 <tr><td><code>brew bundle dump</code></td><td>今入っているものを <code>Brewfile</code> に書き出す。既にあるファイルを上書きするなら <code>--force</code></td></tr>
@@ -356,7 +356,7 @@ brew "glibc" if OS.linux?</code></pre>
   </div>
 
   <h2 id="env">よく使う環境変数</h2>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat"><thead><tr><th>変数</th><th>効果</th></tr></thead><tbody>
 <tr><td><code>HOMEBREW_NO_AUTO_UPDATE=1</code></td><td><code>install</code>・<code>upgrade</code>・<code>tap</code> の前の自動 <code>brew update</code> をしない</td></tr>
 <tr><td><code>HOMEBREW_AUTO_UPDATE_SECS</code></td><td>自動 update の間隔（秒）。既定は 86400（24 時間）。止めるより間隔を延ばすのが推奨</td></tr>
@@ -369,7 +369,7 @@ brew "glibc" if OS.linux?</code></pre>
   </div>
 
   <h2 id="changes">最近の主な変更（5.0〜7.0）</h2>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat ver"><thead><tr><th>版（公開日）</th><th>変わったこと</th></tr></thead><tbody>
 <tr><td>5.0.0<br><span class="note">2025-11-12</span></td><td>ダウンロードの並列化が既定に。<code>brew mcp-server</code>（4.6.0 で内蔵）で使える開発用コマンドが増えた。cask の <code>--no-quarantine</code> を非推奨に</td></tr>
 <tr><td>5.1.0<br><span class="note">2026-03-10</span></td><td><code>brew version-install</code> を追加。<code>brew bundle</code> の対応を拡大</td></tr>

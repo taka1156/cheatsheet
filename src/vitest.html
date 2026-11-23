@@ -112,7 +112,7 @@ footer#memo-backlink a {
   text-decoration: none;
 }
 footer#memo-backlink a:hover { color: var(--accent); }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; }
 td code, th code { word-break: break-all; }
@@ -156,12 +156,12 @@ describe(&#x27;sum&#x27;, () =&gt; {
 
   <h2 id="cmd">実行コマンドと設定</h2>
 
-<table>
+<div class="table-wrap"><table>
 <tr><th>やりたいこと</th><th>コマンド・設定</th></tr>
 <tr><td>テストを実行</td><td><code>vp test</code></td></tr>
 <tr><td>対象ファイル</td><td><code>vite.config.ts</code> の <code>test.include</code></td></tr>
 <tr><td>実行環境</td><td><code>test.environment</code>（例: <code>'node'</code>、DOM は <code>'jsdom'</code> など）</td></tr>
-</table>
+</table></div>
 <pre>test: {
   include: [&#x27;src/**/*.test.ts&#x27;],
   environment: &#x27;node&#x27;,

@@ -84,7 +84,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -245,7 +244,7 @@ npx skills experimental_install</code></pre>
   </div>
 
   <h2 id="sources">add に渡せるソース</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>形式</th><th>例</th></tr></thead>
     <tbody>
       <tr><td data-l="形式">GitHub の省略形</td><td data-l="例"><code>vercel-labs/agent-skills</code></td></tr>
@@ -261,7 +260,7 @@ npx skills experimental_install</code></pre>
   <p class="note">非公開リポジトリも同じコマンドで入る。Git の認証情報 → GitHub CLI（<code>gh</code>）→ SSH の順に試す。GitHub API 用に <code>GITHUB_TOKEN</code> / <code>GH_TOKEN</code> を渡すこともできる（必須ではない）。</p>
 
   <h2 id="options">add のオプション</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>オプション</th><th>意味</th></tr></thead>
     <tbody>
       <tr><td data-l="オプション"><code>-g, --global</code></td><td data-l="意味">プロジェクトではなくユーザーのホームに入れる</td></tr>
@@ -276,7 +275,7 @@ npx skills experimental_install</code></pre>
   </table></div>
 
   <h2 id="paths">主なエージェントの置き場所</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>エージェント</th><th><code>-a</code> の値</th><th>プロジェクト</th><th>グローバル（<code>-g</code>）</th></tr></thead>
     <tbody>
       <tr><td data-l="エージェント">Claude Code</td><td data-l="-a"><code>claude-code</code></td><td data-l="プロジェクト"><code>.claude/skills/</code></td><td data-l="グローバル"><code>~/.claude/skills/</code></td></tr>
@@ -291,7 +290,7 @@ npx skills experimental_install</code></pre>
 
   <h2 id="lock">skills-lock.json と CI</h2>
   <p>プロジェクトに入れたスキルは <code>skills-lock.json</code>（version 2）に、ソース・Git のコミット・中身のハッシュ（<code>computedHash</code>）と一緒に記録される。コミットしてチームで共有する。グローバルのロックは <code>~/.agents/.skill-lock.json</code>（<code>XDG_STATE_HOME</code> があれば <code>$XDG_STATE_HOME/skills/.skill-lock.json</code>）。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>使い方</th><th>コマンド</th><th>動き</th></tr></thead>
     <tbody>
       <tr><td data-l="使い方">状態を見る</td><td data-l="コマンド"><code>skills list</code></td><td data-l="動き">ロックと比べて <code>modified</code>（手で変えた）・<code>untracked</code>（ロックにない）・<code>Missing</code>（ロックにあるが無い）を表示。<code>--json</code> で機械向け</td></tr>
@@ -313,7 +312,7 @@ Instructions for the agent to follow when this skill is activated.</code></pre>
   <p>CLI がリポジトリで探す場所は、ルートの <code>SKILL.md</code>、<code>skills/</code>（<code>skills/&lt;分類&gt;/&lt;name&gt;/</code> のように 3 段まで）、<code>.claude/skills/</code> などの各エージェントのフォルダ。それ以外の場所も探すなら <code>--full-depth</code>。<code>metadata.internal: true</code> を付けたスキルは、<code>INSTALL_INTERNAL_SKILLS=1</code> のときだけ表示・インストールされる。</p>
 
   <h2 id="env">環境変数とテレメトリ</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>変数</th><th>意味</th></tr></thead>
     <tbody>
       <tr><td data-l="変数"><code>DISABLE_TELEMETRY</code> / <code>DO_NOT_TRACK</code></td><td data-l="意味">匿名の利用統計と、セキュリティ監査の問い合わせを止める</td></tr>

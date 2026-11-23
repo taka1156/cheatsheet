@@ -212,7 +212,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="t-cfg">設定・保守</button>
   </div>
 
-  <div class="panel card" id="t-life">
+  <div class="panel card table-wrap" id="t-life">
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>colima start</code></td><td>VM を作成（初回）または起動する。すでに起動中なら何もしない</td></tr>
 <tr><td><code>colima start --cpus 4 --memory 8</code></td><td>CPU・メモリ（GiB）を指定して起動。止めてから実行すると既存の VM にも反映される</td></tr>
@@ -226,7 +226,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-prof" hidden>
+  <div class="panel card table-wrap" id="t-prof" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>colima status</code></td><td>起動状態・ランタイム・ソケットのパスなどを表示（<code>-e</code> で詳細、<code>-j</code> で JSON）</td></tr>
 <tr><td><code>colima list</code></td><td>全プロファイルの状態・CPU・メモリ・ディスク・ランタイム・IP を一覧（<code>ls</code> でも可）</td></tr>
@@ -239,7 +239,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-vm" hidden>
+  <div class="panel card table-wrap" id="t-vm" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>colima ssh</code></td><td>VM にログインする</td></tr>
 <tr><td><code>colima ssh -- uname -a</code></td><td>VM の中で 1 コマンドだけ実行する。<code>--</code> で Colima のフラグと区切る</td></tr>
@@ -251,7 +251,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-rt" hidden>
+  <div class="panel card table-wrap" id="t-rt" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr class="grp"><td colspan="2">containerd</td></tr>
 <tr><td><code>colima start --runtime containerd</code></td><td>Docker の代わりに containerd で起動する</td></tr>
@@ -268,7 +268,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 </tbody></table>
   </div>
 
-  <div class="panel card" id="t-cfg" hidden>
+  <div class="panel card table-wrap" id="t-cfg" hidden>
 <table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
 <tr><td><code>colima start --edit</code></td><td>そのプロファイルの <code>colima.yaml</code> を編集してから起動</td></tr>
 <tr><td><code>colima template</code></td><td>新しく作る VM の既定値（テンプレート）を編集する</td></tr>
@@ -281,7 +281,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
 
   <h2 id="flags">colima start のよく使うオプション</h2>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat flags"><thead><tr><th>オプション</th><th>既定値</th><th>意味</th></tr></thead><tbody>
 <tr><td><code>-c</code><br><code>--cpus</code></td><td>2</td><td>CPU 数</td></tr>
 <tr><td><code>-m</code><br><code>--memory</code></td><td>2</td><td>メモリ（GiB）</td></tr>
@@ -304,7 +304,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="config">設定ファイル</h2>
   <p>フラグの代わりに YAML でも設定できる。<code>colima start --edit</code> で開くのが早い。</p>
-  <div class="tblwrap">
+  <div class="table-wrap tblwrap">
 <table class="cheat"><thead><tr><th>ファイル</th><th>中身</th></tr></thead><tbody>
 <tr><td><code>~/.colima/default/colima.yaml</code></td><td>プロファイル <code>default</code> の設定。別プロファイルは <code>~/.colima/名前/colima.yaml</code></td></tr>
 <tr><td><code>~/.colima/_templates/default.yaml</code></td><td>新しく作る VM の既定値（<code>colima template</code> で編集）</td></tr>

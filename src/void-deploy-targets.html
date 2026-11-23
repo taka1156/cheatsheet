@@ -132,7 +132,6 @@ table.vs { min-width: 520px; }
 @media (max-width: 480px) { .tree div { grid-template-columns: 1fr; gap: 0; padding: 4px 0; } }
 
 /* 表 */
-.tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
@@ -241,18 +240,18 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="t-feat">機能</button>
     <button class="tab" role="tab" aria-selected="false" data-panel="t-ops">運用・管理</button>
   </div>
-  <div class="panel card" id="t-prep">
-    <div class="tbl-wrap"><table class="vs">
+  <div class="panel card table-wrap" id="t-prep">
+    <table class="vs">
       <tr><th>項目</th><th>直接 Cloudflare</th><th>Void Platform</th></tr>
       <tr><td>最初にやること</td><td><code>void init</code> でデプロイ先に Cloudflare を選ぶだけ</td><td>管理者が <code>void platform install</code>（ドメイン・ログイン・DB・トークンを設定）</td></tr>
       <tr><td>必要な Cloudflare の契約</td><td>Workers Free の範囲で動く（Sandbox などは有料）</td><td>Workers for Platforms の有料プラン ＋ R2・Analytics Engine を有効化</td></tr>
       <tr><td>ほかに要るもの</td><td>なし</td><td>基盤専用の空の PostgreSQL、ログインの提供元、アプリ用ドメイン（試すだけなら workers.dev）</td></tr>
       <tr><td>料金を払うのは</td><td>デプロイした人のアカウント</td><td>基盤を入れた会社のアカウント（＋ DB の料金）</td></tr>
       <tr><td>Workers AI の使用量</td><td>自分のアカウントの枠を使う</td><td>基盤のアカウントの枠。人ごとの上限がかかることがある</td></tr>
-    </table></div>
+    </table>
   </div>
-  <div class="panel card" id="t-dev" hidden>
-    <div class="tbl-wrap"><table class="vs">
+  <div class="panel card table-wrap" id="t-dev" hidden>
+    <table class="vs">
       <tr><th>項目</th><th>直接 Cloudflare</th><th>Void Platform</th></tr>
       <tr><td>デプロイする人に必要なもの</td><td>Cloudflare アカウント（またはそのトークン）</td><td>Platform のアカウントだけ</td></tr>
       <tr><td>つなぐ</td><td><code>void connect --platform cloudflare</code></td><td><code>void connect platform.example.com</code></td></tr>
@@ -260,11 +259,11 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td>CI から</td><td><code>void init --github</code> でワークフローを生成。<code>CLOUDFLARE_API_TOKEN</code> を登録</td><td>自分で書いた CI ＋ プロジェクト専用トークン（<code>void project token create</code>）。<code>VOID_TOKEN</code>・<code>VOID_API_URL</code></td></tr>
       <tr><td>既存の Worker</td><td><code>wrangler.jsonc</code> がある Worker を紐付けて引き継げる</td><td>—</td></tr>
       <tr><td>共同作業</td><td>なし（1 人）</td><td>Reader・Collaborator・Project administrator・Owner の役割で招待</td></tr>
-    </table></div>
+    </table>
   </div>
   <div class="panel card" id="t-feat" hidden>
     <p class="note">D1・KV・R2・Queues・cron・ISR・WebSocket・Durable Objects・静的サイト・SSR は<strong>どちらも使える</strong>。違いがあるのは次のところ。</p>
-    <div class="tbl-wrap"><table class="vs">
+    <div class="table-wrap"><table class="vs">
       <tr><th>項目</th><th>直接 Cloudflare</th><th>Void Platform</th></tr>
       <tr><td>実行ログ</td><td>ライブ tail（その場で流れるだけ）</td><td>基盤に保存されたログ履歴を後から見られる</td></tr>
       <tr><td>ロールバック</td><td>Worker のバージョンに戻す</td><td>基盤に残したデプロイ履歴に戻す</td></tr>
@@ -276,8 +275,8 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td>ほかのアプリからの承認付きデプロイ</td><td>—</td><td>Connected apps（OAuth）とプライベートプレビュー</td></tr>
     </table></div>
   </div>
-  <div class="panel card" id="t-ops" hidden>
-    <div class="tbl-wrap"><table class="vs">
+  <div class="panel card table-wrap" id="t-ops" hidden>
+    <table class="vs">
       <tr><th>項目</th><th>直接 Cloudflare</th><th>Void Platform</th></tr>
       <tr><td>誰が管理するか</td><td>各自</td><td>基盤の管理者（<code>void platform …</code>）</td></tr>
       <tr><td>利用者の管理</td><td>—</td><td>サインアップの許可リスト・招待・停止</td></tr>
@@ -285,7 +284,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
       <tr><td>監視</td><td>Cloudflare のダッシュボード</td><td><code>void platform system health</code>・操作の記録・デプロイのログ</td></tr>
       <tr><td>基盤自体の保守</td><td>不要</td><td>アップグレード・修復・トークン更新・停止／削除を管理者が行う</td></tr>
       <tr><td>画面</td><td>Cloudflare のダッシュボード</td><td>管理者用の画面あり。利用者用ダッシュボードと GitHub 自動ビルドは標準に無い（基盤をカスタムビルド）</td></tr>
-    </table></div>
+    </table>
   </div>
 
   <h2 id="proscons">メリット・デメリット</h2>

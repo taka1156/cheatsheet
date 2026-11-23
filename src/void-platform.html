@@ -116,7 +116,6 @@ ol.plain li { margin: 3px 0; }
 @media (max-width: 480px) { .tree div { grid-template-columns: 1fr; gap: 0; padding: 4px 0; } }
 
 /* 表 */
-.tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
@@ -200,7 +199,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="compare">直接 Cloudflare と Platform の違い</h2>
   <p>アプリのコード（API）はどちらでも同じ。違うのはデプロイ先の管理のしかた。メリット・デメリットと選び方は → <a href="void-deploy-targets.html">直接 Cloudflare vs Void Platform</a></p>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>項目</th><th>直接 Cloudflare ／ Void Platform</th></tr>
       <tr><td>向いている人</td><td>個人のアプリ ／ チーム・会社・顧客に使わせる</td></tr>
@@ -217,7 +216,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   <p class="note">ユーザー用ダッシュボードと GitHub の自動ビルドは標準のインストールに含まれず、基盤を改造してカスタムビルドする必要がある。管理者用の画面は標準で付く。</p>
 
   <h2 id="prereq">インストールに必要なもの</h2>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>もの</th><th>メモ</th></tr>
       <tr><td>Cloudflare アカウント</td><td>Workers for Platforms（有料プラン）・R2・Analytics Engine を有効にしておく</td></tr>
@@ -245,7 +244,7 @@ void platform install                   # 保存したプランを選んで実�
     <li>DNS 待ちなどで止まったら <code>void platform install --resume --name &lt;id&gt;</code></li>
   </ol>
   <h3 style="margin-top:14px">作られる主なリソース</h3>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>リソース</th><th>数・用途</th></tr>
       <tr><td>Workers</td><td>5（API・プロキシ・ログ取り込み・ディスパッチ・メール）＋ workers.dev のアプリごとに 1</td></tr>
@@ -266,7 +265,7 @@ void project status ・ logs ・ rollback ・ cancel</code></pre>
   <p class="note">デプロイは基盤が受け付けたあとは CLI を閉じても続く。認証情報はプラットフォームの URL ごとにキーチェーンへ保存。<code>void platform list</code> ・ <code>void platform use [id]</code> で接続先を切り替え。</p>
 
   <h3 style="margin-top:14px">チームで使う（プロジェクトのメンバー）</h3>
-  <div class="tbl-wrap card">
+  <div class="table-wrap card">
     <table>
       <tr><th>役割</th><th>できること</th></tr>
       <tr><td>Reader</td><td>プロジェクト・使用量・デプロイ・ログ・メンバーを見る（デプロイ不可）</td></tr>
@@ -297,8 +296,8 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="m-ops">運用・ログ</button>
     <button class="tab" role="tab" aria-selected="false" data-panel="m-maint">保守・停止</button>
   </div>
-  <div class="panel card" id="m-access">
-    <div class="tbl-wrap"><table>
+  <div class="panel card table-wrap" id="m-access">
+    <table>
       <tr><th>コマンド</th><th>やること</th></tr>
       <tr><td><code>void platform signup allow github teammate</code></td><td>GitHub ユーザーのサインアップを許可</td></tr>
       <tr><td><code>void platform signup allow email '*@example.com'</code></td><td>メールアドレス・ドメインで許可</td></tr>
@@ -308,11 +307,11 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
       <tr><td><code>void platform user suspend &lt;id&gt; --reason "…"</code></td><td>ユーザーを停止（<code>restore</code> で戻す、<code>delete</code> で削除）</td></tr>
       <tr><td><code>void platform project list</code> ・ <code>owner</code></td><td>プロジェクト一覧・オーナーの移譲</td></tr>
       <tr><td><code>void platform zero-trust configure</code></td><td>プロジェクトのホスト名を Cloudflare Access で守る設定（<code>--protect-new-projects</code> で新しいアプリに既定でかける。各プロジェクトで公開に戻せる）</td></tr>
-    </table></div>
+    </table>
   </div>
   <div class="panel card" id="m-plan" hidden>
     <p>プラン ＝ アカウントごとのリソース上限（課金ではない）。変更に再デプロイは不要。</p>
-    <div class="tbl-wrap"><table>
+    <div class="table-wrap"><table>
       <tr><th>コマンド</th><th>やること</th></tr>
       <tr><td><code>void platform config plans</code></td><td>プランを見る</td></tr>
       <tr><td><code>void platform config plans add team --copy pro --name "Team"</code></td><td>既存プランをコピーして追加</td></tr>
@@ -322,8 +321,8 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
       <tr><td><code>void platform config plans archive</code> ・ <code>remove --replacement pro</code></td><td>アーカイブ ・ 代わりを決めて削除</td></tr>
     </table></div>
   </div>
-  <div class="panel card" id="m-ops" hidden>
-    <div class="tbl-wrap"><table>
+  <div class="panel card table-wrap" id="m-ops" hidden>
+    <table>
       <tr><th>コマンド</th><th>やること</th></tr>
       <tr><td><code>void platform system health</code> ・ <code>overview</code></td><td>基盤の状態（異常なら終了コードが 0 以外）</td></tr>
       <tr><td><code>void platform system events</code></td><td>操作の記録（変更が途中で切れたら、繰り返す前にここを見る）</td></tr>
@@ -331,10 +330,10 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
       <tr><td><code>void platform deployment logs &lt;id&gt; --since 10m --follow</code></td><td>アプリのログを追う</td></tr>
       <tr><td><code>void platform deployment cancel &lt;id&gt;</code></td><td>デプロイを取り消す</td></tr>
       <tr><td><code>void platform project ai-logging</code></td><td>プロジェクトごとの AI Gateway のログ記録</td></tr>
-    </table></div>
+    </table>
   </div>
-  <div class="panel card" id="m-maint" hidden>
-    <div class="tbl-wrap"><table>
+  <div class="panel card table-wrap" id="m-maint" hidden>
+    <table>
       <tr><th>コマンド</th><th>やること</th></tr>
       <tr><td><code>void platform status [id]</code></td><td>インストールの状態</td></tr>
       <tr><td><code>void platform upgrade [id]</code></td><td>新しい版に上げる（<code>--runtime-logs minimal|full</code> でログ設定も変更）</td></tr>
@@ -343,7 +342,7 @@ void deploy --platform void --project "$VOID_PROJECT"</code></pre>
       <tr><td><code>void platform discover --account &lt;id&gt; --installation &lt;name&gt;</code></td><td>別のマシンから管理する</td></tr>
       <tr><td><code>void platform disable [id]</code> ・ <code>enable [id]</code></td><td>データを残したまま止める ・ 再開</td></tr>
       <tr><td><code>void platform uninstall [id]</code></td><td>トラフィックを止めて削除（既定では多くのリソースと PostgreSQL・ゾーンは残る。<code>--purge-resources</code> で DNS・Access なども消す）</td></tr>
-    </table></div>
+    </table>
   </div>
 
   <h2 id="connected">発展：Connected apps</h2>

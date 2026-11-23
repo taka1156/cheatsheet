@@ -86,7 +86,6 @@ pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: norm
 .warn strong { color: var(--c-warn); }
 
 /* 表 */
-.tbl-wrap { overflow-x: auto; margin: 8px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { background: var(--chip); font-weight: 700; font-size: 0.8rem; }
@@ -188,7 +187,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   <p class="note">cf 自体は dev サーバーもバンドラーも持たず、Vite（など）か Wrangler に処理を渡す。<code>package.json</code> の scripts も実行しないので、追加のビルド手順は自分の <code>build</code> スクリプトにつなげる。</p>
 
   <h2 id="requirements">動かす前提</h2>
-  <div class="tbl-wrap stack"><table>
+  <div class="table-wrap stack"><table>
     <tr><th>項目</th><th>内容</th><th>守らないと</th></tr>
     <tr><td data-l="項目">Node.js 22.18 以上</td><td data-l="内容">Bun は非対応</td><td data-l="守らないと"><code>cloudflare.config.ts loading is not supported on Bun</code></td></tr>
     <tr><td data-l="項目"><code>"type": "module"</code></td><td data-l="内容"><code>package.json</code> に書く</td><td data-l="守らないと">未指定だと毎回警告。<code>"commonjs"</code> だと <code>Cannot use import statement outside a module</code></td></tr>
@@ -206,7 +205,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 }</code></pre>
 
   <h2 id="exports">cf/config が export するもの</h2>
-  <div class="tbl-wrap"><table>
+  <div class="table-wrap"><table>
     <tr><th>名前</th><th>用途</th></tr>
     <tr><td><code>defineConfig</code></td><td>設定本体。<code>export default</code> で使う。オブジェクト・Promise・<code>({ mode, isPreview }) =&gt; 設定</code> の関数のどれでも渡せる</td></tr>
     <tr><td><code>defineWorker</code></td><td>別の設定ファイルから import できる Worker 定義を作る（default export の代わりにはならない）</td></tr>
@@ -232,7 +231,7 @@ export default defineConfig({
 
   <h2 id="keys">設定キー一覧</h2>
   <h3>トップレベル</h3>
-  <div class="tbl-wrap"><table>
+  <div class="table-wrap"><table>
     <tr><th>キー</th><th>説明</th></tr>
     <tr><td><code>accountId</code></td><td>既定のアカウント。環境変数 <code>CLOUDFLARE_ACCOUNT_ID</code> が優先</td></tr>
     <tr><td><code>complianceRegion</code></td><td><code>"public"</code> か <code>"fedramp-high"</code>。<code>CLOUDFLARE_COMPLIANCE_REGION</code> が優先</td></tr>
@@ -242,7 +241,7 @@ export default defineConfig({
 
   <h3><code>worker</code> の中</h3>
   <input class="filter" id="keyFilter" type="search" placeholder="キーを絞り込み（例: env, cache, placement）" aria-label="worker のキーを絞り込み">
-  <div class="tbl-wrap"><table id="keyTable">
+  <div class="table-wrap"><table id="keyTable">
     <tr><th>キー</th><th>説明</th></tr>
     <tr><td><code>name</code><span class="req">必須</span></td><td>Worker 名</td></tr>
     <tr><td><code>compatibilityDate</code><span class="req">必須</span></td><td><code>yyyy-mm-dd</code>。ランタイムの版を決める</td></tr>
@@ -308,7 +307,7 @@ export default defineConfig({
   <p class="note">右のコメントは生成される <code>Env</code> 型。Vite プラグインが dev・build 中に <code>.cloudflare/types/index.d.ts</code> を書き、Vite を使わないなら <code>cf workers types</code> で同じファイルを作る。</p>
 
   <h2 id="triggers">triggers（いつ起動するか）</h2>
-  <div class="tbl-wrap"><table>
+  <div class="table-wrap"><table>
     <tr><th>ビルダー</th><th>主な引数</th><th>用途</th></tr>
     <tr><td><code>triggers.fetch</code></td><td><code>{ pattern, zone? }</code></td><td>ルート（例: <code>api.example.com/*</code>）</td></tr>
     <tr><td><code>triggers.queue</code></td><td><code>{ name, maxBatchSize, maxRetries, ... }</code></td><td>Queue のコンシューマー</td></tr>
@@ -319,14 +318,14 @@ export default defineConfig({
   <p class="note">triggers は「起動するきっかけ」だけを決め、<code>env</code> のバインディングは作らない。Queue に送る側にもなるなら <code>bindings.queue</code> も別に書く。</p>
 
   <h2 id="do">exports と Durable Object のライフサイクル</h2>
-  <div class="tbl-wrap stack"><table>
+  <div class="table-wrap stack"><table>
     <tr><th>ビルダー</th><th>説明</th></tr>
     <tr><td data-l="ビルダー"><code>exports.worker({ cache })</code></td><td data-l="説明">WorkerEntrypoint の export</td></tr>
     <tr><td data-l="ビルダー"><code>exports.durableObject({ storage, container? })</code></td><td data-l="説明"><code>storage</code> は <code>"sqlite"</code>（推奨）か <code>"legacy-kv"</code>。Container を付けられるのは sqlite のクラスだけ</td></tr>
     <tr><td data-l="ビルダー"><code>exports.workflow({ name, ... })</code></td><td data-l="説明"><code>name</code> はアカウント内で一意。<code>jurisdiction</code> は作成後に変えられない</td></tr>
   </table></div>
   <p>Durable Object は <code>state</code> でクラスの移り変わりを宣言する（移行用の migration ブロックの代わり）。</p>
-  <div class="tbl-wrap"><table>
+  <div class="table-wrap"><table>
     <tr><th>state</th><th>意味</th><th>併せて書くもの</th></tr>
     <tr><td><code>created</code>（省略時）</td><td>稼働中のクラス</td><td><code>storage</code></td></tr>
     <tr><td><code>deleted</code></td><td>削除したクラスを退役させる</td><td>—</td></tr>
@@ -355,7 +354,7 @@ export default defineConfig(({ mode, isPreview }) =&gt; {
     },
   };
 });</code></pre>
-  <div class="tbl-wrap stack"><table>
+  <div class="table-wrap stack"><table>
     <tr><th>状況</th><th><code>mode</code> の値</th></tr>
     <tr><td data-l="状況"><code>--mode</code> / <code>-m</code> を付けた</td><td data-l="mode の値">指定した値</td></tr>
     <tr><td data-l="状況">Vite プラグインで <code>cf dev</code></td><td data-l="mode の値"><code>development</code></td></tr>
@@ -369,7 +368,7 @@ export default defineConfig(({ mode, isPreview }) =&gt; {
   </ul>
 
   <h2 id="commands">関連コマンド</h2>
-  <div class="tbl-wrap stack"><table>
+  <div class="table-wrap stack"><table>
     <tr><th>コマンド</th><th>内容</th></tr>
     <tr><td data-l="コマンド"><code>cf init my-worker</code> / <code>cf init .</code></td><td data-l="内容"><code>cloudflare.config.ts</code> 付きのプロジェクトを作る／既存アプリに追加</td></tr>
     <tr><td data-l="コマンド"><code>cf dev</code> / <code>cf dev --mode staging</code></td><td data-l="内容">ローカル開発</td></tr>

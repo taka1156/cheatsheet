@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -193,7 +192,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </ol>
 
   <h2 id="read">画面の読み方</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>部分</th><th>見方</th></tr></thead>
     <tbody>
       <tr><td data-l="部分">報告数のグラフ</td><td data-l="見方">山の高さは「その時間に報告した人の数」。夜中の小さな山と、昼の大きな山は同じ重みではないので、基準との差で見る</td></tr>
@@ -205,7 +204,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </table></div>
 
   <h2 id="combine">ほかの情報源と組み合わせる</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>情報源</th><th>分かること</th><th>弱いところ</th></tr></thead>
     <tbody>
       <tr><td data-l="情報源">Downdetector</td><td data-l="分かること">利用者がどう困っているか（症状・地域）。公式発表より早いことが多い</td><td data-l="弱いところ">原因は分からない。報道や SNS の話題で報告が膨らむことがある</td></tr>
@@ -217,7 +216,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   <p class="note">たとえば「Downdetector で通信会社 A の報告が急増」＋「Radar で A の AS の通信量が落ちている」なら回線側の障害、「報告は増えたが Radar は平常」ならアプリやサービス側の不具合を疑う。</p>
 
   <h2 id="ops">運用・セキュリティでの使いどころ</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>場面</th><th>使い方</th></tr></thead>
     <tbody>
       <tr><td data-l="場面">問い合わせが急に増えた</td><td data-l="使い方">自社サービスや依存先（クラウド・決済・認証・CDN）の Downdetector を見て、原因が外にあるか切り分ける</td></tr>
@@ -228,7 +227,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </table></div>
 
   <h2 id="plans">プランと提供元</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>プラン</th><th>主な内容</th></tr></thead>
     <tbody>
       <tr><td data-l="プラン">無料</td><td data-l="内容">障害状況の閲覧・報告。お気に入り 5 件まで、通知は 1 日 3 件まで（Speedtest アプリ経由）</td></tr>

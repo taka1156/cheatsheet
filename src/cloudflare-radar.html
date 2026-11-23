@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -197,7 +196,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="pg-traffic">トラフィック・AI</button>
   </div>
   <div class="panel" id="pg-sec">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
       <tbody>
         <tr><td data-l="画面">Zero Wire</td><td data-l="URL"><code>/security/zero-wire</code></td><td data-l="内容">重大な脆弱性・脅威のブリーフィング。「Needs attention」（今見るべき）と「Reference」（落ち着いたもの）に分かれ、対処手順・Cloudflare での観測・出典が載る。RSS あり</td></tr>
@@ -210,7 +209,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     </table></div>
   </div>
   <div class="panel" id="pg-route" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
       <tbody>
         <tr><td data-l="画面">Routing</td><td data-l="URL"><code>/routing</code></td><td data-l="内容">BGP の統計、IP アドレス空間の推移、Top 100 AS（顧客コーン・アドレス数）</td></tr>
@@ -223,7 +222,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     </table></div>
   </div>
   <div class="panel" id="pg-traffic" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>画面</th><th>URL</th><th>見えるもの・使いどころ</th></tr></thead>
       <tbody>
         <tr><td data-l="画面">Traffic</td><td data-l="URL"><code>/traffic</code>・<code>/traffic/jp</code></td><td data-l="内容">国・地域・AS ごとの通信量の推移、人とボットの割合、デバイス・プロトコル、API 通信の割合など</td></tr>
@@ -236,7 +235,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   <p class="note">URL は <code>https://radar.cloudflare.com</code> からの相対パス。国のページは ISO 3166 の 2 文字コード（日本は <code>jp</code>）。</p>
 
   <h2 id="usecase">やりたいこと別の逆引き</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>やりたいこと</th><th>どこを見るか</th></tr></thead>
     <tbody>
       <tr><td data-l="やりたいこと">届いたリンクが安全か調べたい</td><td data-l="どこ">URL Scanner（<code>/scan</code>）。Unlisted で調べる（下の「URL Scanner」）</td></tr>
@@ -258,7 +257,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <button class="tab" role="tab" aria-selected="false" data-panel="cv-triage">優先度の付け方</button>
   </div>
   <div class="panel" id="cv-open">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>やること</th><th>URL・操作</th></tr></thead>
       <tbody>
         <tr><td data-l="やること">1 件を開く</td><td data-l="URL・操作"><code>/zero-wire/cves/CVE-2021-44228</code>（Log4Shell の例）。検索バー・<code>Cmd</code> / <code>Ctrl</code> + <code>K</code> に CVE ID や語を入れてもよい</td></tr>
@@ -271,7 +270,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
     <p class="note">CVE ページ用の API は公開されていない（2026-11 時点）。プログラムで扱うなら JSON フィードを使う。</p>
   </div>
   <div class="panel" id="cv-read" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>ブロック</th><th>載っているもの</th><th>読み方</th></tr></thead>
       <tbody>
         <tr><td data-l="ブロック">ヘッダー</td><td data-l="載っているもの">CVSS スコア・説明・公開日などの日付</td><td data-l="読み方">まず何の製品の何の脆弱性かを把握する</td></tr>
@@ -286,7 +285,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
   </div>
   <div class="panel" id="cv-triage" hidden>
     <p>CVSS は「起きたらどれだけ深刻か」で、「狙われているか」は表さない。Exploitation の 3 つで実際の危なさを足して判断する。</p>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>指標</th><th>出しているところ</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="指標">KEV</td><td data-l="出しているところ">CISA</td><td data-l="意味">実際に悪用が確認された脆弱性の一覧。載っていれば「もう狙われている」</td></tr>
@@ -338,7 +337,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
     "customagent": "my-scanner",
     "referer": "https://mail.example.com"
   }'</code></pre>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>オプション</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="オプション"><code>visibility</code></td><td data-l="意味"><code>Public</code>（既定。最近のスキャン一覧と検索に載る）か <code>Unlisted</code>（ID を知る人だけが見られる）</td></tr>
@@ -351,7 +350,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
   </div>
   <div class="panel" id="sc-search" hidden>
     <p><code>GET v2/search?q=...</code>（画面の検索も同じ書き方）。フィッシングの同類探しに使える。</p>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>クエリ</th><th>見つかるもの</th></tr></thead>
       <tbody>
         <tr><td data-l="クエリ"><code>page.domain:"example.com"</code></td><td data-l="見つかるもの">そのドメインのページのスキャン</td></tr>
@@ -363,7 +362,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
     </table></div>
   </div>
   <div class="panel" id="sc-limit" hidden>
-    <div class="tbl"><table>
+    <div class="table-wrap"><table>
       <thead><tr><th>プラン</th><th>検索できる履歴</th><th>Public / 月</th><th>Unlisted / 月</th><th>レート</th></tr></thead>
       <tbody>
         <tr><td>Free / Radar</td><td>直近 50 件</td><td>5,000</td><td>なし</td><td>10 秒に 1 回</td></tr>
@@ -385,7 +384,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
     <button class="tab" role="tab" aria-selected="false" data-panel="api-cmp">比較する</button>
   </div>
   <div class="panel" id="api-param">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>パラメータ</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="パラメータ"><code>dateRange</code></td><td data-l="意味"><code>7d</code> など。<code>7dControl</code> はその前の 7 日（比較用）</td></tr>
@@ -400,7 +399,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
     <p class="note">返り値の <code>meta</code> に、実際に使われた期間・粒度・信頼度（<code>confidenceInfo</code>）が入る。<code>7d</code> のような指定は実行時に日付へ変わるので、何の期間だったかは <code>meta</code> で確かめる。</p>
   </div>
   <div class="panel" id="api-ep" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>パス（/radar 以下）</th><th>取れるもの</th></tr></thead>
       <tbody>
         <tr><td data-l="パス"><code>/attacks/layer7/timeseries</code>・<code>/summary/{dimension}</code></td><td data-l="取れるもの">L7 攻撃の推移・内訳（<code>layer3</code> にすると DDoS）</td></tr>
@@ -440,7 +439,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
   </div>
 
   <h2 id="ai">AI から使う</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>方法</th><th>使い方</th></tr></thead>
     <tbody>
       <tr><td data-l="方法">Radar Researcher（ベータ）</td><td data-l="使い方">Radar のヘッダーから開く AI アシスタント。質問に、API のデータからグラフを作って答える。会話は共有リンクにできる</td></tr>
@@ -451,7 +450,7 @@ curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/urlscanner/v2/sc
   </table></div>
 
   <h2 id="license">データの使い方（ライセンス）</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>もの</th><th>ライセンス</th></tr></thead>
     <tbody>
       <tr><td data-l="もの">埋め込み・ダウンロードしたグラフや画像</td><td data-l="ライセンス">CC BY 4.0（出典を書けば商用も可）</td></tr>

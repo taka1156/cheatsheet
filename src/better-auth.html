@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -307,7 +306,7 @@ createAuthClient({ plugins: [inferAdditionalFields&lt;typeof auth&gt;()] });</co
   </div>
 
   <h2 id="config">主な設定</h2>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
@@ -336,7 +335,7 @@ import { twoFactorClient } from 'better-auth/client/plugins';
 createAuthClient({ plugins: [twoFactorClient({ twoFactorPage: '/two-factor' })] });
 
 await authClient.twoFactor.enable({ password });</code></pre>
-  <div class="tbl">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>サーバー側</th><th>できること</th></tr></thead>
       <tbody>
@@ -355,7 +354,7 @@ await authClient.twoFactor.enable({ password });</code></pre>
   <p class="note">表のうち <code>passkey()</code>・<code>apiKey()</code> 以外は <code>better-auth/plugins</code> から import し、クライアント側は <code>〜Client()</code>（<code>better-auth/client/plugins</code>）を使う。</p>
 
   <h2 id="cli">CLI</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
       <thead><tr><th>コマンド</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="コマンド"><code>npx auth@latest generate</code></td><td data-l="意味">Prisma・Drizzle のスキーマや SQL を生成。<code>--adapter prisma --dialect postgresql</code> で DB に接続せずに生成</td></tr>

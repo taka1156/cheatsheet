@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -237,7 +236,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
 
   <h2 id="config">設定ファイル</h2>
   <p>置き場所は次のどれか（上から探して最初に見つかったもの 1 つだけを使う）。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>場所</th><th>メモ</th></tr></thead>
     <tbody>
       <tr><td data-l="場所"><code>renovate.json</code> / <code>renovate.jsonc</code> / <code>renovate.json5</code></td><td data-l="メモ">いちばん普通。コメントを書くなら <code>.jsonc</code> が推奨（<code>.json</code> も JSONC として読まれる）</td></tr>
@@ -256,7 +255,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
   <p class="note"><code>$schema</code> を書くとエディタで補完と検証が効く。</p>
 
   <h3>プリセット（extends）</h3>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>書き方</th><th>意味</th></tr></thead>
     <tbody>
       <tr><td data-l="書き方"><code>config:recommended</code></td><td data-l="意味">標準の推奨セット。Dependency Dashboard・monorepo のグループ化（<code>group:monorepos</code>・<code>group:recommended</code>）・<code>node_modules</code> とテスト用フォルダの除外・Age/Confidence バッジ・置き換え／回避策ルールなど</td></tr>
@@ -278,7 +277,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
     <button class="tab" role="tab" aria-selected="false" data-panel="op-sec">セキュリティ</button>
   </div>
   <div class="panel" id="op-amount">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="キー"><code>schedule</code></td><td data-l="既定"><code>["at any time"]</code></td><td data-l="意味">ブランチを作ってよい時間帯。cron の 5 項目で書く（分は <code>*</code> にする）。<code>"before 4am on monday"</code> のような英文の書き方（later）は非推奨</td></tr>
@@ -294,7 +293,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
     </table></div>
   </div>
   <div class="panel" id="op-merge" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="キー"><code>automerge</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">CI が通ったら人の手を介さずマージする</td></tr>
@@ -307,7 +306,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
     <p class="note">ブランチ保護で必須のチェックがある前提で使う。必須レビューを設定していると、レビューが済むまで automerge されない（Renovate をバイパス対象に入れることもできる）。</p>
   </div>
   <div class="panel" id="op-ver" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="キー"><code>rangeStrategy</code></td><td data-l="既定"><code>"auto"</code></td><td data-l="意味"><code>^1.2.0</code> のような範囲の直し方。<code>pin</code>（固定版にする）・<code>bump</code>（範囲の下限を上げる）・<code>replace</code>・<code>widen</code>・<code>update-lockfile</code>（範囲内ならロックファイルだけ）・<code>in-range-only</code></td></tr>
@@ -320,7 +319,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
     </table></div>
   </div>
   <div class="panel" id="op-scope" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="キー"><code>enabledManagers</code></td><td data-l="既定">すべて</td><td data-l="意味">書いた manager だけを動かす（例: <code>["npm", "github-actions"]</code>）</td></tr>
@@ -334,7 +333,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
     </table></div>
   </div>
   <div class="panel" id="op-sec" hidden>
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>キー</th><th>既定</th><th>意味</th></tr></thead>
       <tbody>
         <tr><td data-l="キー"><code>vulnerabilityAlerts</code></td><td data-l="既定">有効</td><td data-l="意味">GitHub の Dependabot アラートを読み、修正版への PR をスケジュールに関係なく作る（GitHub で、アラートの読み取り権限があるとき）</td></tr>
@@ -347,7 +346,7 @@ docker run --rm -e RENOVATE_TOKEN -e RENOVATE_PLATFORM=gitlab \
 
   <h2 id="rules">packageRules</h2>
   <p><code>packageRules</code> は「<b>match* で対象を選び、残りのキーで振る舞いを上書きする</b>」ルールの配列。上から順に当てはめ、後のルールが前のルールを上書きする。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>match キー</th><th>選ぶもの</th></tr></thead>
     <tbody>
       <tr><td data-l="match キー"><code>matchPackageNames</code></td><td data-l="選ぶもの">パッケージ名（<code>"react"</code>・<code>"@types/**"</code>・<code>"/^eslint/"</code>・<code>"!foo"</code>）</td></tr>
@@ -446,7 +445,7 @@ ENV GH_VERSION=2.60.0</code></pre>
   </div>
 
   <h2 id="debug">確認・デバッグ</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>やること</th><th>方法</th></tr></thead>
     <tbody>
       <tr><td data-l="やること">設定の検証</td><td data-l="方法"><code>npx --yes --package renovate -- renovate-config-validator</code>（<code>--strict</code> で古い書き方も警告）。pre-commit のフックもある</td></tr>

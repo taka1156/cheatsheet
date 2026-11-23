@@ -85,7 +85,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -220,7 +219,7 @@ Deno.serve(app.fetch);</code></pre>
   </div>
 
   <h2 id="routing">ルーティング</h2>
-  <div class="tbl">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>書き方</th><th>意味</th></tr></thead>
       <tbody>
@@ -245,7 +244,7 @@ Deno.serve(app.fetch);</code></pre>
     <button class="tab" role="tab" aria-selected="false" data-panel="cx-var">変数・環境</button>
   </div>
   <div class="panel" id="cx-req">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
         <thead><tr><th>メソッド</th><th>返すもの</th></tr></thead>
         <tbody>
           <tr><td data-l="メソッド"><code>c.req.param('id')</code></td><td data-l="返すもの">パスパラメータ（引数なしで全部）</td></tr>
@@ -314,7 +313,7 @@ const timing = createMiddleware(async (c, next) =&gt; {
 });
 app.use(timing);</code></pre>
   <h3>組み込みミドルウェア（<code>hono/〜</code> から import）</h3>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>import 元</th><th>用途</th></tr></thead>
       <tbody>

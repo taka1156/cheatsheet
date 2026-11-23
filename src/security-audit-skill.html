@@ -84,7 +84,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -179,7 +178,7 @@ do a security review, output to ~/audits/my-project</code></pre>
 
   <h2 id="modes">2 つのモード</h2>
   <p>スキルを読み込んだだけでは監査は始まらない。<b>既定はガイダンスモード</b>で、フル監査は明示的に頼んだときだけ。どちらとも取れる依頼なら、エージェントがファイルを作る前に 1 つ質問する。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>モード</th><th>始まる頼み方</th><th>やること</th></tr></thead>
     <tbody>
       <tr><td data-l="モード">ガイダンス</td><td data-l="頼み方">セキュリティの質問、特定箇所のレビュー、見つけた問題の調査・トリアージ</td><td data-l="やること">必要な部分だけ使う。6 フェーズは回さず、出力フォルダも作らない</td></tr>
@@ -200,7 +199,7 @@ do a security review, output to ~/audits/my-project</code></pre>
   <p class="note">終わり方は 2 つだけ。(a) レポートを全部書き、検証ツールが 2 つとも通る。(b) <code>run_status: "incomplete"</code> と理由を記録し、レポートに抜けを書く。フェーズの途中で止めない。</p>
 
   <h2 id="verdicts">判定（verdict）と重大度</h2>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>判定</th><th>意味</th><th>重大度</th></tr></thead>
     <tbody>
       <tr><td data-l="判定"><span class="vd ok">confirmed</span></td><td data-l="意味">入口から到達点（sink）までのソースの追跡がそろい、サンドボックスの中で結果を観測できた脆弱性</td><td data-l="重大度">付ける</td></tr>
@@ -209,7 +208,7 @@ do a security review, output to ~/audits/my-project</code></pre>
     </tbody>
   </table></div>
   <p>重大度は confirmed だけに付け、実際に示せた影響を超えない。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>重大度</th><th>目安</th></tr></thead>
     <tbody>
       <tr><td data-l="重大度">critical</td><td data-l="目安">認証なしでコード実行・データストア全体へのアクセス・任意アカウントの乗っ取り</td></tr>
@@ -223,7 +222,7 @@ do a security review, output to ~/audits/my-project</code></pre>
 
   <h2 id="files">出力ファイル</h2>
   <p>出力先を指定しなければ、対象の外の <code>~/security-audit-skill/&lt;repo-name&gt;/run-&lt;N&gt;</code> に書く。対象リポジトリの中に書くのは、Git に無視されるフォルダを自分で指定したときだけ。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>ファイル</th><th>中身</th></tr></thead>
     <tbody>
       <tr><td data-l="ファイル"><code>run-metadata.json</code></td><td data-l="中身">対象・コミット・プロファイル・範囲・予算・実行の状態</td></tr>
@@ -253,7 +252,7 @@ node &lt;skill-dir&gt;/validate-findings.cjs &lt;output-dir&gt;/findings.json</c
     <button class="tab" role="tab" aria-selected="false" data-panel="pf-budget">予算</button>
   </div>
   <div class="panel" id="pf-profile">
-    <div class="tbl stack"><table>
+    <div class="table-wrap stack"><table>
       <thead><tr><th>プロファイル</th><th>向く場面</th><th>違い</th></tr></thead>
       <tbody>
         <tr><td data-l="プロファイル"><code>quick</code></td><td data-l="向く場面">小さい対象、再実行、最初のざっと見</td><td data-l="違い">台帳の単位を粗くし、hunter の波 1 回と critic 1 回だけ。候補ごとの verifier は 1 つ</td></tr>
@@ -273,7 +272,7 @@ node &lt;skill-dir&gt;/validate-findings.cjs &lt;output-dir&gt;/findings.json</c
 
   <h2 id="companions">攻撃クラスの補助ファイル</h2>
   <p>偵察の結果に合わせて、対象の種類ごとの補助ファイルを選んで hunter に渡す。共通は <code>ATTACK-CLASSES.md</code>。</p>
-  <div class="tbl stack"><table>
+  <div class="table-wrap stack"><table>
     <thead><tr><th>ファイル</th><th>対象</th></tr></thead>
     <tbody>
       <tr><td data-l="ファイル"><code>WEB-PROTOCOL-AND-AUTH.md</code></td><td data-l="対象">HTTP のリクエスト解釈のずれ・キャッシュ・認証プロトコル</td></tr>

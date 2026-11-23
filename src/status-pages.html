@@ -86,7 +86,6 @@ ul, ol { padding-left: 1.4em; margin: 8px 0; }
 li { margin: 2px 0; }
 
 /* 表 */
-.tbl { overflow-x: auto; margin: 10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th { background: var(--chip); font-weight: 600; white-space: nowrap; }
@@ -151,7 +150,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="links">まず開くページ</h2>
   <p class="note">「公開」はログイン不要。「自分の環境向け」はアカウント・テナントへのログインと権限が必要。</p>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>サービス</th><th>公開ステータス</th><th>自分の環境向け</th></tr></thead>
       <tbody>
@@ -181,7 +180,7 @@ footer#memo-backlink a:hover { color: var(--accent); }
 
   <h2 id="dockerhub">Docker Hub が止まったときの逃げ道</h2>
   <p><code>FROM node:22</code> のようにレジストリを書かないイメージは Docker Hub から取ってくる。自分のイメージを別のレジストリに置いていても、ベースイメージの取得で CI のビルドが止まることがある。公式イメージ (Docker Official Images) には次の取得先がある。</p>
-  <div class="tbl stack">
+  <div class="table-wrap stack">
     <table>
       <thead><tr><th>取得先</th><th>使い方</th><th>注意</th></tr></thead>
       <tbody>

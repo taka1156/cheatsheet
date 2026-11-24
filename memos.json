@@ -1,5 +1,15 @@
 [
  {
+  "file": "typespec.html",
+  "title": "TypeSpec 使い方",
+  "desc": "tsp コマンド・tspconfig.yaml・言語の書き方・HTTP デコレーター・バージョニング・emitter をまとめたチートシート。",
+  "tags": [
+   "API・バックエンド"
+  ],
+  "date": "2026-11-25",
+  "quizzes": 0
+ },
+ {
   "file": "threejs.html",
   "title": "three.js 使い方",
   "desc": "three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。",

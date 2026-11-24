@@ -5,9 +5,18 @@
   <id>https://cs.taka1156.site/</id>
   <link rel="alternate" type="text/html" href="https://cs.taka1156.site/"/>
   <link rel="self" type="application/atom+xml" href="https://cs.taka1156.site/feed.xml"/>
-  <updated>2026-11-24T00:00:00+09:00</updated>
+  <updated>2026-11-25T00:00:00+09:00</updated>
   <author><name>CheatSheet</name></author>
   <icon>https://cs.taka1156.site/assets/icon-192.png</icon>
+  <entry>
+    <title>TypeSpec 使い方</title>
+    <id>https://cs.taka1156.site/typespec.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/typespec.html"/>
+    <published>2026-11-25T00:00:00+09:00</published>
+    <updated>2026-11-25T00:00:00+09:00</updated>
+    <summary>tsp コマンド・tspconfig.yaml・言語の書き方・HTTP デコレーター・バージョニング・emitter をまとめたチートシート。</summary>
+    <category term="API・バックエンド"/>
+  </entry>
   <entry>
     <title>three.js 使い方</title>
     <id>https://cs.taka1156.site/threejs.html</id>

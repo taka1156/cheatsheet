@@ -4,6 +4,7 @@
 
 ## Memos
 
+- [TypeSpec 使い方](https://cs.taka1156.site/md/typespec.md): tsp コマンド・tspconfig.yaml・言語の書き方・HTTP デコレーター・バージョニング・emitter をまとめたチートシート。（API・バックエンド / 2026-11-25）
 - [three.js 使い方](https://cs.taka1156.site/md/threejs.md): three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。（フロントエンド / 2026-11-24）
 - [Rive 使い方](https://cs.taka1156.site/md/rive.md): Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。（フロントエンド / 2026-11-24）
 - [Playwright 使い方](https://cs.taka1156.site/md/playwright.md): Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。（開発ツール / 2026-11-24）

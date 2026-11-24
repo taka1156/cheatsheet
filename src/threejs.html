@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>three.js 使い方</title>
+<meta name="description" content="three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。">
+<meta name="memo:tags" content="フロントエンド">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--fg-2); font-weight: 600; font-size: 0.78rem; }
+td:first-child { white-space: nowrap; }
+/* スマホでは表を 1 行 1 枚のカードに積む（列名は data-l） */
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 全体像の図 */
+.flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: 8px;
+  margin: 8px 0;
+}
+.flow .box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+}
+.flow .box > b {
+  display: block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.flow .box ul { list-style: none; }
+.flow .box li { padding: 2px 0; color: var(--fg-2); }
+.flow .box li code { color: var(--fg); }
+.flow .arrow {
+  align-self: center;
+  color: var(--fg-2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  text-align: center;
+}
+.flow .arrow::before { content: "→"; }
+.flow .stack { display: grid; gap: 8px; }
+@media (max-width: 640px) {
+  .flow { grid-template-columns: 1fr; }
+  .flow .arrow::before { content: "↓"; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>three.js 使い方</h1>
+  <p class="subtitle">ブラウザで 3D を描く JavaScript ライブラリ three.js のチートシート（r187・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>WebGL・WebGPU を直接書かずに、シーン・カメラ・メッシュ・ライトを組み立てて 3D を描くライブラリ。</li>
+      <li>シーンに物を置き、カメラから見た絵をレンダラーが <code>&lt;canvas&gt;</code> に毎フレーム描く、が基本の形。</li>
+      <li>視点操作や glTF 読み込みは本体ではなく <code>three/addons/</code> から読み込む。版ごとに API が変わるので版は固定する。</li>
+    </ul>
+  </div>
+
+  <h2 id="overview">全体像</h2>
+  <div class="flow">
+    <div class="box">
+      <b>Scene</b>
+      <ul>
+        <li><code>Mesh</code> = <code>Geometry</code>（形）＋ <code>Material</code>（見た目）</li>
+        <li><code>Light</code>（光源）</li>
+        <li><code>Group</code>（まとめて動かす）</li>
+        <li><code>scene.background</code>・<code>environment</code></li>
+      </ul>
+    </div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="stack">
+      <div class="box">
+        <b>Camera</b>
+        <ul>
+          <li><code>PerspectiveCamera</code>（遠近あり）</li>
+          <li><code>OrthographicCamera</code>（遠近なし）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="box">
+      <b>Renderer</b>
+      <ul>
+        <li><code>renderer.render(scene, camera)</code></li>
+        <li><code>renderer.domElement</code> が <code>&lt;canvas&gt;</code></li>
+        <li><code>setAnimationLoop()</code> で毎フレーム呼ぶ</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">物はすべて <code>Object3D</code> の子孫で、<code>position</code>・<code>rotation</code>・<code>scale</code> と親子関係（<code>add()</code>）を持つ。単位は自由だが、glTF やライトの物理単位に合わせて「1 = 1 m」にしておくと楽。</p>
+
+  <h2 id="install">導入</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="i-npm">npm + Vite</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-cdn">import map（CDN）</button>
+  </div>
+  <div class="panel" id="i-npm">
+<pre><code>npm install three
+npm install -D vite @types/three   # TypeScript なら @types/three も（本体に型は入っていない）
+npx vite                           # 開発サーバー</code></pre>
+<pre><code>// main.js
+import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'</code></pre>
+    <p class="note">公式マニュアルもビルドツール（Vite など）を使う形を勧めている。<code>@types/three</code> は本体と同じ版（<code>0.187.x</code>）にそろえる。</p>
+  </div>
+  <div class="panel" id="i-cdn" hidden>
+<pre><code>&lt;script type="importmap"&gt;
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+  }
+}
+&lt;/script&gt;
+&lt;script type="module"&gt;
+  import * as THREE from 'three'
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+&lt;/script&gt;</code></pre>
+    <p class="note">本体とアドオンは<b>同じ版・同じ CDN</b> から読む（混ぜると three.js が 2 重に読み込まれて壊れる）。URL の版は必ず固定し、<code>latest</code> にしない。<code>file://</code> では動かないので、ローカルでも <code>npx serve</code> などのサーバーで開く。</p>
+  </div>
+
+  <h2 id="minimal">最小のコード</h2>
+<pre><code>import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+
+// 1. シーン・カメラ・レンダラー
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x202530)
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100)
+camera.position.set(3, 2, 5)
+
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2))   // 高 DPI で重くなりすぎないよう上限
+renderer.setSize(innerWidth, innerHeight)
+document.body.appendChild(renderer.domElement)
+
+// 2. 物とライト
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshStandardMaterial({ color: 0x44aa88 }),
+)
+scene.add(cube)
+scene.add(new THREE.AmbientLight(0xffffff, 0.4))
+const sun = new THREE.DirectionalLight(0xffffff, 2)
+sun.position.set(5, 10, 5)
+scene.add(sun)
+
+// 3. 視点操作
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true
+
+// 4. 毎フレーム描く
+const timer = new THREE.Timer()
+timer.connect(document)   // タブが裏にある間は時間を進めない
+renderer.setAnimationLoop((time) =&gt; {
+  timer.update(time)
+  cube.rotation.y += timer.getDelta()   // 1 秒で 1 ラジアン（フレームレートに依存しない）
+  controls.update()                     // enableDamping のときは毎フレーム必要
+  renderer.render(scene, camera)
+})
+
+// 5. 画面サイズに追従
+addEventListener('resize', () =&gt; {
+  camera.aspect = innerWidth / innerHeight
+  camera.updateProjectionMatrix()       // カメラの値を変えたら必ず呼ぶ
+  renderer.setSize(innerWidth, innerHeight)
+})</code></pre>
+  <p class="note">角度はラジアン。度で書きたいときは <code>THREE.MathUtils.degToRad(45)</code>。</p>
+
+  <h2 id="api">よく使う API</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="a-geo">ジオメトリ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-mat">マテリアル</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-light">ライト</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-cam">カメラ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-obj">Object3D</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-ren">レンダラー</button>
+  </div>
+  <div class="panel" id="a-geo">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>クラス</th><th>引数（主なもの）</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>BoxGeometry</code></td><td data-l="引数（主なもの）"><code>(w, h, d)</code></td><td data-l="用途">箱</td></tr>
+          <tr><td><code>SphereGeometry</code></td><td data-l="引数（主なもの）"><code>(radius, widthSeg, heightSeg)</code></td><td data-l="用途">球。分割数を上げると滑らか</td></tr>
+          <tr><td><code>PlaneGeometry</code></td><td data-l="引数（主なもの）"><code>(w, h)</code></td><td data-l="用途">板。床にするなら <code>rotation.x = -Math.PI / 2</code></td></tr>
+          <tr><td><code>CylinderGeometry</code></td><td data-l="引数（主なもの）"><code>(rTop, rBottom, h, radialSeg)</code></td><td data-l="用途">円柱・円錐</td></tr>
+          <tr><td><code>CapsuleGeometry</code></td><td data-l="引数（主なもの）"><code>(radius, height, capSeg, radialSeg, heightSeg)</code></td><td data-l="用途">カプセル（キャラの当たり判定の見た目など）</td></tr>
+          <tr><td><code>TorusGeometry</code></td><td data-l="引数（主なもの）"><code>(radius, tube)</code></td><td data-l="用途">ドーナツ</td></tr>
+          <tr><td><code>BufferGeometry</code></td><td data-l="引数（主なもの）"><code>setAttribute('position', new BufferAttribute(arr, 3))</code></td><td data-l="用途">頂点を自分で並べる</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">同じ形をたくさん並べるときは、Mesh を大量に作らず <code>InstancedMesh(geometry, material, count)</code> と <code>setMatrixAt(i, matrix)</code> を使う（描画が 1 回で済む）。</p>
+  </div>
+  <div class="panel" id="a-mat" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>クラス</th><th>ライト</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>MeshBasicMaterial</code></td><td data-l="ライト">不要</td><td data-l="用途">単色・テクスチャをそのまま。陰影なし</td></tr>
+          <tr><td><code>MeshLambertMaterial</code></td><td data-l="ライト">必要</td><td data-l="用途">つやなしの軽い陰影</td></tr>
+          <tr><td><code>MeshPhongMaterial</code></td><td data-l="ライト">必要</td><td data-l="用途">ハイライトつき（古典的）</td></tr>
+          <tr><td><code>MeshStandardMaterial</code></td><td data-l="ライト">必要</td><td data-l="用途">PBR。<code>metalness</code>・<code>roughness</code>。迷ったらこれ</td></tr>
+          <tr><td><code>MeshPhysicalMaterial</code></td><td data-l="ライト">必要</td><td data-l="用途">Standard ＋ ガラス・クリアコート・布など</td></tr>
+          <tr><td><code>MeshNormalMaterial</code></td><td data-l="ライト">不要</td><td data-l="用途">法線を色で表示（デバッグ用）</td></tr>
+          <tr><td><code>LineBasicMaterial</code> / <code>PointsMaterial</code></td><td data-l="ライト">不要</td><td data-l="用途"><code>Line</code>・<code>Points</code> 用</td></tr>
+          <tr><td><code>ShaderMaterial</code></td><td data-l="ライト">—</td><td data-l="用途">GLSL を自分で書く（WebGLRenderer 専用）</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre><code>new THREE.MeshStandardMaterial({
+  color: 0xffffff, map: texture,          // 色・カラーテクスチャ
+  metalness: 0, roughness: 0.5,
+  transparent: true, opacity: 0.8,        // 半透明は transparent も必要
+  side: THREE.DoubleSide,                 // 裏面も描く（板の裏が消えるとき）
+  wireframe: true,
+})</code></pre>
+  </div>
+  <div class="panel" id="a-light" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>クラス</th><th>引数</th><th>どんな光か</th></tr></thead>
+        <tbody>
+          <tr><td><code>AmbientLight</code></td><td data-l="引数"><code>(color, intensity)</code></td><td data-l="どんな光か">全体を均一に明るく。影・陰影はできない</td></tr>
+          <tr><td><code>HemisphereLight</code></td><td data-l="引数"><code>(skyColor, groundColor, intensity)</code></td><td data-l="どんな光か">空と地面の 2 色の環境光。屋外向け</td></tr>
+          <tr><td><code>DirectionalLight</code></td><td data-l="引数"><code>(color, intensity)</code></td><td data-l="どんな光か">太陽のような平行光。<code>position</code> から <code>target</code> へ向く</td></tr>
+          <tr><td><code>PointLight</code></td><td data-l="引数"><code>(color, intensity, distance, decay)</code></td><td data-l="どんな光か">電球。距離で減衰（<code>decay</code> 既定 2）</td></tr>
+          <tr><td><code>SpotLight</code></td><td data-l="引数"><code>(color, intensity, distance, angle, penumbra)</code></td><td data-l="どんな光か">スポットライト</td></tr>
+          <tr><td><code>RectAreaLight</code></td><td data-l="引数"><code>(color, intensity, w, h)</code></td><td data-l="どんな光か">面光源。Standard / Physical のみ、影なし</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">ライトは物理単位（<code>PointLight</code>・<code>SpotLight</code> はカンデラ）。距離 1 m を 1 にしていないと、点光源は暗すぎたり明るすぎたりする。見た目を手早く整えるなら、環境マップ（下の「定番の手順」）を <code>scene.environment</code> に入れるのが早い。</p>
+  </div>
+  <div class="panel" id="a-cam" hidden>
+<pre><code>// 遠近あり: (縦の画角[度], 縦横比, near, far)
+const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000)
+
+// 遠近なし: (left, right, top, bottom, near, far)
+const s = 5, a = w / h
+const ortho = new THREE.OrthographicCamera(-s * a, s * a, s, -s, 0.1, 100)
+
+camera.position.set(0, 2, 5)
+camera.lookAt(0, 0, 0)            // OrbitControls を使うなら controls.target で決める
+camera.updateProjectionMatrix()   // fov・aspect・near・far などを変えたら呼ぶ</code></pre>
+    <p class="note"><code>near</code> を小さく・<code>far</code> を大きくしすぎると、奥で面がちらつく（Z ファイティング）。範囲は必要な分だけにする。</p>
+  </div>
+  <div class="panel" id="a-obj" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>obj.position.set(x, y, z)</code></td><td data-l="意味">位置（親からの相対）。Y が上</td></tr>
+          <tr><td><code>obj.rotation.set(x, y, z)</code></td><td data-l="意味">回転（ラジアン、オイラー角）</td></tr>
+          <tr><td><code>obj.scale.setScalar(2)</code></td><td data-l="意味">拡大・縮小</td></tr>
+          <tr><td><code>obj.lookAt(v)</code></td><td data-l="意味">指定した点の方を向く</td></tr>
+          <tr><td><code>parent.add(child)</code> / <code>remove(child)</code></td><td data-l="意味">親子関係。親を動かすと子もついてくる</td></tr>
+          <tr><td><code>obj.traverse(fn)</code></td><td data-l="意味">子孫を全部たどる（glTF の中のメッシュに設定するときなど）</td></tr>
+          <tr><td><code>obj.getObjectByName('name')</code></td><td data-l="意味">名前で探す</td></tr>
+          <tr><td><code>obj.getWorldPosition(new Vector3())</code></td><td data-l="意味">ワールド座標での位置</td></tr>
+          <tr><td><code>obj.visible = false</code></td><td data-l="意味">非表示</td></tr>
+          <tr><td><code>obj.userData</code></td><td data-l="意味">自由に使えるデータ置き場</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="a-ren" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>new WebGLRenderer({ antialias, alpha, canvas })</code></td><td data-l="意味"><code>alpha: true</code> で背景を透明に。<code>canvas</code> で既存の要素に描く</td></tr>
+          <tr><td><code>setSize(w, h)</code> / <code>setPixelRatio(r)</code></td><td data-l="意味">描画サイズ・解像度の倍率</td></tr>
+          <tr><td><code>setAnimationLoop(fn)</code></td><td data-l="意味">毎フレーム呼ぶ（WebXR でもこれ）。<code>null</code> で止める</td></tr>
+          <tr><td><code>shadowMap.enabled = true</code></td><td data-l="意味">影を有効にする</td></tr>
+          <tr><td><code>toneMapping = THREE.ACESFilmicToneMapping</code></td><td data-l="意味">トーンマッピング（HDR の環境マップと組み合わせる）</td></tr>
+          <tr><td><code>outputColorSpace</code></td><td data-l="意味">出力の色空間。既定の <code>SRGBColorSpace</code> のままでよい</td></tr>
+          <tr><td><code>renderer.info</code></td><td data-l="意味">描画回数・三角形数・メモリ上のジオメトリ・テクスチャ数（重さの確認）</td></tr>
+          <tr><td><code>dispose()</code></td><td data-l="意味">レンダラーを捨てる（SPA で画面を離れるとき）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 id="addons">よく使うアドオン</h2>
+  <p>すべて <code>three/addons/</code> から名前つきで import する（<code>THREE.OrbitControls</code> のように本体の名前空間からは使えない）。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>import 元</th><th>クラス</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>controls/OrbitControls.js</code></td><td data-l="クラス"><code>OrbitControls</code></td><td data-l="用途">ドラッグで注視点の周りを回る・ズーム・パン</td></tr>
+        <tr><td><code>controls/MapControls.js</code></td><td data-l="クラス"><code>MapControls</code></td><td data-l="用途">地図のような操作（左ドラッグでパン）</td></tr>
+        <tr><td><code>controls/TransformControls.js</code></td><td data-l="クラス"><code>TransformControls</code></td><td data-l="用途">物を掴んで移動・回転・拡大するギズモ</td></tr>
+        <tr><td><code>controls/PointerLockControls.js</code></td><td data-l="クラス"><code>PointerLockControls</code></td><td data-l="用途">FPS 風の視点</td></tr>
+        <tr><td><code>loaders/GLTFLoader.js</code></td><td data-l="クラス"><code>GLTFLoader</code></td><td data-l="用途">glTF / GLB モデルの読み込み（推奨形式）</td></tr>
+        <tr><td><code>loaders/DRACOLoader.js</code></td><td data-l="クラス"><code>DRACOLoader</code></td><td data-l="用途">Draco 圧縮された glTF を解く</td></tr>
+        <tr><td><code>loaders/KTX2Loader.js</code></td><td data-l="クラス"><code>KTX2Loader</code></td><td data-l="用途">KTX2（GPU 圧縮テクスチャ）</td></tr>
+        <tr><td><code>loaders/HDRLoader.js</code></td><td data-l="クラス"><code>HDRLoader</code></td><td data-l="用途"><code>.hdr</code> の環境マップ（旧 <code>RGBELoader</code>）</td></tr>
+        <tr><td><code>environments/RoomEnvironment.js</code></td><td data-l="クラス"><code>RoomEnvironment</code></td><td data-l="用途">ファイルなしで使える室内の環境マップ</td></tr>
+        <tr><td><code>postprocessing/EffectComposer.js</code></td><td data-l="クラス"><code>EffectComposer</code></td><td data-l="用途">ポストエフェクト（<code>RenderPass</code>・<code>UnrealBloomPass</code> など）</td></tr>
+        <tr><td><code>libs/stats.module.js</code></td><td data-l="クラス"><code>Stats</code>（default）</td><td data-l="用途">FPS 表示</td></tr>
+        <tr><td><code>libs/lil-gui.module.min.js</code></td><td data-l="クラス"><code>GUI</code></td><td data-l="用途">パラメーターを触る GUI</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="recipes">定番の手順</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="r-gltf">glTF を読む</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-env">環境マップ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-tex">テクスチャ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-shadow">影</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-ray">クリック判定</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-anim">アニメーション</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-dispose">片付け</button>
+  </div>
+  <div class="panel" id="r-gltf">
+<pre><code>import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
+
+const draco = new DRACOLoader()
+draco.setDecoderPath('/draco/')   // node_modules/three/examples/jsm/libs/draco/ を public/draco/ に置く
+
+const loader = new GLTFLoader()
+loader.setDRACOLoader(draco)      // Draco 圧縮のモデルを読むときだけ必要
+
+const gltf = await loader.loadAsync('/models/robot.glb')
+scene.add(gltf.scene)
+gltf.scene.traverse((o) =&gt; {
+  if (o.isMesh) { o.castShadow = true; o.receiveShadow = true }
+})
+// gltf.animations: AnimationClip の配列 / gltf.cameras: カメラ</code></pre>
+    <p class="note">モデルが大きすぎる・見えないときは、<code>new THREE.Box3().setFromObject(gltf.scene)</code> で大きさと中心を測って、カメラの位置や <code>scale</code> を合わせる。</p>
+  </div>
+  <div class="panel" id="r-env" hidden>
+<pre><code>// ファイルなし: 室内っぽい環境光で PBR マテリアルを照らす
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+const pmrem = new THREE.PMREMGenerator(renderer)
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+
+// .hdr ファイルから
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js'
+const hdr = await new HDRLoader().loadAsync('/env/studio.hdr')
+hdr.mapping = THREE.EquirectangularReflectionMapping
+scene.environment = hdr        // 照明・映り込み
+scene.background = hdr         // 背景にも出すなら
+renderer.toneMapping = THREE.ACESFilmicToneMapping</code></pre>
+  </div>
+  <div class="panel" id="r-tex" hidden>
+<pre><code>const tex = await new THREE.TextureLoader().loadAsync('/img/wood.jpg')
+tex.colorSpace = THREE.SRGBColorSpace        // 色のテクスチャ（map）は必ず指定。無いと白っぽくなる
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+tex.repeat.set(4, 4)                         // 4×4 で繰り返す
+tex.anisotropy = renderer.capabilities.getMaxAnisotropy()   // 斜めから見たときのぼやけを減らす
+
+new THREE.MeshStandardMaterial({ map: tex })
+// normalMap・roughnessMap などデータのテクスチャは colorSpace を変えない</code></pre>
+  </div>
+  <div class="panel" id="r-shadow" hidden>
+    <ol class="steps">
+      <li><b>レンダラーで有効にする</b><code>renderer.shadowMap.enabled = true</code>。既定の <code>PCFShadowMap</code> で影の縁は柔らかい。ぼかしの強さは <code>sun.shadow.radius</code> で調整する（<code>PCFSoftShadowMap</code> は r182 で非推奨）</li>
+      <li><b>ライトに影を落とさせる</b><code>sun.castShadow = true</code>。<code>AmbientLight</code>・<code>HemisphereLight</code> は影を作れない</li>
+      <li><b>物に設定する</b>影を落とす側に <code>mesh.castShadow = true</code>、受ける側（床など）に <code>receiveShadow = true</code></li>
+      <li><b>範囲と解像度を調整する</b><code>DirectionalLight</code> の影は <code>sun.shadow.camera</code>（left / right / top / bottom）の範囲内だけ。粗いときは <code>sun.shadow.mapSize.set(2048, 2048)</code>。範囲は <code>new THREE.CameraHelper(sun.shadow.camera)</code> で見える</li>
+    </ol>
+  </div>
+  <div class="panel" id="r-ray" hidden>
+<pre><code>const raycaster = new THREE.Raycaster()
+const pointer = new THREE.Vector2()
+
+renderer.domElement.addEventListener('pointerdown', (e) =&gt; {
+  const rect = renderer.domElement.getBoundingClientRect()
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1     // -1〜1 に変換
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1    // 上が +1
+  raycaster.setFromCamera(pointer, camera)
+  const hits = raycaster.intersectObjects(clickables)   // 子孫も調べる（既定で recursive）
+  if (hits.length) console.log(hits[0].object, hits[0].point)   // 近い順
+})</code></pre>
+    <p class="note">対象を <code>scene.children</code> 全体にすると重いので、判定したい物だけの配列を渡す。</p>
+  </div>
+  <div class="panel" id="r-anim" hidden>
+<pre><code>// glTF に入っているアニメーションを再生
+const mixer = new THREE.AnimationMixer(gltf.scene)
+const action = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'Walk'))
+action.play()
+// 切り替え: next.reset().play(); action.crossFadeTo(next, 0.3)
+
+const timer = new THREE.Timer()
+timer.connect(document)
+renderer.setAnimationLoop((time) =&gt; {
+  timer.update(time)
+  mixer.update(timer.getDelta())   // 経過秒を渡す
+  renderer.render(scene, camera)
+})</code></pre>
+  </div>
+  <div class="panel" id="r-dispose" hidden>
+<pre><code>// シーンから外しても GPU のメモリは解放されない。明示的に dispose する
+scene.remove(mesh)
+mesh.geometry.dispose()
+mesh.material.dispose()
+mesh.material.map?.dispose()       // テクスチャも別に解放
+
+// まとめて片付ける（SPA で画面を離れるときなど）
+renderer.setAnimationLoop(null)
+controls.dispose()
+renderer.dispose()</code></pre>
+    <p class="note">漏れていないかは <code>renderer.info.memory</code>（geometries・textures の数）が増え続けないかで確かめる。</p>
+  </div>
+
+  <h2 id="webgpu">WebGPURenderer</h2>
+<pre><code>import * as THREE from 'three/webgpu'    // WebGPU 版はこちらから（'three' と混ぜない）
+
+const renderer = new THREE.WebGPURenderer({ antialias: true })
+await renderer.init()                    // 最初に 1 回 await してから render する
+renderer.setAnimationLoop(() =&gt; renderer.render(scene, camera))</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>項目</th><th>WebGLRenderer</th><th>WebGPURenderer</th></tr></thead>
+      <tbody>
+        <tr><td>import 元</td><td data-l="WebGLRenderer"><code>three</code></td><td data-l="WebGPURenderer"><code>three/webgpu</code></td></tr>
+        <tr><td>WebGPU が無いブラウザ</td><td data-l="WebGLRenderer">—</td><td data-l="WebGPURenderer">WebGL 2 のバックエンドに自動で切り替わる</td></tr>
+        <tr><td>独自シェーダー</td><td data-l="WebGLRenderer"><code>ShaderMaterial</code>（GLSL）</td><td data-l="WebGPURenderer">TSL（<code>three/tsl</code>）でノードを組む。GLSL の <code>ShaderMaterial</code> は使えない</td></tr>
+        <tr><td>ポストエフェクト</td><td data-l="WebGLRenderer"><code>EffectComposer</code></td><td data-l="WebGPURenderer"><code>RenderPipeline</code>（r183 で <code>PostProcessing</code> から改名）と TSL のノード</td></tr>
+        <tr><td><code>renderAsync()</code></td><td data-l="WebGLRenderer">—</td><td data-l="WebGPURenderer">非推奨（r181 から）。<code>init()</code> を待ってから <code>render()</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">既存のコードや情報が多いのは WebGLRenderer。<code>ShaderMaterial</code> や <code>EffectComposer</code> に頼るなら WebGL のまま、計算シェーダーや新しい機能が欲しいなら WebGPU、で選ぶ。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>MeshStandardMaterial を使えば、ライトを置かなくても見える</summary><p><code>MeshStandardMaterial</code>・<code>Lambert</code>・<code>Phong</code>・<code>Physical</code> はライトか <code>scene.environment</code> が無いと真っ黒になる。まず確かめたいだけなら <code>MeshBasicMaterial</code> か <code>MeshNormalMaterial</code> を使う。</p></details>
+  <details class="myth"><summary>script タグで three.min.js を読めば THREE が使える</summary><p><code>build/three.min.js</code>（グローバルの <code>THREE</code>）は r161 で配布が終わり、r186 では minify 済みの <code>three.module.min.js</code> も npm の配布物から消えた。今は ES モジュール（npm か import map）だけ。<code>THREE.GLTFLoader</code> のような古い書き方も動かない。</p></details>
+  <details class="myth"><summary>アニメーションの時間は THREE.Clock で測る</summary><p><code>Clock</code> は r183 で非推奨になり、使うと警告が出る。代わりに本体の <code>THREE.Timer</code> を使う。<code>timer.update()</code> をフレームの最初に 1 回呼び、そのフレームの中では <code>getDelta()</code> を何回呼んでも同じ値が返る。</p></details>
+  <details class="myth"><summary>scene.remove() すればメモリも解放される</summary><p>シーンから外すだけでは、GPU 上のジオメトリ・マテリアル・テクスチャは残る。使わなくなったら <code>dispose()</code> を呼ぶ（上の「片付け」）。</p></details>
+  <details class="myth"><summary>位置やカメラの設定を変えれば、すぐ画面に反映される</summary><p>描画は <code>render()</code> を呼んだときだけ。アニメーションループを回していないなら、変えたあとに <code>render()</code> を呼ぶ。カメラの <code>fov</code>・<code>aspect</code>・<code>near</code>・<code>far</code> は、さらに <code>updateProjectionMatrix()</code> が要る。</p></details>
+  <details class="myth"><summary>three.js はセマンティックバージョニングなので、マイナー版の更新なら壊れない</summary><p>npm の版は <code>0.187.0</code> のように 0 始まりで、毎回のリリース（r187）が破壊的変更を含みうる。非推奨の API は約 10 リリース残ってから消える。上げるときは公式の Migration Guide を版ごとに読み、本体と <code>@types/three</code> を一緒に上げる。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="vite-plus.html">Vite+ と vp コマンド チートシート</a> — three.js のプロジェクトを Vite で動かすとき</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://threejs.org/manual/#en/installation">three.js manual: Installation</a></li>
+    <li><a href="https://threejs.org/docs/">three.js docs</a>（API リファレンス）</li>
+    <li><a href="https://github.com/mrdoob/three.js/wiki/Migration-Guide">three.js Migration Guide</a>（版ごとの破壊的変更）</li>
+    <li><a href="https://github.com/mrdoob/three.js/releases">three.js Releases</a></li>
+  </ul>
+  <p class="note">2026-11-24 に確認（three r187 / npm <code>three@0.187.0</code>。<code>Clock</code> の非推奨・<code>HDRLoader</code>・<code>renderAsync</code> の非推奨はパッケージのソースで確認）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

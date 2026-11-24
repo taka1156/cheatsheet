@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSAP 使い方</title>
+<meta name="description" content="GSAP（v3.15）のトゥイーン・タイムライン・イージング・ScrollTrigger・主なプラグイン・React での使い方。">
+<meta name="memo:tags" content="フロントエンド">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--fg-2); font-weight: 600; font-size: 0.78rem; }
+td:first-child { white-space: nowrap; }
+/* スマホでは表を 1 行 1 枚のカードに積む（列名は data-l） */
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* タイムラインの図 */
+.tl-diagram { display: grid; gap: 6px; margin: 8px 0; }
+.tl-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 10px; font-size: 0.8rem; }
+.tl-label { color: var(--fg-2); }
+.tl-track { position: relative; height: 18px; background: var(--chip); border-radius: 4px; }
+.tl-track i { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; background: var(--fg-2); border: 1px solid var(--surface); }
+.tl-track i.new { background: var(--c-hl); }
+.tl-diagram .legend i.lg-old { background: var(--fg-2); }
+.tl-diagram .legend i.lg-new { background: var(--c-hl); }
+@media (max-width: 420px) { .tl-row { grid-template-columns: 7.5em 1fr; } }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GSAP 使い方</h1>
+  <p class="subtitle">JavaScript のアニメーションライブラリ GSAP（GreenSock Animation Platform）のチートシート（v3.15 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>CSS・SVG・JS のオブジェクトの値を、時間に沿って滑らかに変える JavaScript のアニメーションライブラリ。</li>
+      <li><code>gsap.to()</code> で 1 つ動かし、<code>timeline</code> で順番を組み、ScrollTrigger でスクロールに結び付ける。</li>
+      <li>v3.13 から SplitText などのプラグインも含めて全部無料。ただし MIT ではなく独自の無料ライセンス。</li>
+    </ul>
+  </div>
+
+  <h2 id="install">導入</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="i-npm">npm</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-cdn">CDN</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-react">React</button>
+  </div>
+  <div class="panel" id="i-npm">
+<pre><code>npm install gsap        # プラグインも全部入っている（型定義も同梱）</code></pre>
+<pre><code>import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { SplitText } from 'gsap/SplitText'
+
+gsap.registerPlugin(ScrollTrigger, SplitText)   // プラグインは使う前に 1 回登録する</code></pre>
+  </div>
+  <div class="panel" id="i-cdn" hidden>
+<pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/ScrollTrigger.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  gsap.registerPlugin(ScrollTrigger)   // グローバルの gsap・ScrollTrigger を使う
+&lt;/script&gt;</code></pre>
+  </div>
+  <div class="panel" id="i-react" hidden>
+<pre><code>npm install gsap @gsap/react</code></pre>
+<pre><code>import { useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+gsap.registerPlugin(useGSAP)
+
+function Box() {
+  const container = useRef(null)
+  useGSAP(() =&gt; {
+    gsap.to('.box', { x: 200 })          // セレクターは container の中だけを探す
+  }, { scope: container })               // アンマウント時に自動で revert される
+  return &lt;div ref={container}&gt;&lt;div className="box" /&gt;&lt;/div&gt;
+}</code></pre>
+    <p class="note">クリックなどで後から作るアニメーションは <code>const { contextSafe } = useGSAP({ scope })</code> で包むと、同じく片付けの対象になる。</p>
+  </div>
+
+  <h2 id="tween">トゥイーン（1 つ動かす）</h2>
+<pre><code>gsap.to('.box', { x: 200, duration: 1 })              // 今の値 → 指定の値
+gsap.from('.box', { opacity: 0, y: 40 })               // 指定の値 → 今の値（登場の演出）
+gsap.fromTo('.box', { scale: 0 }, { scale: 1 })        // 開始と終了を両方指定
+gsap.set('.box', { xPercent: -50 })                    // 時間 0 ですぐ設定
+
+const tween = gsap.to('.dot', { y: -20, repeat: -1, yoyo: true, stagger: 0.1 })</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>指定</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>duration</code></td><td data-l="既定"><code>0.5</code></td><td data-l="意味">秒</td></tr>
+        <tr><td><code>ease</code></td><td data-l="既定"><code>"power1.out"</code></td><td data-l="意味">緩急（下の「イージング」）</td></tr>
+        <tr><td><code>delay</code></td><td data-l="既定"><code>0</code></td><td data-l="意味">始まるまでの秒数</td></tr>
+        <tr><td><code>repeat</code></td><td data-l="既定"><code>0</code></td><td data-l="意味">繰り返す回数。<code>-1</code> で無限</td></tr>
+        <tr><td><code>yoyo</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">繰り返すたびに向きを反転</td></tr>
+        <tr><td><code>stagger</code></td><td data-l="既定">—</td><td data-l="意味">複数の対象を秒ずつずらす。<code>{ each: 0.1, from: 'center' }</code> も可</td></tr>
+        <tr><td><code>easeReverse</code></td><td data-l="既定">—</td><td data-l="意味">逆再生のときの緩急。<code>true</code> で順方向と同じ形（3.15〜。<code>yoyoEase</code> は非推奨）</td></tr>
+        <tr><td><code>paused</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">作るだけで再生しない</td></tr>
+        <tr><td><code>overwrite</code></td><td data-l="既定"><code>false</code></td><td data-l="意味"><code>"auto"</code> で、同じ対象・同じ値を動かす先行トゥイーンの該当部分を止める</td></tr>
+        <tr><td><code>onStart</code> / <code>onUpdate</code> / <code>onComplete</code></td><td data-l="既定">—</td><td data-l="意味">開始・毎フレーム・完了で呼ぶ関数</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>動かせる値</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>x</code> / <code>y</code></td><td data-l="意味"><code>translateX/Y</code>（px）。<code>left</code>・<code>top</code> より軽い</td></tr>
+        <tr><td><code>xPercent</code> / <code>yPercent</code></td><td data-l="意味">自分の幅・高さに対する %</td></tr>
+        <tr><td><code>rotation</code> / <code>rotationX</code> / <code>rotationY</code></td><td data-l="意味">回転（度）。<code>"+=90"</code> で今の値から相対</td></tr>
+        <tr><td><code>scale</code> / <code>scaleX</code> / <code>scaleY</code></td><td data-l="意味">拡大・縮小</td></tr>
+        <tr><td><code>autoAlpha</code></td><td data-l="意味"><code>opacity</code> ＋ 0 のとき <code>visibility: hidden</code></td></tr>
+        <tr><td><code>transformOrigin</code></td><td data-l="意味">回転・拡大の中心（<code>"left top"</code> など）</td></tr>
+        <tr><td><code>'--my-var'</code></td><td data-l="意味">CSS 変数そのもの</td></tr>
+        <tr><td><code>color: 'var(--c)'</code></td><td data-l="意味">CSS 変数の値に向かって動かす（3.13〜）</td></tr>
+        <tr><td><code>attr: { r: 20 }</code></td><td data-l="意味">SVG などの属性</td></tr>
+        <tr><td>普通のオブジェクト</td><td data-l="意味"><code>gsap.to(obj, { value: 100 })</code>。three.js の <code>mesh.position</code> なども動かせる</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="timeline">タイムライン（順番を組む）</h2>
+<pre><code>const tl = gsap.timeline({ defaults: { duration: 0.6, ease: 'power2.out' }, repeat: 0 })
+tl.from('.title', { y: 40, opacity: 0 })
+  .from('.text', { opacity: 0 }, '-=0.3')    // 前の終わりの 0.3 秒前から
+  .from('.btn', { scale: 0 }, '&lt;')          // 前と同時に
+  .addLabel('end')
+  .to('.bg', { opacity: 0.5 }, 'end+=0.2')</code></pre>
+  <p>第 3 引数（位置パラメーター）で、タイムラインのどこに置くかを決める。図は、3 つ目のトゥイーンを置いた位置。</p>
+  <div class="card tl-diagram" role="img" aria-label="位置パラメーターごとに、3 つ目のトゥイーンがタイムラインのどこに置かれるかを示す図">
+    <div class="tl-row"><span class="tl-label">前の 2 つ</span><span class="tl-track"><i style="left:0;width:30%"></i><i style="left:30%;width:30%"></i></span></div>
+    <div class="tl-row"><span class="tl-label">省略 / <code>"&gt;"</code></span><span class="tl-track"><i class="new" style="left:60%;width:30%"></i></span></div>
+    <div class="tl-row"><span class="tl-label"><code>"&lt;"</code></span><span class="tl-track"><i class="new" style="left:30%;width:30%"></i></span></div>
+    <div class="tl-row"><span class="tl-label"><code>"-=0.5"</code></span><span class="tl-track"><i class="new" style="left:45%;width:30%"></i></span></div>
+    <div class="tl-row"><span class="tl-label"><code>"&lt;0.5"</code></span><span class="tl-track"><i class="new" style="left:45%;width:30%"></i></span></div>
+    <div class="tl-row"><span class="tl-label"><code>0.5</code></span><span class="tl-track"><i class="new" style="left:15%;width:30%"></i></span></div>
+    <div class="legend"><span><i class="lg-old"></i>前のトゥイーン（各 1 秒。横幅 30% が 1 秒）</span><span><i class="lg-new"></i>3 つ目のトゥイーンが入る位置</span></div>
+  </div>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>位置</th><th>置かれる場所</th></tr></thead>
+      <tbody>
+        <tr><td>省略 / <code>"&gt;"</code></td><td data-l="置かれる場所">直前のトゥイーンの終わり（順番に並ぶ）</td></tr>
+        <tr><td><code>"&lt;"</code></td><td data-l="置かれる場所">直前のトゥイーンの始まり（同時に動く）</td></tr>
+        <tr><td><code>"+=0.5"</code> / <code>"-=0.5"</code></td><td data-l="置かれる場所">タイムライン全体の終わりから 0.5 秒後 / 前</td></tr>
+        <tr><td><code>"&lt;0.5"</code> / <code>"&gt;-0.2"</code></td><td data-l="置かれる場所">直前の始まりの 0.5 秒後 / 直前の終わりの 0.2 秒前</td></tr>
+        <tr><td><code>1</code></td><td data-l="置かれる場所">タイムラインの 1 秒の位置（絶対）</td></tr>
+        <tr><td><code>"label"</code> / <code>"label+=1"</code></td><td data-l="置かれる場所">ラベルの位置 / その 1 秒後</td></tr>
+        <tr><td><code>"&lt;25%"</code></td><td data-l="置かれる場所">直前のトゥイーンの 25% の位置</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="control">再生の操作</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>メソッド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>play()</code> / <code>pause()</code> / <code>resume()</code></td><td data-l="意味">再生・一時停止・再開</td></tr>
+        <tr><td><code>reverse()</code> / <code>restart()</code></td><td data-l="意味">逆再生・最初から</td></tr>
+        <tr><td><code>seek(1.5)</code> / <code>progress(0.5)</code></td><td data-l="意味">秒・割合（0〜1）の位置へ飛ぶ</td></tr>
+        <tr><td><code>timeScale(2)</code></td><td data-l="意味">再生速度（2 で倍速）</td></tr>
+        <tr><td><code>kill()</code></td><td data-l="意味">止めて捨てる（値はそのまま）</td></tr>
+        <tr><td><code>revert()</code></td><td data-l="意味">止めて、GSAP が書き込んだインラインスタイルを元に戻す</td></tr>
+        <tr><td><code>then()</code></td><td data-l="意味">完了で解決する Promise（<code>await tween</code>）</td></tr>
+        <tr><td><code>gsap.killTweensOf('.box')</code></td><td data-l="意味">その対象のトゥイーンを全部止める</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="ease">イージング</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>名前</th><th>動き</th></tr></thead>
+      <tbody>
+        <tr><td><code>"none"</code></td><td data-l="動き">一定の速さ</td></tr>
+        <tr><td><code>"power1"</code>〜<code>"power4"</code></td><td data-l="動き">数字が大きいほど緩急が強い。<code>power1</code> = quad、<code>power2</code> = cubic、<code>power3</code> = quart、<code>power4</code> = quint 相当</td></tr>
+        <tr><td><code>"sine"</code> / <code>"expo"</code> / <code>"circ"</code></td><td data-l="動き">弱い / とても強い / 円弧の緩急</td></tr>
+        <tr><td><code>"back(1.7)"</code></td><td data-l="動き">一度行き過ぎて戻る</td></tr>
+        <tr><td><code>"elastic(1, 0.3)"</code></td><td data-l="動き">ばねのように揺れる</td></tr>
+        <tr><td><code>"bounce"</code></td><td data-l="動き">跳ねる</td></tr>
+        <tr><td><code>"steps(5)"</code></td><td data-l="動き">5 段階でカクカク</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">それぞれ <code>.in</code>（ゆっくり始まる）・<code>.out</code>（ゆっくり終わる。既定）・<code>.inOut</code> を付ける（例: <code>"power3.inOut"</code>）。自分で曲線を描くなら CustomEase。</p>
+
+  <h2 id="scrolltrigger">ScrollTrigger</h2>
+<pre><code>gsap.registerPlugin(ScrollTrigger)
+
+// 1. 画面に入ったら再生
+gsap.from('.card', {
+  y: 60, opacity: 0, stagger: 0.1,
+  scrollTrigger: { trigger: '.cards', start: 'top 80%' },
+})
+
+// 2. スクロール量に合わせて進める・固定する
+const tl = gsap.timeline({
+  scrollTrigger: {
+    trigger: '.section',
+    start: 'top top',     // trigger の上端が画面の上端に来たら
+    end: '+=2000',        // そこから 2000px スクロールする間
+    scrub: 1,             // スクロールに追従（数値は追いつくまでの秒数）
+    pin: true,            // その間 .section を画面に固定
+    markers: true,        // 開発中だけ: 開始・終了の位置を表示
+  },
+})
+tl.to('.a', { x: 500 }).to('.b', { rotation: 360 })</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>指定</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>trigger</code></td><td data-l="既定">—</td><td data-l="意味">位置の基準にする要素</td></tr>
+        <tr><td><code>start</code></td><td data-l="既定"><code>"top bottom"</code></td><td data-l="意味">「要素のどこ 画面のどこ」が重なったら開始。<code>pin</code> があると <code>"top top"</code></td></tr>
+        <tr><td><code>end</code></td><td data-l="既定"><code>"bottom top"</code></td><td data-l="意味">終了位置。<code>"+=500"</code> で開始から 500px</td></tr>
+        <tr><td><code>scrub</code></td><td data-l="既定"><code>false</code></td><td data-l="意味"><code>true</code> でスクロール位置に直結、数値で遅れて追従</td></tr>
+        <tr><td><code>toggleActions</code></td><td data-l="既定"><code>"play none none none"</code></td><td data-l="意味">入る・出る・戻って入る・戻って出るときの動作（play / pause / resume / reverse / restart / reset / complete / none）</td></tr>
+        <tr><td><code>pin</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">区間の間、要素を固定。<code>pinSpacing</code> で後ろの余白を調整</td></tr>
+        <tr><td><code>once</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">1 回だけ動かす</td></tr>
+        <tr><td><code>snap</code></td><td data-l="既定">—</td><td data-l="意味">止まったときに区切り（<code>1 / 4</code>、<code>"labels"</code> など）へ吸着</td></tr>
+        <tr><td><code>toggleClass</code></td><td data-l="既定">—</td><td data-l="意味">区間内だけクラスを付ける</td></tr>
+        <tr><td><code>onEnter</code> / <code>onLeave</code> / <code>onUpdate</code></td><td data-l="既定">—</td><td data-l="意味">区間に入る・出る・進むたびに呼ぶ（<code>self.progress</code> で進み具合）</td></tr>
+        <tr><td><code>containerAnimation</code></td><td data-l="既定">—</td><td data-l="意味">横スクロールのアニメーションの中の要素を基準にする</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>静的メソッド</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>ScrollTrigger.create({...})</code></td><td data-l="意味">アニメーションなしでスクロール位置だけ使う</td></tr>
+        <tr><td><code>ScrollTrigger.batch('.item', {...})</code></td><td data-l="意味">画面に入った要素をまとめて処理</td></tr>
+        <tr><td><code>ScrollTrigger.refresh()</code></td><td data-l="意味">位置を計算し直す（画像の読み込みやレイアウト変更のあと）</td></tr>
+        <tr><td><code>ScrollTrigger.getAll()</code> / <code>killAll()</code></td><td data-l="意味">全部取得 / 全部止める</td></tr>
+        <tr><td><code>ScrollTrigger.normalizeScroll(true)</code></td><td data-l="意味">モバイルのアドレスバーの伸び縮みによるずれ・ガタつきを抑える</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="plugins">主なプラグイン</h2>
+  <p>すべて <code>gsap</code> パッケージに入っていて、<code>gsap/名前</code> から import して <code>registerPlugin</code> する。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>プラグイン</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>ScrollTrigger</code></td><td data-l="用途">スクロールに連動（上の節）</td></tr>
+        <tr><td><code>ScrollSmoother</code></td><td data-l="用途">ScrollTrigger の上に作るスムーススクロール（ネイティブのスクロールを使う）</td></tr>
+        <tr><td><code>ScrollToPlugin</code></td><td data-l="用途"><code>gsap.to(window, { scrollTo: '#sec' })</code> でスクロール位置を動かす</td></tr>
+        <tr><td><code>SplitText</code></td><td data-l="用途">文字・単語・行に分けて 1 つずつ動かす</td></tr>
+        <tr><td><code>Flip</code></td><td data-l="用途">レイアウトが変わる前後をなめらかにつなぐ（FLIP）</td></tr>
+        <tr><td><code>Draggable</code> ＋ <code>InertiaPlugin</code></td><td data-l="用途">ドラッグ・回転操作と、離したあとの慣性</td></tr>
+        <tr><td><code>Observer</code></td><td data-l="用途">ホイール・タッチ・ポインターの向きを統一して受け取る</td></tr>
+        <tr><td><code>MotionPathPlugin</code></td><td data-l="用途">SVG のパスに沿って動かす</td></tr>
+        <tr><td><code>DrawSVGPlugin</code></td><td data-l="用途">SVG の線を描くように見せる</td></tr>
+        <tr><td><code>MorphSVGPlugin</code></td><td data-l="用途">SVG の形を別の形に変形（3.14 で <code>smooth</code> が追加）</td></tr>
+        <tr><td><code>CustomEase</code></td><td data-l="用途">自分で描いた曲線をイージングにする</td></tr>
+        <tr><td><code>TextPlugin</code> / <code>ScrambleTextPlugin</code></td><td data-l="用途">文字を差し替える / ランダムな文字を経由して差し替える</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>SplitText の例</h3>
+<pre><code>gsap.registerPlugin(SplitText)
+SplitText.create('.headline', {
+  type: 'lines, words',
+  mask: 'lines',           // 行ごとに overflow: clip の箱で包む（下から出てくる演出）
+  autoSplit: true,         // フォントの読み込み・幅の変化で分け直す
+  onSplit: (self) =&gt;       // 分け直すたびに呼ばれる。返したアニメーションは自動で引き継がれる
+    gsap.from(self.lines, { yPercent: 100, stagger: 0.08 }),
+})</code></pre>
+
+  <h2 id="responsive">レスポンシブ・片付け</h2>
+<pre><code>// 画面幅や設定ごとにアニメーションを分ける。条件が外れると自動で revert される
+const mm = gsap.matchMedia()
+mm.add({
+  isDesktop: '(min-width: 800px)',
+  reduceMotion: '(prefers-reduced-motion: reduce)',
+}, (ctx) =&gt; {
+  const { isDesktop, reduceMotion } = ctx.conditions
+  gsap.to('.box', { x: isDesktop ? 400 : 100, duration: reduceMotion ? 0 : 1 })
+})
+
+// 一式をまとめて片付ける（React 以外のコンポーネントなど）
+const ctx = gsap.context(() =&gt; { gsap.to('.box', { x: 100 }) }, rootElement)
+ctx.revert()   // 中で作ったトゥイーン・ScrollTrigger・SplitText を全部元に戻す</code></pre>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>SplitText や MorphSVG は有料会員（Club GSAP）だけのプラグイン</summary><p>2025-04-30 の v3.13 から、旧会員限定のプラグインも含めて全部無料で、商用利用もできる。すべて npm の <code>gsap</code> パッケージに入っていて、専用のレジストリやトークンは要らない。</p></details>
+  <details class="myth"><summary>無料になったので GSAP は MIT ライセンスのオープンソースになった</summary><p>ライセンスは Webflow の独自ライセンス（Standard "No Charge" GSAP License）。普通のサイトやアプリには無料で使えるが、Webflow と競合する「コードを書かずにアニメーションを作るビジュアルツール」に組み込むことは禁止されている。</p></details>
+  <details class="myth"><summary>React では useEffect の中で gsap.to を呼べばよい</summary><p>StrictMode では effect が 2 回走り、片付けないとアニメーションが二重になる。<code>@gsap/react</code> の <code>useGSAP()</code> を使うと、中で作ったものがアンマウント時に自動で revert される。</p></details>
+  <details class="myth"><summary>タイムラインの中の各トゥイーンに scrollTrigger を付ければ、順番にスクロールで動く</summary><p>タイムラインの子トゥイーンに付けた <code>scrollTrigger</code> は、親のタイムラインと再生位置の取り合いになり正しく動かない。<code>scrollTrigger</code> はタイムライン自体か、独立したトゥイーンに付ける。</p></details>
+  <details class="myth"><summary>位置を動かすときは left や top を動かす</summary><p><code>left</code>・<code>top</code>・<code>width</code> はレイアウトの再計算が起きて重い。位置は <code>x</code>・<code>y</code>、大きさは <code>scale</code> を使う（transform なので GPU で合成できる）。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="lenis.html">Lenis 使い方</a> — スムーススクロールを Lenis にして、ScrollTrigger と同期させるとき</li>
+    <li><a href="threejs.html">three.js 使い方</a> — 3D の物の位置やカメラを GSAP で動かすとき</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://gsap.com/docs/v3/">GSAP Docs</a></li>
+    <li><a href="https://gsap.com/docs/v3/Plugins/ScrollTrigger/">ScrollTrigger</a></li>
+    <li><a href="https://gsap.com/resources/React/">GSAP &amp; React（useGSAP）</a></li>
+    <li><a href="https://gsap.com/blog/3-13/">3.13 リリース（全プラグインの無料化）</a>・<a href="https://gsap.com/blog/3-15/">3.15 リリース（easeReverse）</a></li>
+    <li><a href="https://gsap.com/community/standard-license/">Standard "No Charge" GSAP License</a></li>
+  </ul>
+  <p class="note">2026-11-24 に確認（npm <code>gsap@3.15.1</code>。npm には <code>4.0.0-beta</code> も出ているが、このページは v3 の内容）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

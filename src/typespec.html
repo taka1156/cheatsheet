@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeSpec 使い方</title>
+<meta name="description" content="tsp コマンド・tspconfig.yaml・言語の書き方・HTTP デコレーター・バージョニング・emitter をまとめたチートシート。">
+<meta name="memo:tags" content="API・バックエンド">
+<meta name="memo:date" content="2026-11-25">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 20px 0 8px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.panel pre { background: var(--bg); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.78rem; color: var(--fg-2); font-weight: 700; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td:first-child { width: 38%; }
+td code { overflow-wrap: anywhere; }
+/* スマホでは 1 行を 1 枚のカード状に縦積みにする（1 列目が見出し） */
+@media (max-width: 600px) {
+  .table-wrap thead { display: none; }
+  .table-wrap tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .table-wrap tr:last-child { border-bottom: none; }
+  .table-wrap td { display: block; border: none; padding: 2px 4px; width: auto; }
+  .table-wrap td:first-child { font-weight: 700; }
+  .table-wrap td + td:not(:last-child) { color: var(--fg-2); font-size: 0.8rem; }
+}
+
+/* 流れの図 */
+.flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1.3fr;
+  align-items: center;
+  gap: 10px;
+}
+.flow .box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+}
+.flow .box b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; }
+.flow .box span { color: var(--fg-2); font-size: 0.75rem; }
+.flow .arrow { color: var(--fg-2); font-size: 1.1rem; text-align: center; }
+.flow .arrow::before { content: "→"; }
+.flow .outs { display: grid; gap: 6px; }
+.flow .outs .box { padding: 6px 10px; }
+@media (max-width: 600px) {
+  .flow { grid-template-columns: 1fr; }
+  .flow .arrow::before { content: "↓"; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TypeSpec 使い方</h1>
+  <p class="subtitle">API を型で書いて OpenAPI・JSON Schema・コードを生成する Microsoft 製の言語（v1.18 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>TypeScript 風の構文で API の形を書く言語で、拡張子は <code>.tsp</code>、CLI は <code>tsp</code>。</li>
+      <li><code>tsp compile</code> が型を読み、<code>tspconfig.yaml</code> で選んだ emitter が OpenAPI などを書き出す。</li>
+      <li>安定版は compiler・http・openapi3・json-schema など一部。クライアント／サーバー生成はまだプレビュー。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">全体の流れ</h2>
+  <div class="flow">
+    <div class="box"><b>main.tsp</b><span>model・op・デコレーター</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="box"><b>tsp compile</b><span>型チェック・linter</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="outs">
+      <div class="box"><b>@typespec/openapi3</b><span>openapi.yaml</span></div>
+      <div class="box"><b>@typespec/json-schema</b><span>*.yaml（JSON Schema）</span></div>
+      <div class="box"><b>@typespec/protobuf</b><span>*.proto</span></div>
+      <div class="box"><b>http-client-* / http-server-*</b><span>クライアント・サーバーのコード</span></div>
+    </div>
+  </div>
+  <p class="note">どの emitter を動かすかは <code>tspconfig.yaml</code> の <code>emit</code> か <code>--emit</code> で決める。何も指定しないと型チェックだけで、何も出力されない。</p>
+
+  <h2 id="setup">セットアップ</h2>
+  <ol class="steps">
+    <li><b>CLI を入れる</b><code>npm install -g @typespec/compiler</code>（Node.js LTS が前提）。Node なしなら <code>curl -fsSL https://typespec.io/install.sh | bash</code> の単体版（実験的）。</li>
+    <li><b>プロジェクトを作る</b><code>tsp init</code> でテンプレートを選ぶ。REST なら「Generic REST API」（http・rest・openapi・openapi3 が入る）。</li>
+    <li><b>依存を入れる</b><code>tsp install</code>（<code>package.json</code> の依存を入れる。<code>npm install</code> でもよい）。</li>
+    <li><b>コンパイル</b><code>tsp compile .</code>。保存のたびに作り直すなら <code>tsp compile . --watch</code>。</li>
+    <li><b>エディター</b>VS Code は Marketplace の「TypeSpec」拡張を入れる（<code>tsp code install</code> は非推奨）。</li>
+  </ol>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>できるファイル</th><th>中身</th></tr></thead>
+      <tbody>
+        <tr><td><code>main.tsp</code></td><td>入口。<code>tsp compile .</code> はこのファイルから読む</td></tr>
+        <tr><td><code>tspconfig.yaml</code></td><td>emitter とそのオプション、linter</td></tr>
+        <tr><td><code>package.json</code></td><td>compiler・ライブラリ・emitter の版</td></tr>
+        <tr><td><code>tsp-output/</code></td><td>出力先（既定は <code>{cwd}/tsp-output</code>）。OpenAPI は <code>tsp-output/@typespec/openapi3/openapi.yaml</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="cli">tsp コマンド</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="cli-cmd">サブコマンド</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cli-compile">compile のオプション</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="cli-other">そのほかの CLI</button>
+  </div>
+  <div class="panel card table-wrap" id="cli-cmd">
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>tsp init [テンプレートURL]</code></td><td>新規プロジェクト。URL で独自テンプレートも使える</td></tr>
+        <tr><td><code>tsp install</code></td><td>依存のインストール</td></tr>
+        <tr><td><code>tsp compile &lt;path&gt;</code></td><td>コンパイル。path はファイルか、<code>main.tsp</code> があるフォルダ</td></tr>
+        <tr><td><code>tsp format &lt;glob...&gt;</code></td><td>整形。例: <code>tsp format "**/*.tsp"</code></td></tr>
+        <tr><td><code>tsp info</code></td><td>compiler の版・設定の解決結果</td></tr>
+        <tr><td><code>tsp info &lt;emitter&gt;</code></td><td>その emitter のオプション一覧（例: <code>tsp info @typespec/openapi3</code>）</td></tr>
+        <tr><td><code>tsp --version</code></td><td>版の確認</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap" id="cli-compile" hidden>
+    <table>
+      <thead><tr><th>オプション</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>--emit &lt;name&gt;</code></td><td>動かす emitter（複数回指定できる）</td></tr>
+        <tr><td><code>--option &lt;emitter&gt;.&lt;key&gt;=&lt;値&gt;</code></td><td>emitter のオプション。例: <code>--option @typespec/openapi3.file-type=json</code></td></tr>
+        <tr><td><code>--output-dir &lt;dir&gt;</code></td><td>出力先の上書き</td></tr>
+        <tr><td><code>--config &lt;path&gt;</code></td><td>使う <code>tspconfig.yaml</code>（かそのフォルダ）を指定</td></tr>
+        <tr><td><code>--arg &lt;key&gt;=&lt;値&gt;</code></td><td>設定ファイルの <code>parameters</code> に値を渡す</td></tr>
+        <tr><td><code>--watch</code></td><td>変更を見て再コンパイル</td></tr>
+        <tr><td><code>--no-emit</code></td><td>emitter を動かさず型チェックだけ（CI 向け）</td></tr>
+        <tr><td><code>--warn-as-error</code></td><td>警告でも終了コードを非 0 に</td></tr>
+        <tr><td><code>--list-files</code></td><td>書き出したファイルの一覧を表示</td></tr>
+        <tr><td><code>--no-linter</code></td><td>linter を全部止める</td></tr>
+        <tr><td><code>--linter-rule &lt;rule&gt;=true|false</code></td><td>ルール単位で上書き</td></tr>
+        <tr><td><code>--ignore-deprecated</code></td><td>deprecated の診断を出さない</td></tr>
+        <tr><td><code>--import &lt;lib&gt;</code></td><td>追加で import するライブラリ</td></tr>
+        <tr><td><code>--trace &lt;area&gt;</code> / <code>--debug</code></td><td>内部ログ（例: <code>import-resolution.*</code>）</td></tr>
+        <tr><td><code>--stats</code></td><td>コンパイルの統計を表示</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap" id="cli-other" hidden>
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>npx tsp-openapi3 openapi.yaml --output-dir ./tsp</code></td><td>既存の OpenAPI 3 を TypeSpec に変換（<code>@typespec/openapi3</code> に同梱）。<code>--namespace</code> で名前空間を指定</td></tr>
+        <tr><td><code>TYPESPEC_NPM_REGISTRY</code></td><td>環境変数。<code>tsp init</code>・<code>tsp install</code> が使う npm レジストリ（社内ミラー用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="config">tspconfig.yaml</h2>
+  <pre><code>emit:
+  - "@typespec/openapi3"
+  - "@typespec/json-schema"
+
+output-dir: "{project-root}/generated"   # 既定は {cwd}/tsp-output
+
+options:
+  "@typespec/openapi3":
+    openapi-versions: ["3.1.0"]           # 既定は ["3.0.0"]。"3.2.0" も可
+    file-type: yaml                       # yaml | json（配列で両方）
+    emitter-output-dir: "{output-dir}/openapi"
+    output-file: "openapi.{version}.yaml"
+
+linter:
+  extends:
+    - "@typespec/http/all"</code></pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>キー</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>emit</code></td><td>動かす emitter（CLI の <code>--emit</code>）</td></tr>
+        <tr><td><code>options</code></td><td>emitter ごとのオプション（CLI の <code>--option</code>）</td></tr>
+        <tr><td><code>output-dir</code></td><td>全体の出力先。各 emitter は既定で <code>{output-dir}/&lt;emitter名&gt;</code> に出す</td></tr>
+        <tr><td><code>emitter-output-dir</code></td><td>emitter 共通のオプション。その emitter だけ出力先を変える</td></tr>
+        <tr><td><code>extends</code></td><td>別の <code>tspconfig.yaml</code> を継承。同じ emitter の設定は丸ごと上書き（キー単位でマージしない）</td></tr>
+        <tr><td><code>parameters</code></td><td>自前の変数。既定値が必須で、<code>--arg</code> で上書き</td></tr>
+        <tr><td><code>environment-variables</code></td><td>使う環境変数の宣言（既定値が必須）。<code>{env.NAME}</code> で参照</td></tr>
+        <tr><td><code>linter</code></td><td><code>extends</code>・<code>enable</code>・<code>disable</code>。v1.16 から <code>"file:../rules.yaml"</code> で共有ファイルも参照できる</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">変数は <code>{project-root}</code>（設定ファイルのあるフォルダ）・<code>{cwd}</code>・<code>{output-dir}</code>・<code>{emitter-name}</code> など。環境変数は <code>environment-variables:</code> に既定値つきで宣言すると <code>{env.NAME}</code> で使える。設定ファイルは入口の .tsp と同じフォルダから親へ向かって探し、最初に見つかったものを使う。CLI の指定は設定ファイルより優先される。</p>
+
+  <h3>openapi3 emitter のよく使うオプション</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>オプション</th><th>値（既定）</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>openapi-versions</code></td><td><code>3.0.0</code> / <code>3.1.0</code> / <code>3.2.0</code>（<code>["3.0.0"]</code>）</td><td>出す OpenAPI の版</td></tr>
+        <tr><td><code>file-type</code></td><td><code>yaml</code> / <code>json</code>（yaml）</td><td>出力形式</td></tr>
+        <tr><td><code>output-file</code></td><td><code>{service-name-if-multiple}.{version}.openapi.yaml</code></td><td>ファイル名。<code>{version}</code> は版ごとに展開</td></tr>
+        <tr><td><code>omit-unreachable-types</code></td><td>真偽値</td><td>op から参照されない型を出さない</td></tr>
+        <tr><td><code>seal-object-schemas</code></td><td>真偽値（false）</td><td>余分なプロパティを禁止（3.0 は <code>additionalProperties: false</code>、3.1 以降は <code>unevaluatedProperties: false</code>）</td></tr>
+        <tr><td><code>operation-id-strategy</code></td><td><code>parent-container</code> / <code>fqn</code> / <code>explicit-only</code></td><td>operationId の付け方（既定は <code>Pets_list</code> の形）</td></tr>
+        <tr><td><code>safeint-strategy</code></td><td><code>int64</code> / <code>double-int</code>（int64）</td><td><code>safeint</code> の出し方</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="lang">言語の基本</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="lang-types">組み込み型</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="lang-model">model</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="lang-enum">enum・union</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="lang-tmpl">テンプレート</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="lang-deco">検証デコレーター</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="lang-ns">import・namespace</button>
+  </div>
+  <div class="panel card table-wrap" id="lang-types">
+    <table>
+      <thead><tr><th>型</th><th>中身・OpenAPI での形</th></tr></thead>
+      <tbody>
+        <tr><td><code>string</code> / <code>boolean</code> / <code>bytes</code></td><td>文字列・真偽値・バイナリ（JSON では base64）</td></tr>
+        <tr><td><code>int8</code>〜<code>int64</code>, <code>uint8</code>〜<code>uint64</code></td><td>整数（<code>format: int32</code> など）</td></tr>
+        <tr><td><code>integer</code> / <code>safeint</code></td><td>任意長の整数 ／ JS で安全な範囲の整数</td></tr>
+        <tr><td><code>float32</code> / <code>float64</code> / <code>decimal</code> / <code>numeric</code></td><td>小数。<code>numeric</code> は数値全体の親</td></tr>
+        <tr><td><code>utcDateTime</code> / <code>offsetDateTime</code></td><td>日時（<code>format: date-time</code>）</td></tr>
+        <tr><td><code>plainDate</code> / <code>plainTime</code> / <code>duration</code></td><td>日付・時刻・期間</td></tr>
+        <tr><td><code>url</code></td><td><code>format: uri</code></td></tr>
+        <tr><td><code>T[]</code> / <code>Record&lt;T&gt;</code></td><td>配列 ／ 値が T の辞書（<code>additionalProperties</code>）</td></tr>
+        <tr><td><code>[string, int32]</code></td><td>タプル</td></tr>
+        <tr><td><code>unknown</code> / <code>void</code> / <code>never</code> / <code>null</code></td><td>何でも ／ 本文なし ／ ありえない ／ null</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card" id="lang-model" hidden>
+<pre><code>/** ペット（doc コメントは description になる） */
+model Pet {
+  id: string;
+  name: string;
+  age?: int32;              // ? で任意
+  tags: string[] = #[];     // 既定値（配列は #[ ]、オブジェクトは #{ }）
+  owner: Owner | null;      // null 許容
+  kind: "dog" | "cat";      // リテラル型の union
+}
+
+scalar petId extends string;                  // 独自のスカラー
+@format("email") scalar email extends string; // 形式付き</code></pre>
+    <p>再利用の書き方（<code>extends</code> / <code>is</code> / <code>...</code>）は下の「model の再利用」を参照。</p>
+  </div>
+  <div class="panel card" id="lang-enum" hidden>
+<pre><code>enum Kind { dog, cat, bird }             // 値は名前と同じ文字列
+enum Level { low: 1, high: 10 }          // 値を指定
+
+union Status { "active", "disabled", string }  // 拡張可能な列挙（anyOf）
+
+@discriminated(#{ envelope: "none", discriminatorPropertyName: "kind" })
+union Shape { circle: Circle, square: Square } // oneOf + discriminator
+model Circle { kind: "circle"; r: float64 }
+model Square { kind: "square"; size: float64 }</code></pre>
+    <p class="note"><code>enum</code> は閉じた列挙。あとから値が増えるなら、最後に <code>string</code> を足した <code>union</code> にしておく。</p>
+  </div>
+  <div class="panel card" id="lang-tmpl" hidden>
+<pre><code>model Page&lt;T&gt; {
+  items: T[];
+  nextLink?: url;
+}
+model Paged&lt;T extends {}&gt; { value: T[] }   // 制約付き
+model Box&lt;T = string&gt; { v: T }            // 既定の型
+
+alias PetPage = Page&lt;Pet&gt;;                // 別名（出力に新しい型は出ない）
+
+op list(): Page&lt;Pet&gt;;</code></pre>
+  </div>
+  <div class="panel card table-wrap" id="lang-deco" hidden>
+    <table>
+      <thead><tr><th>デコレーター</th><th>対象</th><th>OpenAPI での形</th></tr></thead>
+      <tbody>
+        <tr><td><code>@doc("…")</code> / <code>/** … */</code></td><td>なんでも</td><td><code>description</code></td></tr>
+        <tr><td><code>@summary("…")</code></td><td>op など</td><td><code>summary</code></td></tr>
+        <tr><td><code>@minLength(n)</code> / <code>@maxLength(n)</code></td><td>文字列</td><td><code>minLength</code> / <code>maxLength</code></td></tr>
+        <tr><td><code>@minValue(n)</code> / <code>@maxValue(n)</code></td><td>数値</td><td><code>minimum</code> / <code>maximum</code></td></tr>
+        <tr><td><code>@minItems(n)</code> / <code>@maxItems(n)</code></td><td>配列</td><td><code>minItems</code> / <code>maxItems</code></td></tr>
+        <tr><td><code>@pattern("^…$")</code></td><td>文字列</td><td><code>pattern</code></td></tr>
+        <tr><td><code>@format("email")</code></td><td>文字列</td><td><code>format</code></td></tr>
+        <tr><td><code>@secret</code></td><td>文字列</td><td><code>format: password</code></td></tr>
+        <tr><td><code>@encode(…)</code></td><td>日時・bytes など</td><td>直列化の形（例: <code>DateTimeKnownEncoding.rfc3339</code>）</td></tr>
+        <tr><td><code>@visibility(Lifecycle.Read)</code></td><td>プロパティ</td><td>読み取り専用（<code>readOnly</code>）。<code>Create</code>・<code>Update</code>・<code>Query</code> もある</td></tr>
+        <tr><td><code>@example(…)</code> / <code>@opExample(…)</code></td><td>型 ／ op</td><td><code>examples</code></td></tr>
+        <tr><td><code>#deprecated "理由"</code></td><td>なんでも</td><td>非推奨（ディレクティブ）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card" id="lang-ns" hidden>
+<pre><code>import "@typespec/http";     // ライブラリ（package.json に入れておく）
+import "./models/pet.tsp";   // 自分のファイル
+
+using Http;                  // 名前空間を開く（書かないと Http.Body のように完全名）
+
+namespace PetStore;          // ファイル全体をこの名前空間に
+namespace PetStore.Admin { } // ブロックでも書ける
+
+interface Pets { list(): Pet[]; }   // op のまとまり</code></pre>
+  </div>
+
+  <h2 id="reuse">model の再利用</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th><th>OpenAPI での形</th></tr></thead>
+      <tbody>
+        <tr><td><code>model Staff extends User { … }</code></td><td>継承。親子関係が残る</td><td><code>allOf: [$ref User]</code> ＋ 追加分</td></tr>
+        <tr><td><code>model Admin is User { … }</code></td><td>コピー（デコレーターも引き継ぐ）。関係は残らない</td><td>全プロパティを持つ別スキーマ</td></tr>
+        <tr><td><code>model A { ...Timestamps; … }</code></td><td>プロパティだけ展開（spread）</td><td>A に平らに入る</td></tr>
+        <tr><td><code>alias PetPage = Page&lt;Pet&gt;;</code></td><td>別名。新しい型は作らない</td><td>出ない</td></tr>
+        <tr><td><code>OmitProperties&lt;T, "id"&gt;</code> / <code>PickProperties</code> / <code>OptionalProperties</code></td><td>組み込みの型変換テンプレート</td><td>変換後の新スキーマ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="http">HTTP（@typespec/http）</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="http-deco">デコレーター</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="http-res">レスポンス</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="http-auth">認証</button>
+  </div>
+  <div class="panel card table-wrap" id="http-deco">
+    <table>
+      <thead><tr><th>デコレーター</th><th>付ける所</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>@service(#{ title: "…" })</code></td><td>namespace</td><td>サービスの入口。無いと paths が空の OpenAPI になる（<code>no-service-found</code> の警告）</td></tr>
+        <tr><td><code>@server("https://…", "説明")</code></td><td>namespace</td><td><code>servers</code></td></tr>
+        <tr><td><code>@route("/pets")</code></td><td>namespace・interface・op</td><td>パス。親の route に連結される</td></tr>
+        <tr><td><code>@get</code> <code>@post</code> <code>@put</code> <code>@patch</code> <code>@delete</code> <code>@head</code></td><td>op</td><td>HTTP メソッド。省略時は本文があれば POST、無ければ GET</td></tr>
+        <tr><td><code>@path</code></td><td>引数</td><td>パス引数。<code>@route</code> に無ければ <code>/{id}</code> が自動で付く</td></tr>
+        <tr><td><code>@query</code> / <code>@query("q")</code></td><td>引数</td><td>クエリ。<code>@query(#{ explode: true })</code> で配列の展開</td></tr>
+        <tr><td><code>@header</code> / <code>@header("x-req-id")</code></td><td>引数・レスポンス</td><td>ヘッダー。名前を省くと <code>contentType</code> → <code>content-type</code> に変換</td></tr>
+        <tr><td><code>@body</code></td><td>引数・レスポンス</td><td>本文そのもの（型がそのまま本文）</td></tr>
+        <tr><td><code>@bodyRoot</code></td><td>引数・レスポンス</td><td>本文の根。中の <code>@header</code> などは本文から外れる</td></tr>
+        <tr><td>（何も付けない引数）</td><td>引数</td><td>本文のプロパティとしてまとめられる</td></tr>
+        <tr><td><code>@statusCode</code></td><td>レスポンスのプロパティ</td><td>ステータスコード（<code>201</code> や <code>400 | 404</code>）</td></tr>
+        <tr><td><code>@error</code></td><td>model</td><td>エラー型。<code>@statusCode</code> が無ければ <code>default</code> レスポンスになる</td></tr>
+        <tr><td><code>@tag("Pets")</code></td><td>namespace・interface・op</td><td>OpenAPI の tags（<code>@typespec/openapi</code>）</td></tr>
+        <tr><td><code>@operationId("…")</code></td><td>op</td><td>operationId の指定（<code>@typespec/openapi</code>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card" id="http-res" hidden>
+<pre><code>// 型を返すだけなら 200 + JSON
+@get op read(@path id: string): Pet | NotFoundResponse;
+
+// ステータスやヘッダーを付ける
+@post op create(@body pet: Pet): {
+  @statusCode _: 201;
+  @header location: string;
+  @body pet: Pet;
+} | ApiError;
+
+// 組み込みのレスポンス型と合成（read と同じパスなので別の route で）
+@get @route("/v2") op get2(@path id: string): OkResponse &amp; { @body body: Pet };
+
+@delete op remove(@path id: string): NoContentResponse;   // 204
+
+@error model ApiError {
+  @statusCode _: 400 | 500;
+  code: string;
+  message: string;
+}</code></pre>
+    <p class="note">組み込み: <code>OkResponse</code>（200）・<code>CreatedResponse</code>（201）・<code>AcceptedResponse</code>（202）・<code>NoContentResponse</code>（204）・<code>MovedResponse</code>（301）・<code>NotModifiedResponse</code>（304）・<code>BadRequestResponse</code>（400）・<code>UnauthorizedResponse</code>（401）・<code>ForbiddenResponse</code>（403）・<code>NotFoundResponse</code>（404）・<code>ConflictResponse</code>（409）。</p>
+  </div>
+  <div class="panel card" id="http-auth" hidden>
+<pre><code>@useAuth(BearerAuth)                                    // Authorization: Bearer
+@useAuth(BasicAuth)
+@useAuth(ApiKeyAuth&lt;ApiKeyLocation.header, "X-API-KEY"&gt;)
+@useAuth(ApiKeyAuth&lt;ApiKeyLocation.header, "X-API-KEY"&gt; | BearerAuth)  // どちらか
+@useAuth([ApiKeyAuth&lt;ApiKeyLocation.header, "X-API-KEY"&gt;, BearerAuth]) // 両方
+@useAuth(NoAuth | BearerAuth)                           // 認証なしも可
+@useAuth(OAuth2Auth&lt;[MyFlow]&gt;)                          // OAuth2（フローは model で定義）</code></pre>
+    <p class="note">namespace に付けると全体、op や interface に付けるとそこだけ上書き。</p>
+  </div>
+
+  <h2 id="example">まとまった例</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="ex-tsp">main.tsp</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ex-out">出力（抜粋）</button>
+  </div>
+  <div class="panel card" id="ex-tsp">
+<pre><code>import "@typespec/http";
+import "@typespec/openapi";
+using Http;
+
+@service(#{ title: "Pet Store" })
+@server("https://api.example.com", "本番")
+@useAuth(BearerAuth)
+namespace PetStore;
+
+model Pet {
+  @visibility(Lifecycle.Read) id: string;
+  @minLength(1) @maxLength(50) name: string;
+  @minValue(0) age?: int32;
+  tags: string[] = #[];
+}
+
+@error model ApiError {
+  @statusCode _: 400 | 404 | 500;
+  code: string;
+  message: string;
+}
+
+model Page&lt;T&gt; { items: T[]; nextLink?: url; }
+
+@route("/pets")
+@tag("Pets")
+interface Pets {
+  @get list(@query limit?: int32 = 20, @query("q") search?: string): Page&lt;Pet&gt; | ApiError;
+  @get read(@path id: string): Pet | NotFoundResponse;
+  @post create(@body pet: Pet): { @statusCode _: 201; @body pet: Pet } | ApiError;
+  @patch update(@path id: string, @body pet: MergePatchUpdate&lt;Pet&gt;): Pet;
+  @delete delete(@path id: string): NoContentResponse;
+}</code></pre>
+  </div>
+  <div class="panel card" id="ex-out" hidden>
+<pre><code>paths:
+  /pets:
+    get:
+      operationId: Pets_list
+      parameters:
+        - name: limit
+          in: query
+          ...
+    post:
+      operationId: Pets_create
+      responses:
+        '201': ...
+        '400': ...   # ApiError の 400 | 404 | 500 がそれぞれ出る
+  /pets/{id}:          # @path id が自動でパスに付く
+    get:    { operationId: Pets_read }
+    patch:
+      operationId: Pets_update
+      requestBody:
+        content:
+          application/merge-patch+json: ...
+    delete: { operationId: Pets_delete }
+security:
+  - BearerAuth: []</code></pre>
+  </div>
+
+  <h2 id="versioning">バージョニング（@typespec/versioning）</h2>
+<pre><code>import "@typespec/versioning";
+using Versioning;
+
+@versioned(Versions)
+@service
+namespace PetStore;
+enum Versions { v1, v2, v3 }
+
+model Pet {
+  name: string;
+  @added(Versions.v2) nickname?: string;                  // v2 から
+  @removed(Versions.v3) legacy?: string;                  // v3 で削除
+  @renamedFrom(Versions.v2, "fullName") displayName: string;
+  @typeChangedFrom(Versions.v2, int32) weight: float64;
+}
+
+@added(Versions.v2) op search(): Pet[];</code></pre>
+  <p>openapi3 emitter は版ごとに 1 ファイル出す（<code>openapi.v1.yaml</code>・<code>openapi.v2.yaml</code>…）。ほかに <code>@madeOptional</code>・<code>@madeRequired</code>・<code>@useDependency</code>（依存ライブラリの版を固定）がある。</p>
+
+  <h2 id="emitters">主な emitter・ライブラリ</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>パッケージ</th><th>状態</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>@typespec/compiler</code></td><td>安定（1.x）</td><td>言語本体と <code>tsp</code></td></tr>
+        <tr><td><code>@typespec/http</code></td><td>安定（1.x）</td><td>HTTP のデコレーター</td></tr>
+        <tr><td><code>@typespec/openapi</code></td><td>安定（1.x）</td><td><code>@tag</code>・<code>@operationId</code>・<code>@extension</code> など</td></tr>
+        <tr><td><code>@typespec/openapi3</code></td><td>安定（1.x）</td><td>OpenAPI 3.0 / 3.1 / 3.2 を出す・OpenAPI からの変換</td></tr>
+        <tr><td><code>@typespec/json-schema</code></td><td>安定（1.x）</td><td>JSON Schema を出す</td></tr>
+        <tr><td><code>@typespec/rest</code></td><td>プレビュー（0.x）</td><td>リソース指向の <code>@resource</code> など</td></tr>
+        <tr><td><code>@typespec/versioning</code></td><td>プレビュー（0.x）</td><td>API の版管理</td></tr>
+        <tr><td><code>@typespec/protobuf</code></td><td>プレビュー（0.x）</td><td>.proto を出す（gRPC）</td></tr>
+        <tr><td><code>@typespec/http-client-js</code> ほか python・java・csharp</td><td>プレビュー</td><td>クライアント SDK の生成</td></tr>
+        <tr><td><code>@typespec/http-server-js</code> / <code>http-server-csharp</code></td><td>アルファ</td><td>サーバーの雛形の生成</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">TypeScript のクライアントや型は、openapi3 で OpenAPI を出してから既存の OpenAPI 用ジェネレーターに渡す使い方も多い。</p>
+
+  <h2 id="pitfalls">ハマりどころ</h2>
+  <ol class="steps">
+    <li><b>何も出力されない</b><code>emit</code> も <code>--emit</code> も無いと型チェックだけで終わる。namespace に <code>@service</code> が無いと paths が空の OpenAPI になる。</li>
+    <li><b>出力先がずれる</b>既定の <code>output-dir</code> は <code>{cwd}/tsp-output</code>。別のフォルダから <code>tsp compile path/to/proj</code> すると、実行した場所に出る。固定したいなら <code>output-dir: "{project-root}/tsp-output"</code>。</li>
+    <li><b>デコレーターが見つからない</b><code>import "@typespec/http";</code> に加えて <code>using Http;</code> が要る（無ければ <code>@Http.route</code> と書く）。</li>
+    <li><b>PATCH の本文が全部必須になる</b><code>@patch(#{ implicitOptionality: true })</code> は非推奨の警告が出る。merge-patch なら <code>@body pet: MergePatchUpdate&lt;Pet&gt;</code>、そうでなければ任意プロパティの model を自分で書く。</li>
+    <li><b>OpenAPI が 3.0 で出る</b><code>openapi-versions</code> の既定は <code>["3.0.0"]</code>。3.1 が欲しければ明示する。</li>
+    <li><b>使っていない型まで出る</b>既定ではサービスの namespace 内の型を全部出す。<code>omit-unreachable-types: true</code> で op から参照されるものだけにする。</li>
+    <li><b>enum に値を足すと互換が崩れる</b>クライアントが閉じた列挙として生成するため。増える見込みがあれば <code>union X { "a", "b", string }</code> にする。</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>TypeSpec は Azure 専用の言語だ</summary><p>汎用の API 記述言語で、<code>@typespec/*</code> のライブラリだけで普通の REST API の OpenAPI を出せる。Azure 向けの規約は <code>@azure-tools/typespec-*</code> という別のライブラリに分かれている。</p></details>
+  <details class="myth"><summary>TypeSpec で書いた制約は実行時に検証される</summary><p>TypeSpec は設計時のツールで、出力は OpenAPI などの定義ファイル。リクエストの検証は、生成した定義やコードを使うサーバー側で別に行う。</p></details>
+  <details class="myth"><summary>extends と is は同じ意味だ</summary><p><code>extends</code> は親子関係が残り OpenAPI では <code>allOf</code> になる。<code>is</code> は中身をコピーした別の型で、関係は出力に残らない。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="swagger.html">Swagger 使い方</a> — TypeSpec が出した OpenAPI を表示・試す側</li>
+    <li><a href="hey-api-openapi-ts.html">Hey API openapi-ts 使い方</a> — 出した OpenAPI から TypeScript のクライアントを作る</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://typespec.io/docs/">TypeSpec Installation</a></li>
+    <li><a href="https://typespec.io/docs/handbook/cli/">CLI usage</a></li>
+    <li><a href="https://typespec.io/docs/handbook/configuration/configuration/">Configuration</a></li>
+    <li><a href="https://typespec.io/docs/libraries/http/reference/decorators/">@typespec/http デコレーター</a></li>
+    <li><a href="https://typespec.io/docs/emitters/openapi3/reference/emitter/">@typespec/openapi3 emitter</a></li>
+    <li><a href="https://typespec.io/docs/libraries/versioning/reference/decorators/">@typespec/versioning デコレーター</a></li>
+    <li><a href="https://typespec.io/blog/typespec-1-0-GA-release/">TypeSpec 1.0 GA</a>・<a href="https://typespec.io/release-notes/typespec-1-16-0/">1.16.0 リリースノート</a></li>
+  </ul>
+  <p class="note">2026-11-25 に確認。@typespec/compiler 1.18.0・openapi3 1.18.0・versioning 0.88.0 で例をコンパイルして確かめた。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

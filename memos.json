@@ -1,5 +1,25 @@
 [
  {
+  "file": "threejs.html",
+  "title": "three.js 使い方",
+  "desc": "three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。",
+  "tags": [
+   "フロントエンド"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
+  "file": "rive.html",
+  "title": "Rive 使い方",
+  "desc": "Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。",
+  "tags": [
+   "フロントエンド"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
   "file": "playwright.html",
   "title": "Playwright 使い方",
   "desc": "Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。",
@@ -15,6 +35,26 @@
   "desc": "MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。",
   "tags": [
    "開発ツール"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
+  "file": "lenis.html",
+  "title": "Lenis 使い方",
+  "desc": "スムーススクロールの Lenis（v1.3）の導入、GSAP ScrollTrigger との同期、オプション・メソッド・中の箱のスクロールの扱い。",
+  "tags": [
+   "フロントエンド"
+  ],
+  "date": "2026-11-24",
+  "quizzes": 0
+ },
+ {
+  "file": "gsap.html",
+  "title": "GSAP 使い方",
+  "desc": "GSAP（v3.15）のトゥイーン・タイムライン・イージング・ScrollTrigger・主なプラグイン・React での使い方。",
+  "tags": [
+   "フロントエンド"
   ],
   "date": "2026-11-24",
   "quizzes": 0

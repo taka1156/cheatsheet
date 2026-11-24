@@ -4,8 +4,12 @@
 
 ## Memos
 
+- [three.js 使い方](https://cs.taka1156.site/md/threejs.md): three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。（フロントエンド / 2026-11-24）
+- [Rive 使い方](https://cs.taka1156.site/md/rive.md): Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。（フロントエンド / 2026-11-24）
 - [Playwright 使い方](https://cs.taka1156.site/md/playwright.md): Playwright Test の CLI・codegen・ロケーター・アサーション・設定・認証・モックを用途別にまとめたチートシート。（開発ツール / 2026-11-24）
 - [MSW 使い方](https://cs.taka1156.site/md/msw.md): MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。（開発ツール / 2026-11-24）
+- [Lenis 使い方](https://cs.taka1156.site/md/lenis.md): スムーススクロールの Lenis（v1.3）の導入、GSAP ScrollTrigger との同期、オプション・メソッド・中の箱のスクロールの扱い。（フロントエンド / 2026-11-24）
+- [GSAP 使い方](https://cs.taka1156.site/md/gsap.md): GSAP（v3.15）のトゥイーン・タイムライン・イージング・ScrollTrigger・主なプラグイン・React での使い方。（フロントエンド / 2026-11-24）
 - [secretlint 使い方](https://cs.taka1156.site/md/secretlint.md): API キーや秘密鍵などの認証情報がコミットに混ざるのを防ぐ linter、secretlint v14 の CLI・設定・除外・ルール・pre-commit と CI への組み込みをまとめたチートシート（セキュリティ, 開発ツール / 2026-11-23）
 - [ESLint・Prettier → Oxlint・Oxfmt 移行（Vite+）](https://cs.taka1156.site/md/oxc-migration.md): ESLint・Prettier を Oxlint・Oxfmt に、husky を vp staged に移す手順と変換スクリプト（開発ツール / 2026-11-23）
 - [Homebrew 使い方](https://cs.taka1156.site/md/homebrew.md): macOS・Linux のパッケージマネージャー Homebrew（brew コマンド）の仕組み・用語、用途別コマンド、Brewfile、環境変数、5.0〜7.0 の変更点をまとめたチートシート。（開発ツール / 2026-11-23）

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lenis 使い方</title>
+<meta name="description" content="スムーススクロールの Lenis（v1.3）の導入、GSAP ScrollTrigger との同期、オプション・メソッド・中の箱のスクロールの扱い。">
+<meta name="memo:tags" content="フロントエンド">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+.wrap > ul { padding-left: 1.4em; margin: 8px 0; }
+.wrap > ul li { margin: 4px 0; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--fg-2); font-weight: 600; font-size: 0.78rem; }
+td:first-child { white-space: nowrap; }
+/* スマホでは表を 1 行 1 枚のカードに積む（列名は data-l） */
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Lenis 使い方">
+<meta property="og:description" content="スムーススクロールの Lenis（v1.3）の導入、GSAP ScrollTrigger との同期、オプション・メソッド・中の箱のスクロールの扱い。">
+<meta property="og:url" content="https://cs.taka1156.site/lenis.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="alternate" type="application/atom+xml" title="CheatSheet" href="feed.xml">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Lenis 使い方</h1>
+  <p class="subtitle">ページのスクロールをなめらかにする軽量ライブラリ Lenis のチートシート（v1.3 系・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>ホイールのスクロールを補間してなめらかにする、MIT ライセンスの軽量スムーススクロールライブラリ。</li>
+      <li>ブラウザ本来のスクロール位置を動かすので、<code>position: sticky</code> や ScrollTrigger がそのまま使える。</li>
+      <li>毎フレーム <code>raf()</code> を呼ぶか <code>autoRaf</code> を有効にし、推奨 CSS を読み込むのが基本の形。</li>
+    </ul>
+  </div>
+
+  <h2 id="install">導入</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="i-npm">npm</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-cdn">CDN</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="i-react">React</button>
+  </div>
+  <div class="panel" id="i-npm">
+<pre><code>npm install lenis      # 旧パッケージ名 @studio-freight/lenis は使わない</code></pre>
+<pre><code>import Lenis from 'lenis'
+import 'lenis/dist/lenis.css'      // 推奨 CSS（下の「推奨 CSS」）
+
+const lenis = new Lenis({ autoRaf: true })   // 内部で requestAnimationFrame を回す
+lenis.on('scroll', (e) =&gt; console.log(e.scroll, e.velocity))</code></pre>
+  </div>
+  <div class="panel" id="i-cdn" hidden>
+<pre><code>&lt;link rel="stylesheet" href="https://unpkg.com/lenis@1.3.28/dist/lenis.css"&gt;
+&lt;script src="https://unpkg.com/lenis@1.3.28/dist/lenis.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const lenis = new Lenis({ autoRaf: true, anchors: true })   // グローバルの Lenis
+&lt;/script&gt;</code></pre>
+  </div>
+  <div class="panel" id="i-react" hidden>
+<pre><code>import { ReactLenis, useLenis } from 'lenis/react'
+import 'lenis/dist/lenis.css'
+
+export default function App() {
+  return (
+    &lt;ReactLenis root options={{ lerp: 0.1 }}&gt;   {/* root でページ全体（window）を対象に */}
+      &lt;Page /&gt;
+    &lt;/ReactLenis&gt;
+  )
+}
+
+function Page() {
+  const lenis = useLenis(({ scroll }) =&gt; { /* スクロールのたびに呼ばれる */ })
+  return &lt;button onClick={() =&gt; lenis?.scrollTo(0)}&gt;上へ&lt;/button&gt;
+}</code></pre>
+    <p class="note">Vue・Nuxt 用に <code>lenis/vue</code>・<code>lenis/nuxt</code> もある。</p>
+  </div>
+
+  <h2 id="raf">自分でループを回す</h2>
+<pre><code>const lenis = new Lenis()        // autoRaf は既定で false
+
+function raf(time) {
+  lenis.raf(time)                // 毎フレーム呼ぶ。time はミリ秒
+  requestAnimationFrame(raf)
+}
+requestAnimationFrame(raf)</code></pre>
+  <p class="note">three.js などほかのループと揃えたいときは、そのループの中で <code>lenis.raf(time)</code> を呼ぶ。<code>autoRaf: true</code> と自分のループは、どちらか一方だけにする（時刻の基準が違うループから両方 <code>raf()</code> を呼ぶと動きが乱れる）。</p>
+
+  <h2 id="gsap">GSAP ScrollTrigger と一緒に使う</h2>
+<pre><code>import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
+gsap.registerPlugin(ScrollTrigger)
+
+const lenis = new Lenis()
+lenis.on('scroll', ScrollTrigger.update)          // Lenis が動かした位置を ScrollTrigger に伝える
+gsap.ticker.add((time) =&gt; lenis.raf(time * 1000)) // GSAP の ticker は秒なのでミリ秒に直す
+gsap.ticker.lagSmoothing(0)                       // 処理落ち時の時間補正を切ってずれを防ぐ</code></pre>
+  <p class="note">この場合は <code>autoRaf</code> を使わず、ループを GSAP の ticker に任せる。</p>
+
+  <h2 id="options">オプション</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>オプション</th><th>既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>lerp</code></td><td data-l="既定"><code>0.1</code></td><td data-l="意味">補間の強さ（0〜1）。小さいほどゆっくり追いつく</td></tr>
+        <tr><td><code>duration</code></td><td data-l="既定">なし</td><td data-l="意味">スクロールの秒数。指定すると <code>lerp</code> より優先される（README の表には「既定 1.2・lerp 指定時は無効」とあるが、1.3.28 の実装とは異なる）</td></tr>
+        <tr><td><code>easing</code></td><td data-l="既定">指数関数の減速</td><td data-l="意味"><code>duration</code> と組み合わせる緩急の関数。<code>easing</code> だけ指定すると <code>duration</code> は 1 秒になる</td></tr>
+        <tr><td><code>smoothWheel</code></td><td data-l="既定"><code>true</code></td><td data-l="意味">ホイールのスクロールをなめらかにする</td></tr>
+        <tr><td><code>syncTouch</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">タッチのスクロールも Lenis が動かす（iOS 16 未満では不安定）</td></tr>
+        <tr><td><code>wheelMultiplier</code> / <code>touchMultiplier</code></td><td data-l="既定"><code>1</code></td><td data-l="意味">ホイール・タッチの移動量の倍率</td></tr>
+        <tr><td><code>orientation</code></td><td data-l="既定"><code>"vertical"</code></td><td data-l="意味">スクロールの向き（<code>"horizontal"</code> で横）</td></tr>
+        <tr><td><code>gestureOrientation</code></td><td data-l="既定"><code>"vertical"</code>（横スクロールなら <code>"both"</code>）</td><td data-l="意味">受け付ける操作の向き（<code>"horizontal"</code>・<code>"both"</code> も可）</td></tr>
+        <tr><td><code>infinite</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">終わりと始まりをつないで無限にスクロール（タッチでは <code>syncTouch</code> が必要）</td></tr>
+        <tr><td><code>autoRaf</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">requestAnimationFrame のループを自動で回す</td></tr>
+        <tr><td><code>anchors</code></td><td data-l="既定"><code>false</code></td><td data-l="意味"><code>true</code> でページ内リンク（<code>#id</code>）を Lenis で動かす。<code>{ offset: 80 }</code> のように <code>scrollTo</code> の指定も渡せる</td></tr>
+        <tr><td><code>allowNestedScroll</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">中のスクロールできる要素を自動で見分けて、そこは普通にスクロールさせる（重くなることがある）</td></tr>
+        <tr><td><code>prevent</code></td><td data-l="既定">—</td><td data-l="意味"><code>(node) =&gt; boolean</code>。true を返した要素の上ではなめらかにしない</td></tr>
+        <tr><td><code>autoToggle</code></td><td data-l="既定"><code>false</code></td><td data-l="意味">wrapper の <code>overflow</code> に合わせて自動で start / stop（推奨 CSS が必要）</td></tr>
+        <tr><td><code>respectReducedMotion</code></td><td data-l="既定"><code>true</code></td><td data-l="意味">OS の「視差効果を減らす」が有効なら補間を切り、<code>scrollTo</code> も即座に移動</td></tr>
+        <tr><td><code>wrapper</code> / <code>content</code></td><td data-l="既定"><code>window</code> / <code>html</code></td><td data-l="意味">ページ全体ではなく、特定の箱の中をスクロールさせるとき</td></tr>
+        <tr><td><code>autoResize</code></td><td data-l="既定"><code>true</code></td><td data-l="意味">大きさの変化を自動で反映。<code>false</code> なら <code>resize()</code> を自分で呼ぶ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="api">メソッド・プロパティ・イベント</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="a-method">メソッド</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-prop">プロパティ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="a-attr">HTML 属性</button>
+  </div>
+  <div class="panel" id="a-method">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>メソッド</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>scrollTo(target, options)</code></td><td data-l="意味">指定した位置へスクロール（下の例）</td></tr>
+          <tr><td><code>stop()</code> / <code>start()</code></td><td data-l="意味">スクロールを止める / 再開（モーダルを開いている間など）</td></tr>
+          <tr><td><code>raf(time)</code></td><td data-l="意味">毎フレーム呼ぶ（ミリ秒）</td></tr>
+          <tr><td><code>resize()</code></td><td data-l="意味">大きさを計算し直す</td></tr>
+          <tr><td><code>on('scroll', fn)</code></td><td data-l="意味">スクロールのたびに呼ぶ。戻り値の関数で解除</td></tr>
+          <tr><td><code>on('virtual-scroll', fn)</code></td><td data-l="意味">ホイール・タッチの入力（<code>{ deltaX, deltaY, event }</code>）</td></tr>
+          <tr><td><code>destroy()</code></td><td data-l="意味">インスタンスを捨ててイベントを外す（SPA で画面を離れるとき）</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre><code>lenis.scrollTo('#contact', { offset: -80 })     // 要素・セレクター。offset は固定ヘッダーの分
+lenis.scrollTo(0, { immediate: true })          // アニメーションなしで一番上へ
+lenis.scrollTo('bottom', { duration: 2, lock: true })  // 着くまでユーザーの操作を受け付けない
+lenis.scrollTo(500, { force: true, onComplete: () =&gt; {} })  // stop() 中でも動かす</code></pre>
+    <p class="note"><code>target</code> は数値（px）・CSS セレクター・要素・キーワード（<code>top</code>・<code>bottom</code>・<code>start</code>・<code>end</code>・<code>left</code>・<code>right</code>）。要素へ飛ぶときは、要素の <code>scroll-margin-top</code> とスクロールする箱の <code>scroll-padding-top</code> も差し引かれる。</p>
+  </div>
+  <div class="panel" id="a-prop" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>プロパティ</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>scroll</code></td><td data-l="意味">今のスクロール位置（<code>infinite</code> でも扱える値）</td></tr>
+          <tr><td><code>targetScroll</code></td><td data-l="意味">向かっている先の位置</td></tr>
+          <tr><td><code>progress</code></td><td data-l="意味">進み具合（0〜1）。読了バーなどに</td></tr>
+          <tr><td><code>velocity</code></td><td data-l="意味">今の速さ</td></tr>
+          <tr><td><code>direction</code></td><td data-l="意味"><code>1</code> = 下へ、<code>-1</code> = 上へ</td></tr>
+          <tr><td><code>limit</code></td><td data-l="意味">スクロールできる最大値</td></tr>
+          <tr><td><code>isScrolling</code></td><td data-l="意味"><code>"smooth"</code> / <code>"native"</code> / <code>false</code></td></tr>
+          <tr><td><code>isStopped</code></td><td data-l="意味"><code>stop()</code> 中か</td></tr>
+          <tr><td><code>prefersReducedMotion</code></td><td data-l="意味">視差効果を減らす設定に従っているか</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="a-attr" hidden>
+<pre><code>&lt;div class="modal-body" data-lenis-prevent&gt;…中だけ普通にスクロール…&lt;/div&gt;</code></pre>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>属性</th><th>なめらかにしないもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>data-lenis-prevent</code></td><td data-l="なめらかにしないもの">すべて</td></tr>
+          <tr><td><code>data-lenis-prevent-wheel</code></td><td data-l="なめらかにしないもの">ホイールだけ</td></tr>
+          <tr><td><code>data-lenis-prevent-touch</code></td><td data-l="なめらかにしないもの">タッチだけ</td></tr>
+          <tr><td><code>data-lenis-prevent-vertical</code> / <code>-horizontal</code></td><td data-l="なめらかにしないもの">縦 / 横の向きだけ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 id="css">推奨 CSS（lenis.css）がしていること</h2>
+  <ul>
+    <li><code>html.lenis body { height: auto }</code>: 高さの計算がずれないようにする</li>
+    <li><code>.lenis-stopped</code> のとき <code>overflow: clip</code>: <code>stop()</code> 中にスクロールできないようにする</li>
+    <li><code>[data-lenis-prevent]</code> に <code>overscroll-behavior: contain</code>: 中の箱のスクロールが外に伝わらない</li>
+    <li>スクロール中は <code>iframe</code> の <code>pointer-events</code> を切る: iframe の上でホイールが止まらない</li>
+  </ul>
+  <p class="note">Lenis が動いている間は <code>&lt;html&gt;</code> に <code>lenis</code>・<code>lenis-smooth</code>・<code>lenis-stopped</code> などのクラスが付く。自分の CSS の <code>scroll-behavior: smooth</code> は外しておく（Lenis 自体は <code>behavior: "instant"</code> で動かすので影響しないが、Lenis を通らないページ内リンクなどだけ別の動きになり、挙動がそろわない）。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>Lenis を入れるとスクロールが偽物になり、sticky や IntersectionObserver が使えなくなる</summary><p>Lenis は <code>transform</code> で中身を動かす方式ではなく、ブラウザのスクロール位置そのものを少しずつ動かす。そのため <code>position: sticky</code>・IntersectionObserver・ScrollTrigger はそのまま動く。</p></details>
+  <details class="myth"><summary>CSS の scroll-snap と一緒に使える</summary><p>Lenis は CSS の scroll-snap に対応していない。吸着させたいときは別パッケージの <code>lenis/snap</code> を使う。</p></details>
+  <details class="myth"><summary>new Lenis() するだけでなめらかになる</summary><p>既定では <code>autoRaf</code> が <code>false</code> なので、<code>raf()</code> を毎フレーム呼ばないと何も起きない。<code>autoRaf: true</code> にするか、自分のループ（GSAP の ticker など）から呼ぶ。</p></details>
+  <details class="myth"><summary>スマホのタッチスクロールも既定でなめらかにされる</summary><p>既定で補間するのはホイールだけ（<code>smoothWheel: true</code>、<code>syncTouch: false</code>）。タッチはブラウザ本来の慣性スクロールのまま。</p></details>
+  <details class="myth"><summary>アクセシビリティのため、視差効果を減らす設定は自分で判定して Lenis を切る必要がある</summary><p>v1.3 では <code>respectReducedMotion</code> が既定で <code>true</code> で、OS の設定が有効なら Lenis が自動で補間を切る。Lenis 自体は動き続けるので、ScrollTrigger などとの同期は保たれる。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="gsap.html">GSAP 使い方</a> — ScrollTrigger と組み合わせてスクロール演出を作るとき</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://github.com/darkroomengineering/lenis">darkroomengineering/lenis（README）</a></li>
+    <li><a href="https://lenis.darkroom.engineering/">Lenis 公式サイト</a></li>
+    <li><a href="https://www.npmjs.com/package/lenis">lenis（npm）</a></li>
+  </ul>
+  <p class="note">2026-11-24 に確認（npm <code>lenis@1.3.28</code>。オプションの既定値はパッケージの実装・型定義・README で確認。2.0 は開発版のみ）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

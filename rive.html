@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rive 使い方</title>
+<meta name="description" content="Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。">
+<meta name="memo:tags" content="フロントエンド">
+<meta name="memo:date" content="2026-11-24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+.wrap > ul { padding-left: 1.4em; margin: 8px 0; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--fg-2); font-weight: 600; font-size: 0.78rem; }
+td:first-child { white-space: nowrap; }
+/* スマホでは表を 1 行 1 枚のカードに積む（列名は data-l） */
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+<!-- memo:head（scripts/memo.py が自動生成。手で編集しない） -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="CheatSheet">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CheatSheet">
+<meta property="og:title" content="Rive 使い方">
+<meta property="og:description" content="Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。">
+<meta property="og:url" content="https://cs.taka1156.site/rive.html">
+<meta property="og:image" content="https://cs.taka1156.site/assets/og.png?v=e0cb0951">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="alternate" type="application/atom+xml" title="CheatSheet" href="feed.xml">
+<link rel="stylesheet" href="assets/memo-parts.css">
+<style id="memo-accent">html:root{--accent:#0077b6}@media (prefers-color-scheme: dark){html:root{--accent:#00d4ff}}</style>
+<!-- /memo:head -->
+</head>
+<body>
+<div class="wrap">
+  <h1>Rive 使い方</h1>
+  <p class="subtitle">Rive エディタで作ったインタラクティブなアニメーション（.riv）を、Web で再生・操作するためのチートシート（Web ランタイム v2.55・React 用 v4.41・2026-11 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Rive エディタで作った <code>.riv</code> を、<code>&lt;canvas&gt;</code> の上で再生する MIT ライセンスのランタイム。</li>
+      <li>動きはファイルの中のステートマシンが決め、コードからはビューモデルの値を読み書きして操作する。</li>
+      <li>ステートマシンの入力（input）や Rive イベントは非推奨。新しく作るならデータバインディングで書く。</li>
+    </ul>
+  </div>
+
+  <h2 id="flow">全体像</h2>
+  <ol class="steps">
+    <li><b>エディタで作る</b>アートボード（画面）に絵を描き、タイムラインで動きを付け、ステートマシンで「どの状態のときにどの動きか」をつなぐ</li>
+    <li><b>ビューモデルを用意する</b>コードと受け渡ししたい値（数値・文字列・真偽値・色・列挙・トリガー・リストなど）をビューモデルのプロパティとして定義し、図形やステートマシンの遷移に結び付ける（データバインディング）</li>
+    <li><b>書き出す</b><code>.riv</code> ファイルとしてエクスポートする。無料プランの書き出しでは短い Rive のスプラッシュが入り、有料プランでは入らない</li>
+    <li><b>ランタイムで再生する</b><code>new Rive({ src, canvas, stateMachine, autoBind: true })</code> で読み込み、<code>rive.viewModelInstance</code> の値を読み書きする</li>
+  </ol>
+
+  <h2 id="packages">パッケージの選び方</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>パッケージ</th><th>描画</th><th>向いている場面</th></tr></thead>
+      <tbody>
+        <tr><td><code>@rive-app/webgl2</code></td><td data-l="描画">WebGL 2（Rive Renderer）</td><td data-l="向いている場面">公式の推奨。エディタと同じレンダラーで描き、Vector Feathering なども含めて全機能が使える</td></tr>
+        <tr><td><code>@rive-app/canvas</code></td><td data-l="描画">Canvas 2D</td><td data-l="向いている場面">WebGL のコンテキスト数の上限を気にせず、たくさん並べたいとき。Vector Feathering はまだ描けない</td></tr>
+        <tr><td><code>@rive-app/canvas-lite</code></td><td data-l="描画">Canvas 2D</td><td data-l="向いている場面">いちばん小さい版。API は同じだが、テキスト・レイアウト・音声・スクリプトのエンジンと Vector Feathering が入っていない</td></tr>
+        <tr><td><code>@rive-app/react-webgl2</code> ほか</td><td data-l="描画">上と同じ</td><td data-l="向いている場面">React 用。<code>react-webgl2</code>・<code>react-canvas</code>・<code>react-canvas-lite</code> があり、中身はそれぞれ上のパッケージ</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">低レベル API（自分で描画ループを書く）として <code>@rive-app/canvas-advanced</code> などもある。普通は上の高レベル API で足りる。</p>
+
+  <h2 id="setup">読み込んで再生する</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="s-js">JavaScript</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-cdn">CDN</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-react">React</button>
+  </div>
+  <div class="panel" id="s-js">
+<pre><code>npm install @rive-app/webgl2</code></pre>
+<pre><code>import { Rive, Layout, Fit, Alignment } from '@rive-app/webgl2'
+
+const canvas = document.getElementById('hero')
+const r = new Rive({
+  src: '/anim/hero.riv',              // URL。ArrayBuffer なら buffer: で渡す
+  canvas,
+  artboard: 'Main',                   // 省略で既定のアートボード
+  stateMachine: 'State Machine 1',    // 再生するステートマシン
+  autoplay: true,
+  autoBind: true,                     // 既定のビューモデルのインスタンスを自動で結び付ける
+  layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
+  onLoad: () =&gt; {
+    r.resizeDrawingSurfaceToCanvas()  // 解像度を canvas の CSS サイズ × devicePixelRatio に合わせる
+  },
+})
+
+addEventListener('resize', () =&gt; r.resizeDrawingSurfaceToCanvas())</code></pre>
+    <p class="note">パッケージを <code>@rive-app/canvas</code> に替えても、コードはそのまま動く（API は共通）。<code>&lt;canvas&gt;</code> の大きさは CSS で決めておく（<code>width: 100%; aspect-ratio: 16 / 9</code> など）。<code>resizeDrawingSurfaceToCanvas()</code> を呼ばないと、高 DPI の画面でぼやける。</p>
+  </div>
+  <div class="panel" id="s-cdn" hidden>
+<pre><code>&lt;canvas id="hero" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@rive-app/webgl2@2.55.1/rive.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const r = new rive.Rive({         // グローバル変数は小文字の rive
+    src: '/anim/hero.riv',
+    canvas: document.getElementById('hero'),
+    stateMachine: 'State Machine 1',
+    autoplay: true,
+    autoBind: true,
+    onLoad: () =&gt; r.resizeDrawingSurfaceToCanvas(),
+  })
+&lt;/script&gt;</code></pre>
+  </div>
+  <div class="panel" id="s-react" hidden>
+<pre><code>npm install @rive-app/react-webgl2</code></pre>
+<pre><code>import { useRive, useViewModelInstanceNumber, useViewModelInstanceTrigger } from '@rive-app/react-webgl2'
+
+export function Hero() {
+  const { rive, RiveComponent } = useRive({
+    src: '/anim/hero.riv',
+    stateMachine: 'State Machine 1',
+    autoplay: true,
+    autoBind: true,
+  })
+  const vmi = rive?.viewModelInstance
+  const { value: progress, setValue: setProgress } = useViewModelInstanceNumber('progress', vmi)
+  const { trigger: celebrate } = useViewModelInstanceTrigger('celebrate', vmi, {
+    onTrigger: () =&gt; console.log('ファイル側から発火した'),
+  })
+
+  return (
+    &lt;&gt;
+      &lt;RiveComponent style={{ width: 400, height: 300 }} /&gt;  {/* 親の大きさに合わせて描画面も自動で調整 */}
+      &lt;button onClick={() =&gt; setProgress((progress ?? 0) + 10)}&gt;+10&lt;/button&gt;
+      &lt;button onClick={celebrate}&gt;お祝い&lt;/button&gt;
+    &lt;/&gt;
+  )
+}</code></pre>
+    <p class="note">ほかに <code>useViewModelInstanceString</code>・<code>Boolean</code>・<code>Color</code>・<code>Enum</code> があり、どれも値と、値を変える関数を返す（<code>List</code> は件数と追加・削除の関数、<code>Image</code> は差し替える関数だけ）。<code>autoBind</code> を使わないときは <code>useViewModel(rive)</code> → <code>useViewModelInstance(viewModel, { rive })</code> でインスタンスを作って結び付ける。</p>
+  </div>
+
+  <h2 id="databinding">データバインディング（コードから操作する）</h2>
+<pre><code>const vmi = r.viewModelInstance          // autoBind: true のとき、読み込み後に使える
+
+vmi.number('progress').value = 75        // 数値
+vmi.string('title').value = 'こんにちは'  // 文字列
+vmi.boolean('isDark').value = true       // 真偽値
+vmi.color('accent').rgb(255, 80, 0)      // 色（rgba() / argb() / value も）
+vmi.enum('mode').value = 'compact'       // 列挙（定義した値の名前）
+vmi.trigger('celebrate').trigger()       // トリガーを発火
+vmi.number('card/price').value = 980     // 入れ子のビューモデルは / でたどる
+
+// ファイル側（アニメーションやリスナー）で値が変わったら知る
+vmi.number('score').on((value) =&gt; console.log(value))   // コールバックには新しい値が渡る
+vmi.trigger('done').on(() =&gt; console.log('完了の合図'))</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>number</code> / <code>string</code> / <code>boolean</code> / <code>color</code> / <code>enum</code> / <code>trigger</code></td><td data-l="意味">型ごとにプロパティを取り出す。名前が違うと <code>null</code></td></tr>
+        <tr><td><code>list(path)</code></td><td data-l="意味">リスト。項目（ビューモデルのインスタンス）を足す・消す・入れ替える</td></tr>
+        <tr><td><code>image(path)</code> / <code>artboard(path)</code></td><td data-l="意味">画像やアートボードを差し替える</td></tr>
+        <tr><td><code>viewModel(path)</code></td><td data-l="意味">入れ子のビューモデルのインスタンス</td></tr>
+        <tr><td><code>prop.on(cb)</code> / <code>prop.off(cb)</code></td><td data-l="意味">値の変化を受け取る / やめる</td></tr>
+        <tr><td><code>r.viewModelByName('Card')</code></td><td data-l="意味">名前でビューモデルを取る（<code>defaultViewModel()</code> も）</td></tr>
+        <tr><td><code>vm.instanceByName('Dark')</code> / <code>vm.defaultInstance()</code> / <code>vm.instance()</code></td><td data-l="意味">エディタで作ったインスタンス / 既定のインスタンス / 空のインスタンス</td></tr>
+        <tr><td><code>r.bindViewModelInstance(vmi)</code></td><td data-l="意味">作ったインスタンスを結び付ける（<code>autoBind</code> を使わないとき）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">値の読み取りや <code>on</code> の通知は、ステートマシンが次のフレームを進めたときの値になる。</p>
+
+  <h2 id="control">再生の操作・後片付け</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>メソッド・プロパティ</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>play()</code> / <code>pause()</code> / <code>stop()</code></td><td data-l="意味">再生・一時停止・停止</td></tr>
+        <tr><td><code>reset({ stateMachine, autoplay })</code></td><td data-l="意味">最初の状態に戻す</td></tr>
+        <tr><td><code>load({ src, ... })</code></td><td data-l="意味">別のファイル・アートボードに読み替える</td></tr>
+        <tr><td><code>layout = new Layout({...})</code></td><td data-l="意味">収め方を変える（下の表）</td></tr>
+        <tr><td><code>resizeDrawingSurfaceToCanvas()</code></td><td data-l="意味">描画面の解像度を canvas の表示サイズに合わせる</td></tr>
+        <tr><td><code>stateMachineNames</code> / <code>isPlaying</code></td><td data-l="意味">ステートマシンの名前一覧 / 再生中か</td></tr>
+        <tr><td><code>on(EventType.Load, fn)</code></td><td data-l="意味">読み込み・再生などの通知（<code>Load</code>・<code>LoadError</code>・<code>Play</code>・<code>Pause</code>・<code>Stop</code> など）</td></tr>
+        <tr><td><code>volume</code></td><td data-l="意味">音声の音量（0〜1）</td></tr>
+        <tr><td><code>cleanup()</code></td><td data-l="意味">WASM 側のメモリを解放する。SPA で画面を離れるときに必ず呼ぶ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Fit（収め方）</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>値</th><th>収め方</th></tr></thead>
+      <tbody>
+        <tr><td><code>Fit.Contain</code></td><td data-l="収め方">全体が入るように縮める（既定）</td></tr>
+        <tr><td><code>Fit.Cover</code></td><td data-l="収め方">隙間なく埋める（はみ出しは切れる）</td></tr>
+        <tr><td><code>Fit.Fill</code></td><td data-l="収め方">縦横比を無視して引き伸ばす</td></tr>
+        <tr><td><code>Fit.FitWidth</code> / <code>Fit.FitHeight</code></td><td data-l="収め方">幅 / 高さを合わせる</td></tr>
+        <tr><td><code>Fit.ScaleDown</code> / <code>Fit.None</code></td><td data-l="収め方">大きいときだけ縮める / 拡大縮小しない</td></tr>
+        <tr><td><code>Fit.Layout</code></td><td data-l="収め方">アートボードを canvas の大きさに作り直す（エディタのレイアウト機能で作ったレスポンシブな画面向け。<code>layoutScaleFactor</code> で倍率）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="deprecated">非推奨になった書き方と置き換え先</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>古い書き方</th><th>置き換え先</th></tr></thead>
+      <tbody>
+        <tr><td><code>r.stateMachineInputs('SM')</code> で入力を取り、<code>input.value = …</code> / <code>input.fire()</code></td><td data-l="置き換え先">ビューモデルのプロパティ（<code>number</code>・<code>boolean</code>・<code>trigger</code>）</td></tr>
+        <tr><td><code>useStateMachineInput()</code>（React）</td><td data-l="置き換え先"><code>useViewModelInstanceNumber()</code> などのフック</td></tr>
+        <tr><td><code>r.on(EventType.RiveEvent, …)</code>（Rive イベント）</td><td data-l="置き換え先">プロパティの <code>on()</code>（ファイル側でトリガーや値を変える）</td></tr>
+        <tr><td><code>EventType.StateChange</code></td><td data-l="置き換え先">プロパティの <code>on()</code> か、ステートの Actions</td></tr>
+        <tr><td><code>setTextRunValue()</code></td><td data-l="置き換え先">文字列プロパティ（<code>vmi.string()</code>）</td></tr>
+        <tr><td><code>animations: 'idle'</code>（タイムラインだけの再生）・<code>scrub()</code></td><td data-l="置き換え先">ステートマシンで再生を制御する</td></tr>
+        <tr><td><code>stateMachines: ['A', 'B']</code>（複数を同時に再生）</td><td data-l="置き換え先">1 つのステートマシンにまとめる（<code>stateMachine</code>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">非推奨になっても今のファイル・コードは動く。公式は、既存のファイルを作り直す必要はなく、新しい作業ではデータバインディングを使うよう勧めている。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>コードからアニメーションを操作するなら、ステートマシンの入力（input）を使う</summary><p>入力はすべてのランタイムで非推奨になり、データバインディング（ビューモデルのプロパティ）に置き換わった。プロパティは遷移だけでなく、色・文字・位置など結び付けたものなら何でも動かせ、ファイル側で変わった値もコードで受け取れる。</p></details>
+  <details class="myth"><summary>Rive はランタイムも書き出しも全部無料</summary><p>ランタイムはオープンソース（MIT）で、ロイヤリティもかからない。ただし無料プランで書き出した <code>.riv</code> は再生の最初に短い Rive のスプラッシュが入り、入れたくなければ有料プランが要る。</p></details>
+  <details class="myth"><summary>たくさん並べるときも、webgl2 版で 1 つずつ Rive を作ればよい</summary><p>普段は webgl2 版でよい（公式の推奨）が、WebGL にはブラウザごとにコンテキスト数の上限がある。たくさん並べるなら <code>useOffscreenRenderer: true</code> で 1 つのコンテキストを共有するか（React の <code>useRive</code> は既定で有効）、上限のない <code>@rive-app/canvas</code> を使う。</p></details>
+  <details class="myth"><summary>canvas 要素を DOM から外せばメモリも解放される</summary><p>Rive は WASM 側にメモリを確保している。使い終わったら <code>r.cleanup()</code> を呼ぶ（React の <code>useRive</code> はアンマウント時に自動で片付ける）。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="gsap.html">GSAP 使い方</a> — DOM 側の演出と組み合わせるとき（Rive の数値プロパティを GSAP のトゥイーンで動かすなど）</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://rive.app/docs/runtimes/web/web-js">Rive Docs: Web (JS)</a></li>
+    <li><a href="https://rive.app/docs/runtimes/web/data-binding">Rive Docs: Web のデータバインディング</a>・<a href="https://rive.app/docs/runtimes/react/data-binding">React のデータバインディング</a></li>
+    <li><a href="https://rive.app/docs/editor/data-binding/migration-guide">Rive Docs: 入力・イベントからデータバインディングへの移行</a></li>
+    <li><a href="https://rive.app/docs/runtimes/web/canvas-vs-webgl">Rive Docs: Canvas vs WebGL2</a>（パッケージの選び方）</li>
+  </ul>
+  <p class="note">2026-11-24 に確認（npm <code>@rive-app/webgl2@2.55.1</code>・<code>@rive-app/canvas@2.55.1</code>・<code>@rive-app/react-webgl2@4.41.0</code>。非推奨の扱いはパッケージの型定義の注記で確認）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

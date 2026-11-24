@@ -9,6 +9,24 @@
   <author><name>CheatSheet</name></author>
   <icon>https://cs.taka1156.site/assets/icon-192.png</icon>
   <entry>
+    <title>three.js 使い方</title>
+    <id>https://cs.taka1156.site/threejs.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/threejs.html"/>
+    <published>2026-11-24T00:00:00+09:00</published>
+    <updated>2026-11-24T00:00:00+09:00</updated>
+    <summary>three.js（r187）の導入、シーン・カメラ・レンダラーの基本形、よく使う API とアドオン、glTF 読み込みなどの定番手順。</summary>
+    <category term="フロントエンド"/>
+  </entry>
+  <entry>
+    <title>Rive 使い方</title>
+    <id>https://cs.taka1156.site/rive.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/rive.html"/>
+    <published>2026-11-24T00:00:00+09:00</published>
+    <updated>2026-11-24T00:00:00+09:00</updated>
+    <summary>Rive の Web ランタイム（v2.55）と React での再生、データバインディングでの操作、非推奨になった入力・イベントの置き換え先。</summary>
+    <category term="フロントエンド"/>
+  </entry>
+  <entry>
     <title>Playwright 使い方</title>
     <id>https://cs.taka1156.site/playwright.html</id>
     <link rel="alternate" type="text/html" href="https://cs.taka1156.site/playwright.html"/>
@@ -25,6 +43,24 @@
     <updated>2026-11-24T00:00:00+09:00</updated>
     <summary>MSW v3 のハンドラーの書き方、Vitest・ブラウザ・Vite・Playwright・Storybook への組み込み、v2 からの移行をまとめたチートシート。</summary>
     <category term="開発ツール"/>
+  </entry>
+  <entry>
+    <title>Lenis 使い方</title>
+    <id>https://cs.taka1156.site/lenis.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/lenis.html"/>
+    <published>2026-11-24T00:00:00+09:00</published>
+    <updated>2026-11-24T00:00:00+09:00</updated>
+    <summary>スムーススクロールの Lenis（v1.3）の導入、GSAP ScrollTrigger との同期、オプション・メソッド・中の箱のスクロールの扱い。</summary>
+    <category term="フロントエンド"/>
+  </entry>
+  <entry>
+    <title>GSAP 使い方</title>
+    <id>https://cs.taka1156.site/gsap.html</id>
+    <link rel="alternate" type="text/html" href="https://cs.taka1156.site/gsap.html"/>
+    <published>2026-11-24T00:00:00+09:00</published>
+    <updated>2026-11-24T00:00:00+09:00</updated>
+    <summary>GSAP（v3.15）のトゥイーン・タイムライン・イージング・ScrollTrigger・主なプラグイン・React での使い方。</summary>
+    <category term="フロントエンド"/>
   </entry>
   <entry>
     <title>secretlint 使い方</title>

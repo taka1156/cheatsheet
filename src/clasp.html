@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>clasp 使い方</title>
+<meta name="description" content="Google Apps Script をローカルのコードとして管理する clasp 3.x の、セットアップ・コマンド・.clasp.json・.claspignore・run-function の準備をまとめたチートシート">
+<meta name="memo:tags" content="開発ツール">
+<meta name="memo:date" content="2026-11-27">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 20px 0 8px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.cm { color: var(--fg-2); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat tr:last-child td { border-bottom: none; }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.panel.card { padding: 6px 10px; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.alias { color: var(--fg-2); font-size: 0.75rem; }
+.danger { font-size: 0.7rem; font-weight: 700; color: var(--c-ng); border: 1px solid var(--c-ng); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+.empty { display: none; color: var(--fg-2); font-size: 0.8rem; padding: 6px 2px; }
+@media (max-width: 520px) {
+  /* スマホ幅では 1 行を「コマンド → 説明」の縦積みにして、コマンドを途中で折らない */
+  .cheat thead { display: none; }
+  .cheat tr { display: block; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+  .cheat tr:last-child { border-bottom: none; }
+  .cheat td { display: block; padding: 0; border: none; }
+  .cheat td:first-child { white-space: normal; overflow-wrap: anywhere; font-weight: 700; margin-bottom: 2px; }
+}
+
+/* 図：ローカルとリモートの関係 */
+.sync { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+.sync .node { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px 12px; font-size: 0.8rem; }
+.sync .node b { display: block; font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+.sync .node .path { display: block; font: 500 0.72rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); overflow-wrap: anywhere; }
+.sync .ops { display: flex; flex-direction: column; gap: 6px; font: 600 0.75rem 'JetBrains Mono', ui-monospace, monospace; }
+.sync .op { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--chip); white-space: nowrap; text-align: center; }
+.sync .op.to::after { content: " →"; }
+.sync .op.from::before { content: "← "; }
+.deploy-row { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.deploy-row div { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; background: var(--surface); }
+.deploy-row b { display: block; font: 700 0.8rem 'JetBrains Mono', ui-monospace, monospace; }
+@media (max-width: 600px) {
+  .sync { grid-template-columns: 1fr; }
+  .sync .ops { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .sync .op.to::after { content: " ↓"; }
+  .sync .op.from::before { content: "↑ "; }
+  .deploy-row { grid-template-columns: 1fr; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>clasp 使い方</h1>
+  <p class="subtitle">Google Apps Script（GAS）をローカルのコードとして管理する CLI（3.x）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>GAS のプロジェクトをローカルに持ってきて、Git やエディタで管理できるようにする、Google が公開しているオープンソースの CLI。</li>
+      <li><code>clone</code>・<code>pull</code> で取得し、<code>push</code> で上書き、<code>deploy</code> で版を固定して公開する。</li>
+      <li>3.x は TypeScript を変換しない。<code>push</code> はリモートを丸ごと置き換えるので <code>.claspignore</code> を必ず確かめる。</li>
+    </ul>
+  </div>
+
+  <h2 id="model">ローカルとリモートの関係</h2>
+  <div class="card">
+    <div class="sync">
+      <div class="node"><b>ローカル</b>Git で管理するフォルダ<span class="path">.clasp.json / appsscript.json / *.js *.gs *.html</span></div>
+      <div class="ops">
+        <span class="op to">push</span>
+        <span class="op from">pull</span>
+        <span class="op from">clone</span>
+      </div>
+      <div class="node"><b>script.google.com</b>Apps Script プロジェクト（HEAD）<span class="path">scriptId で特定。フォルダは「tests/slides」のような名前になる</span></div>
+    </div>
+    <div class="deploy-row">
+      <div><b>create-version</b>HEAD の内容から、変更できない版（version）を作る</div>
+      <div><b>create-deployment</b>版を作ってデプロイ（ウェブアプリは デプロイごとに URL）</div>
+      <div><b>update-deployment</b>同じデプロイ ID のまま新しい版に差し替える</div>
+    </div>
+  </div>
+  <p class="note">ローカルの <code>tests/slides.js</code> は、リモートでは <code>tests/slides.gs</code> というフラットな名前になる（clasp が相互に変換する）。</p>
+
+  <h2 id="start">はじめかた</h2>
+  <ol class="steps">
+    <li><b>インストール</b><code>npm install -g @google/clasp</code>（Node.js 20 以上。<code>clasp -v</code> で版を確認）</li>
+    <li><b>Apps Script API を有効にする</b><a href="https://script.google.com/home/usersettings">script.google.com/home/usersettings</a> で「Google Apps Script API」をオンにする。オフのままだと API を呼ぶコマンドが失敗する</li>
+    <li><b>ログイン</b><code>clasp login</code>。ブラウザで認可すると、ホームの <code>~/.clasprc.json</code> に認証情報が保存される。ブラウザが開けない環境は <code>--no-localhost</code></li>
+    <li><b>プロジェクトを作るか持ってくる</b>新規は <code>clasp create-script --title "名前" --type sheets</code>、既存は <code>clasp clone-script &lt;scriptId または URL&gt;</code>。どちらも <code>.clasp.json</code> ができる</li>
+    <li><b>書いて送る</b>編集したら <code>clasp show-file-status</code> で送るファイルを確かめ、<code>clasp push</code>。<code>clasp open-script</code> でエディタを開いて動作を見る</li>
+  </ol>
+
+  <h2 id="commands">コマンド チートシート</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: deploy, watch）" aria-label="コマンドを絞り込む">
+  <p class="note">左の列は 3.x の正式名。<span class="alias">別名</span> は主に 2.x の名前で、今も使える。<span class="danger">注意</span> は、リモートやローカルのファイルを消す・上書きする操作。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-auth">認証</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-proj">プロジェクト</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-sync">同期</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-dep">版・デプロイ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-open">開く</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-adv">ログ・実行・API</button>
+  </div>
+
+  <div class="panel card table-wrap" id="t-auth">
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp login</code></td><td>ブラウザで認可して <code>~/.clasprc.json</code> に保存（ユーザー名は <code>default</code>）</td></tr>
+<tr><td><code>clasp login --no-localhost</code></td><td>ローカルのサーバーを立てず、表示されたコードを手で貼る（SSH 先など）</td></tr>
+<tr><td><code>clasp login --redirect-port 37473</code></td><td>認可の戻り先のポートを指定する</td></tr>
+<tr><td><code>clasp login -u work --creds client_secret.json</code></td><td>自前の OAuth クライアント（デスクトップ アプリ）で、名前付きの認証情報を作る</td></tr>
+<tr><td><code>clasp login --use-project-scopes --creds …</code></td><td><code>appsscript.json</code> の <code>oauthScopes</code> で認可する（<code>run-function</code> 用）。<code>--include-clasp-scopes</code> で clasp の既定スコープも足す</td></tr>
+<tr><td><code>clasp login --extra-scopes a,b</code></td><td>追加のスコープをカンマ区切りで足す</td></tr>
+<tr><td><code>clasp show-authorized-user</code></td><td>ログイン中のユーザーと、OAuth クライアントが既定（<code>google-provided</code>）か自前（<code>user-provided</code>）かを表示。<code>--json</code> も可</td></tr>
+<tr><td><code>clasp logout</code></td><td>保存した認証情報を消す</td></tr>
+<tr><td><code>clasp 任意 --user work</code></td><td>どのコマンドでも、名前付きの認証情報で動かす（アカウントの切り替え）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-proj" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp create-script</code> <span class="alias">create</span></td><td>新しいプロジェクトを作る。<code>--type</code> を省くと standalone になる</td></tr>
+<tr><td><code>create-script --type sheets</code></td><td>新しいスプレッドシートに紐づいた（コンテナバインドの）スクリプトを作る。<code>docs</code>・<code>slides</code>・<code>forms</code>・<code>standalone</code>（既定）。<code>webapp</code>・<code>api</code> は standalone の別名</td></tr>
+<tr><td><code>create-script --parentId &lt;DriveのID&gt;</code></td><td>既存のドキュメント・シートなどに紐づけて作る。<code>--type</code> は省くか standalone にする（docs・sheets などを付けると新しいファイルが作られ、<code>--parentId</code> は使われない）</td></tr>
+<tr><td><code>create-script --title "名前" --rootDir ./src</code></td><td>タイトルと、ファイルを置くローカルのフォルダを指定</td></tr>
+<tr><td><code>clasp clone-script &lt;scriptId|URL&gt;</code> <span class="alias">clone</span></td><td>既存のプロジェクトを取得して <code>.clasp.json</code> を作る。<code>--rootDir</code>・版番号も指定できる</td></tr>
+<tr><td><code>clasp list-scripts</code> <span class="alias">list</span></td><td>自分の最近のプロジェクトを名前と ID で一覧</td></tr>
+<tr><td><code>clasp delete-script</code> <span class="alias">delete</span> <span class="danger">注意</span></td><td>プロジェクトを Drive のゴミ箱に移す（ローカルの <code>.clasp.json</code> は残る）。<code>-f</code> で確認を飛ばす</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-sync" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp show-file-status</code> <span class="alias">status</span></td><td><code>push</code> で送られるファイルの一覧（無視されるファイルも分かる）。<code>--json</code> も可</td></tr>
+<tr><td><code>clasp push</code> <span class="danger">注意</span></td><td>ローカルのファイルでリモートを<b>丸ごと置き換える</b>（ファイル単位の差分ではない）</td></tr>
+<tr><td><code>clasp push -f</code></td><td>マニフェスト（<code>appsscript.json</code>）の上書き確認を飛ばす</td></tr>
+<tr><td><code>clasp push -w</code></td><td>ファイルの変更を監視して、無視対象でないファイルが変わるたびに push</td></tr>
+<tr><td><code>clasp pull</code></td><td>リモートの内容でローカルを更新する</td></tr>
+<tr><td><code>clasp pull --versionNumber 23</code></td><td>指定した版の内容を取得する</td></tr>
+<tr><td><code>clasp pull -d</code> <span class="danger">注意</span></td><td>リモートに無いローカルのファイルを消す（確認あり。<code>-f</code> で確認なし）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-dep" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp create-version "説明"</code> <span class="alias">version</span></td><td>今の HEAD から変更できない版を作る</td></tr>
+<tr><td><code>clasp list-versions</code> <span class="alias">versions</span></td><td>版の一覧</td></tr>
+<tr><td><code>clasp create-deployment</code> <span class="alias">deploy</span></td><td>新しい版を作って新しいデプロイを作る。<code>-d "説明"</code>、既存の版を使うなら <code>-V 4</code></td></tr>
+<tr><td><code>clasp update-deployment &lt;id&gt;</code> <span class="alias">redeploy</span></td><td>デプロイ ID（＝ウェブアプリの URL）を変えずに新しい版へ差し替える。<code>create-deployment -i &lt;id&gt;</code> と同じ</td></tr>
+<tr><td><code>clasp list-deployments</code> <span class="alias">deployments</span></td><td>デプロイの一覧（ID と版）</td></tr>
+<tr><td><code>clasp delete-deployment &lt;id&gt;</code> <span class="alias">undeploy</span> <span class="danger">注意</span></td><td>デプロイを消す。ID を省くと選択（1 つだけならそれを消す）、<code>--all</code> で全部</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-open" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp open-script</code></td><td>このプロジェクトの Apps Script エディタを開く</td></tr>
+<tr><td><code>clasp open-web-app</code></td><td>デプロイしたウェブアプリを開く</td></tr>
+<tr><td><code>clasp open-container</code></td><td>紐づいているドキュメント・シートなどを開く</td></tr>
+<tr><td><code>clasp open-credentials-setup</code></td><td>OAuth クライアントを作る Cloud Console の画面を開く</td></tr>
+<tr><td><code>clasp open-logs</code></td><td>Cloud Logging の画面を開く</td></tr>
+<tr><td><code>clasp open-api-console</code></td><td>API の有効化を管理する Cloud Console を開く</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-adv" hidden>
+<table class="cheat"><thead><tr><th>コマンド</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>clasp setup-logs</code></td><td>ログを読むのに要る GCP プロジェクト ID を設定する</td></tr>
+<tr><td><code>clasp tail-logs</code> <span class="alias">logs</span></td><td>Cloud Logging の新しいログを表示。<code>--watch</code> で追い続ける、<code>--simplified</code> で時刻を省く、<code>--json</code></td></tr>
+<tr><td><code>clasp run-function myFunc</code> <span class="alias">run</span></td><td>関数をリモートで実行して結果を表示。省くと候補から選ぶ。準備は下の「run-function の準備」</td></tr>
+<tr><td><code>run-function f -p '["a",1]'</code></td><td>引数を JSON の配列で渡す。<code>--nondev</code> で最新コードではなくデプロイ版で動かす</td></tr>
+<tr><td><code>clasp list-apis</code> <span class="alias">apis</span></td><td>高度なサービス（Advanced Services）として有効にできる API の一覧</td></tr>
+<tr><td><code>clasp enable-api drive</code></td><td>GCP プロジェクトで API を有効にする（<code>disable-api</code> で無効）</td></tr>
+<tr><td><code>clasp start-mcp-server</code> <span class="alias">mcp</span></td><td>コーディングエージェント用の MCP サーバーとして起動する（実験的、STDIO）</td></tr>
+</tbody></table>
+  </div>
+  <p class="empty" id="empty">該当するコマンドはありません。</p>
+
+  <h2 id="global">どのコマンドにも付けられるオプション</h2>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>オプション</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>-u, --user &lt;name&gt;</code></td><td>名前付きの認証情報を使う（既定は <code>default</code>）</td></tr>
+<tr><td><code>-P, --project &lt;file&gt;</code></td><td><code>.clasp.json</code> 以外の設定を読む（本番・検証など送り先を分ける）。環境変数 <code>clasp_config_project</code></td></tr>
+<tr><td><code>-I, --ignore &lt;file&gt;</code></td><td><code>.claspignore</code> 以外の無視リストを読む。環境変数 <code>clasp_config_ignore</code></td></tr>
+<tr><td><code>--json</code></td><td>出力を JSON にする</td></tr>
+<tr><td><code>--allow-symlinks</code></td><td>シンボリックリンクのファイル・フォルダも push・pull の対象にする（3.4 から）</td></tr>
+<tr><td><code>--adc</code></td><td>環境のアプリケーションのデフォルト認証情報を使う（サービスアカウント向け。README では実験的・未完成の扱い）</td></tr>
+</tbody></table>
+  </div>
+  <p class="note">不具合を調べるときは <code>DEBUG=clasp:* clasp pull</code> で詳しいログが出る。プロキシは <code>HTTP_PROXY</code>・<code>HTTPS_PROXY</code> で通す。</p>
+
+  <h2 id="migrate">2.x からの変更（3.x）</h2>
+  <p>よく使うコマンドは別名でそのまま動く。名前が変わって別名が無いのは次のもの。</p>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>2.x</th><th>3.x</th></tr></thead><tbody>
+<tr><td><code>open</code></td><td><code>open-script</code></td></tr>
+<tr><td><code>open --web</code> / <code>--addon</code> / <code>--creds</code></td><td><code>open-web-app</code> / <code>open-container</code> / <code>open-credentials-setup</code></td></tr>
+<tr><td><code>login --creds &lt;file&gt;</code></td><td><code>login -u &lt;name&gt; --creds &lt;file&gt;</code></td></tr>
+<tr><td><code>logs --open</code></td><td><code>open-logs</code></td></tr>
+<tr><td><code>apis --open</code> / <code>apis enable x</code> / <code>apis disable x</code></td><td><code>open-api-console</code> / <code>enable-api x</code> / <code>disable-api x</code></td></tr>
+<tr><td><code>deploy -i &lt;id&gt;</code></td><td><code>update-deployment &lt;id&gt;</code></td></tr>
+<tr><td><code>logs --setup</code>・<code>settings</code></td><td>なし</td></tr>
+</tbody></table>
+  </div>
+  <p>もう 1 つの大きな変更は <b>TypeScript の変換をやめたこと</b>。<code>.ts</code> は Rollup などのバンドラーで JS にしてから push する（下の「TypeScript で書く」）。</p>
+
+  <h2 id="config">.clasp.json</h2>
+  <p><code>create-script</code>・<code>clone-script</code> がカレントフォルダに作る。リポジトリにコミットしてよい（認証情報は入らない）。</p>
+<pre><code>{
+  "scriptId": "1D_Gxyv…NXO7o",
+  "rootDir": "dist",
+  "projectId": "my-gcp-project",
+  "scriptExtensions": [".js", ".gs"],
+  "htmlExtensions": [".html"],
+  "filePushOrder": ["dist/polyfill.js"]
+}</code></pre>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>キー</th><th>意味</th></tr></thead><tbody>
+<tr><td><code>scriptId</code></td><td><b>必須。</b>対象のプロジェクト ID（エディタの「プロジェクトの設定」にある）</td></tr>
+<tr><td><code>rootDir</code></td><td>ローカルのファイルを置くフォルダ。省くとカレントフォルダ</td></tr>
+<tr><td><code>projectId</code></td><td>紐づける GCP プロジェクト ID。ログ・<code>run-function</code>・API の有効化で使う。無ければ必要なときに聞かれる</td></tr>
+<tr><td><code>scriptExtensions</code></td><td>スクリプトとして扱う拡張子（既定 <code>[".js", ".gs"]</code>）。pull で書き出すときは先頭の拡張子になる</td></tr>
+<tr><td><code>htmlExtensions</code></td><td>HTML として扱う拡張子（既定 <code>[".html"]</code>）</td></tr>
+<tr><td><code>filePushOrder</code></td><td>先に送るファイル。読み込み順に依存するコード向け。パスは <code>.clasp.json</code> のあるフォルダからで、<code>rootDir</code> も含めて書く</td></tr>
+<tr><td><code>skipSubdirectories</code></td><td><code>true</code> で <code>.claspignore</code> が無いときにサブフォルダを無視する（昔の動きに合わせる）</td></tr>
+<tr><td><code>fileExtension</code></td><td>非推奨。<code>scriptExtensions</code> を使う</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="ignore">.claspignore</h2>
+  <p><code>push</code> から外すファイルのパターン。<code>rootDir</code> からの相対で、<code>.gitignore</code> ではなく multimatch の書き方になる。フォルダを外すときは <code>**/node_modules/**</code> のように書く。<code>.</code> で始まるファイルと、対象外の拡張子はもともと送られない。</p>
+<pre><code><span class="cm"># ビルド結果とマニフェストだけを送る</span>
+**/**
+!appsscript.json
+!main.js</code></pre>
+  <p class="note">ファイルが無いときの既定は「<code>appsscript.json</code> と <code>*.gs</code>・<code>*.js</code>・<code>*.ts</code>・<code>*.html</code> だけを対象にし、<code>.git/</code>・<code>node_modules/</code> は除く」。ただし <code>*.ts</code> は拡張子（<code>scriptExtensions</code>）の判定で外れるので、実際には送られない。</p>
+
+  <h2 id="typescript">TypeScript で書く</h2>
+  <p>3.x は変換しないので、バンドラーで 1 本の JS にしてから push する。どれを選んでも共通の準備は次のとおり。</p>
+  <ol class="steps">
+    <li><b>型を入れる</b><code>npm i -D @types/google-apps-script</code> で <code>SpreadsheetApp</code> などに型が付く</li>
+    <li><b>dist だけを送る</b><code>.clasp.json</code> の <code>rootDir</code> を <code>dist</code> にし、<code>appsscript.json</code> も <code>dist/</code> に置く</li>
+    <li><b>ビルドと push をまとめる</b><code>"push": "node build.mjs &amp;&amp; clasp push"</code> のように 1 つのスクリプトにする</li>
+  </ol>
+
+  <div class="tabs" role="tablist" id="ts-tabs">
+    <button class="tab" role="tab" aria-selected="true" data-panel="ts-esbuild">esbuild ＋ esbuild-gas-plugin</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="ts-gasbombe">Gasbombe で雛形を作る</button>
+  </div>
+  <div class="panel card" id="ts-esbuild">
+    <p>定番の組み合わせ。バンドルすると関数は外から見えなくなるので、GAS から呼ぶ関数（トリガー・<code>doGet</code>・カスタム関数など）は入口のファイルで <code>global</code> に代入する。<code>esbuild-gas-plugin</code> がその代入を読み、トップレベルの関数を出力の先頭に足す。</p>
+<pre><code>npm i -D esbuild esbuild-gas-plugin \
+  typescript @types/google-apps-script</code></pre>
+<pre><code><span class="cm">// build.mjs</span>
+import { build } from "esbuild";
+import { GasPlugin } from "esbuild-gas-plugin";
+
+await build({
+  entryPoints: ["src/main.ts"],  <span class="cm">// 配列で書く（使われるのは先頭の 1 つだけ）</span>
+  bundle: true,
+  outfile: "dist/main.js",       <span class="cm">// 必須（write: false は使えない）</span>
+  plugins: [GasPlugin],
+});</code></pre>
+<pre><code><span class="cm">// src/main.ts（入口）</span>
+import { sum } from "./lib";
+
+const onOpen = () =&gt; { /* … */ };
+/** @customfunction */
+const SUM2 = (a: number, b: number) =&gt; sum(a, b);
+
+global.onOpen = onOpen;   <span class="cm">// ここに書いた関数だけが GAS から呼べる</span>
+global.SUM2 = SUM2;</code></pre>
+    <p class="note"><code>global</code> の代入は入口のファイルにだけ書く（ほかのファイルの代入は拾われない）。<code>global</code> に型が無いと言われたら <code>declare const global: any;</code> などで宣言する。esbuild-gas-plugin は 0.x（0.10.0）。</p>
+  </div>
+  <div class="panel card" id="ts-gasbombe" hidden>
+    <p><b>まだ 0.x で枯れていないが、有用な選択肢。</b>GAS 向けの TypeScript プロジェクトを対話で生成する CLI で、バンドル（Rolldown）・Biome・Vitest・<code>.clasp.json</code> の設定まで一度に用意する。React・Vue で GAS のウェブアプリを作るテンプレートもある。</p>
+<pre><code><span class="cm"># 対話で作る</span>
+npx @ciderjs/gasbombe
+
+<span class="cm"># 対話なし（全部指定する。省いた項目だけ聞かれる）</span>
+npx @ciderjs/gasbombe -n my-app -t server-ts \
+  -c create -p pnpm -g</code></pre>
+    <div class="table-wrap">
+<table class="cheat"><thead><tr><th>オプション</th><th>意味</th></tr></thead><tbody>
+<tr><td><code>-n, --name</code></td><td>プロジェクト名（<code>.</code> でカレントフォルダに展開）</td></tr>
+<tr><td><code>-t, --template</code></td><td><code>server-ts</code>・<code>server-js</code>・<code>react</code>・<code>vue</code>・<code>html-js</code> と、CiderJS 版の <code>server-ciderjs</code>・<code>react-ciderjs</code>・<code>vue-ciderjs</code>（全 8 種）</td></tr>
+<tr><td><code>-c, --clasp</code></td><td><code>.clasp.json</code> の作り方。<code>create</code>（新規）・<code>list</code>（一覧から選ぶ）・<code>input</code>（ID を入力）・<code>skip</code>。<code>create</code>・<code>list</code> は先に <code>clasp login</code> が要る</td></tr>
+<tr><td><code>-p, --pkg</code></td><td><code>npm</code>・<code>pnpm</code>・<code>yarn</code>。<code>--skipInstall</code> で入れない</td></tr>
+<tr><td><code>-g, --git</code> / <code>--skipGit</code></td><td>Git の初期化をする・しない</td></tr>
+</tbody></table>
+    </div>
+    <p class="note">生成物には AI コーディングエージェント向けのルール（<code>.agents/</code>・<code>CLAUDE.md</code> など）も入る。<code>*-ciderjs</code> テンプレートはサーバー関数の型をクライアントに渡す仕組みなど、同じ作者のライブラリ群を使う。確認時点は @ciderjs/gasbombe 0.5.3。</p>
+  </div>
+  <p class="note">ほかの雛形は clasp の README に載っている（<a href="https://github.com/google/aside">google/aside</a> など。こちらは Rollup）。</p>
+
+  <h2 id="run">run-function の準備</h2>
+  <p>ローカルから関数を動かすには、自前の GCP プロジェクトと OAuth クライアントが要る（既定の clasp のクライアントでは動かない）。</p>
+  <ol class="steps">
+    <li><b>GCP プロジェクトを紐づける</b>エディタの「プロジェクトの設定」で GCP プロジェクト番号を設定し、<code>.clasp.json</code> に <code>projectId</code> を書く</li>
+    <li><b>OAuth クライアントを作る</b><code>clasp open-credentials-setup</code> から種類「デスクトップ アプリ」で作り、JSON を <code>client_secret.json</code> として保存（コミットしない）</li>
+    <li><b>実行 API を許可する</b><code>appsscript.json</code> に <code>"executionApi": { "access": "ANYONE" }</code> を書き、スクリプトが使うスコープも <code>oauthScopes</code> に並べて push</li>
+    <li><b>そのスコープでログイン</b><code>clasp login -u dev --use-project-scopes --creds client_secret.json</code></li>
+    <li><b>実行</b><code>clasp run-function -u dev myFunc</code>。「API executable として公開されていない」と出たら、エディタの「デプロイ」から種類「API 実行可能ファイル」でデプロイする</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>push は変更したファイルだけを送るので、手元に無いファイルはリモートに残る</summary><p>Apps Script API にはファイル単位の更新が無く、<code>push</code> は毎回プロジェクトの中身を丸ごと置き換える。ローカルに無いファイルはリモートから消える。エディタで直接足したファイルがあるなら、先に <code>pull</code> する。</p></details>
+  <details class="myth"><summary>clasp 3.x でも .ts をそのまま push すれば JS に変換される</summary><p>変換は 2.x まで。3.x では <code>.ts</code> は対応していない拡張子として push の対象から外れる（送られない）。バンドラーで JS にしてから送る。</p></details>
+  <details class="myth"><summary>clasp logs で Logger.log の出力が見られる</summary><p><code>tail-logs</code>（<code>logs</code>）が読むのは Cloud Logging のログで、<code>console.log</code> の出力で、<code>Logger.log</code> は対象外（README）。<code>Logger.log</code> はエディタの実行ログで見る。GCP プロジェクトの紐づけ（<code>setup-logs</code>）も要る。</p></details>
+  <details class="myth"><summary>.claspignore は .gitignore と同じ書き方で効く</summary><p>パターンは multimatch で解釈されるため、<code>node_modules/</code> だけではフォルダの中身が外れないことがある。<code>**/node_modules/**</code> のように書き、<code>show-file-status</code> で結果を確かめる。</p></details>
+  <details class="myth"><summary>create-deployment し直してもウェブアプリの URL は同じ</summary><p><code>create-deployment</code> は毎回新しいデプロイ（新しい URL）を作る。同じ URL のまま更新するなら <code>update-deployment &lt;id&gt;</code>。</p></details>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://github.com/google/clasp">google/clasp（README）</a></li>
+    <li><a href="https://github.com/google/clasp/blob/master/docs/run.md">clasp docs/run.md</a>（run-function の準備）</li>
+    <li><a href="https://github.com/google/clasp/blob/master/CHANGELOG.md">CHANGELOG</a></li>
+    <li><a href="https://developers.google.com/apps-script/guides/clasp">Use the command line interface with clasp（Google for Developers）</a></li>
+    <li><a href="https://github.com/mahaker/esbuild-gas-plugin">mahaker/esbuild-gas-plugin</a></li>
+    <li><a href="https://github.com/luthpg/gasbombe">luthpg/gasbombe</a>（<a href="https://ciderlabs.link/docs/gasbombe">ドキュメント</a>）</li>
+  </ul>
+  <p class="note">@google/clasp 3.4.1 の README とソース（<code>src/commands/</code>）、esbuild-gas-plugin 0.10.0・@ciderjs/gasbombe 0.5.3 の README とソースと照らして 2026-11-27 に確認。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 絞り込み：入力があれば全タブの行から探し、該当する行だけ出す
+const filter = document.getElementById('filter');
+const cmdTabs = document.querySelector('.tabs');
+const tabs = [...cmdTabs.querySelectorAll('.tab')];
+const panels = tabs.map(t => document.getElementById(t.dataset.panel));
+const empty = document.getElementById('empty');
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  cmdTabs.style.display = q ? 'none' : '';
+  let total = 0;
+  panels.forEach((p, i) => {
+    let hit = 0;
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      const ok = !q || tr.textContent.toLowerCase().includes(q);
+      tr.hidden = !ok;
+      if (ok) hit++;
+    });
+    total += hit;
+    p.hidden = q ? hit === 0 : tabs[i].getAttribute('aria-selected') !== 'true';
+  });
+  empty.style.display = q && total === 0 ? 'block' : 'none';
+});
+</script>
+
+</body>
+</html>

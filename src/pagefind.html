@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagefind 使い方</title>
+<meta name="description" content="静的サイトにサーバーなしの全文検索を足す Pagefind 1.6 の、CLI・Component UI・data-pagefind 属性・設定・JS API・日本語の扱いをまとめたチートシート">
+<meta name="memo:tags" content="フロントエンド, 開発ツール">
+<meta name="memo:date" content="2026-11-27">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 20px 0 8px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+.cm { color: var(--fg-2); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+/* チートシート表 */
+.cheat { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.cheat tr:last-child td { border-bottom: none; }
+.cheat th { font-size: 0.72rem; color: var(--fg-2); font-weight: 600; }
+.cheat td:first-child { white-space: nowrap; }
+.cheat td:first-child code { background: none; padding: 0; }
+.panel.card { padding: 6px 10px; }
+.filter { width: 100%; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--fg); font: inherit; font-size: 0.85rem; }
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.empty { display: none; color: var(--fg-2); font-size: 0.8rem; padding: 6px 2px; }
+@media (max-width: 520px) {
+  /* スマホ幅では 1 行を「コマンド → 説明」の縦積みにして、コマンドを途中で折らない */
+  .cheat thead { display: none; }
+  .cheat tr { display: block; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+  .cheat tr:last-child { border-bottom: none; }
+  .cheat td { display: block; padding: 0; border: none; }
+  .cheat td:first-child { white-space: normal; overflow-wrap: anywhere; font-weight: 700; margin-bottom: 2px; }
+}
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+ul.points { padding-left: 1.4em; margin: 8px 0; }
+ul.points li { margin: 4px 0; }
+/* 図：ビルドから検索まで */
+.flow { display: flex; align-items: stretch; gap: 8px; margin: 6px 0; }
+.flow .node { flex: 1; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px 12px; font-size: 0.8rem; }
+.flow .node b { display: block; font: 700 0.85rem 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 4px; }
+.flow .node .path { display: block; margin-top: 6px; font: 500 0.72rem 'JetBrains Mono', ui-monospace, monospace; color: var(--fg-2); overflow-wrap: anywhere; }
+.flow .arrow { align-self: center; color: var(--fg-2); font: 700 1rem 'JetBrains Mono', ui-monospace, monospace; }
+.flow .arrow::before { content: "→"; }
+@media (max-width: 600px) {
+  .flow { flex-direction: column; }
+  .flow .arrow::before { content: "↓"; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pagefind 使い方</h1>
+  <p class="subtitle">ビルド済みの静的サイトに、サーバーなしの全文検索を足す（1.6）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>静的サイトのビルド後に走らせると、HTML から検索の索引と UI を作って出力フォルダに置くツール。</li>
+      <li>索引は細かく分かれていて、ブラウザは検索語に必要な分だけを読み込んで WebAssembly で検索する。</li>
+      <li>開発サーバーではなくビルド結果に対して動かす。日本語は extended 版が要る（npx は既定で extended）。</li>
+    </ul>
+  </div>
+
+  <h2 id="model">ビルドから検索まで</h2>
+  <div class="flow">
+    <div class="node"><b>1. SSG でビルド</b>Hugo・Astro・Eleventy など何でもよい<span class="path">public/**/*.html</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>2. pagefind を実行</b>HTML を読んで索引を作る<span class="path">npx -y pagefind --site public</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>3. 出力に検索一式</b>索引のかけら・UI の JS / CSS・wasm<span class="path">public/pagefind/</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="node"><b>4. ブラウザで検索</b>必要な索引だけを取りに行く。サーバー処理なし<span class="path">import("/pagefind/pagefind.js")</span></div>
+  </div>
+  <p class="note">CI では「ビルド → pagefind → デプロイ」の順にする。<code>public/pagefind/</code> はビルドのたびに作り直すので、Git には入れない。</p>
+
+  <h2 id="start">はじめかた</h2>
+  <ol class="steps">
+    <li><b>UI を置く</b>検索を出したいページ（レイアウト）に次を書く。参照先のファイルは手順 3 で作られる
+<pre><code>&lt;link href="/pagefind/pagefind-component-ui.css" rel="stylesheet"&gt;
+&lt;script src="/pagefind/pagefind-component-ui.js" type="module"&gt;&lt;/script&gt;
+
+&lt;pagefind-modal-trigger&gt;&lt;/pagefind-modal-trigger&gt;
+&lt;pagefind-modal&gt;&lt;/pagefind-modal&gt;</code></pre></li>
+    <li><b>サイトをビルドする</b>出力フォルダ（例: <code>public/</code>）に HTML ができた状態にする。<code>&lt;html lang="ja"&gt;</code> を付けておく</li>
+    <li><b>索引を作って確かめる</b><code>npx -y pagefind --site public --serve</code>。索引を作ったあと、ローカル（多くは <code>:1414</code>）で出力を配信する</li>
+    <li><b>ビルドに組み込む</b><code>"build": "hugo &amp;&amp; pagefind --site public"</code> のように、<code>--serve</code> を外してビルドの後ろに足す（<code>npm i -D pagefind</code> で版を固定）</li>
+  </ol>
+
+  <h2 id="install">入れ方</h2>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>方法</th><th>コマンド・補足</th></tr></thead><tbody>
+<tr><td>npx</td><td><code>npx pagefind --site public</code>。版の固定は <code>npx pagefind@v1.6.0 …</code>。<b>常に extended 版</b>（中国語・日本語・タイ語の分かち書き入り）</td></tr>
+<tr><td>pip</td><td><code>python3 -m pip install 'pagefind[extended]'</code> → <code>python3 -m pagefind --site public</code>。<code>pagefind[bin]</code> は小さい標準版で日本語の分かち書きなし</td></tr>
+<tr><td>バイナリ</td><td>GitHub Releases の <code>pagefind</code> か <code>pagefind_extended</code> を直接実行。依存なしの単体バイナリ</td></tr>
+<tr><td>cargo</td><td><code>cargo install pagefind --features extended</code></td></tr>
+<tr><td>UI を npm で</td><td><code>npm i @pagefind/component-ui</code> → <code>import '@pagefind/component-ui'</code> と <code>import '@pagefind/component-ui/css'</code>（バンドラーで UI を組み込むとき）</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="ui">検索 UI</h2>
+  <p>今の推奨は Web Components の <b>Component UI</b>。<code>new PagefindUI()</code> の Default UI は旧方式（legacy）で、新しく作るなら使わない。</p>
+  <div class="tabs" role="tablist" id="ui-tabs">
+    <button class="tab" role="tab" aria-selected="true" data-panel="u-pre">出来合い</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-parts">部品で組む</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-cfg">設定</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-api">JS API</button>
+  </div>
+
+  <div class="panel card table-wrap" id="u-pre">
+<table class="cheat"><thead><tr><th>要素</th><th>使いどころ・主な属性</th></tr></thead><tbody>
+<tr><td><code>&lt;pagefind-modal-trigger&gt;</code></td><td>モーダルを開くボタン。<code>shortcut</code>（既定 <code>mod+k</code>）・<code>hide-shortcut</code>・<code>compact</code>（アイコンだけ）・<code>placeholder</code></td></tr>
+<tr><td><code>&lt;pagefind-modal&gt;</code></td><td>ページの上に重ねて開く検索ダイアログ（幅 640px 以下の画面では全画面）。キーボード操作つき。<code>reset-on-close</code> で閉じたら入力を消す</td></tr>
+<tr><td><code>&lt;pagefind-searchbox&gt;</code></td><td>ナビに置く、入力＋ドロップダウンの一体型。<code>show-sub-results</code>（既定は見出し単位の結果を出さない）・<code>max-results</code>・<code>debounce</code>（既定 150ms）・<code>shortcut</code></td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="u-parts" hidden>
+<table class="cheat"><thead><tr><th>要素</th><th>使いどころ・主な属性</th></tr></thead><tbody>
+<tr><td><code>&lt;pagefind-input&gt;</code></td><td>検索欄。<code>debounce</code>（既定 300ms）・<code>autofocus</code>・<code>placeholder</code></td></tr>
+<tr><td><code>&lt;pagefind-results&gt;</code></td><td>結果の一覧。見出し単位の結果は既定で出る（<code>hide-sub-results</code> で消す）。<code>show-images</code>・<code>max-results</code>・<code>link-target="_blank"</code></td></tr>
+<tr><td><code>&lt;pagefind-summary&gt;</code></td><td>件数と検索の状態</td></tr>
+<tr><td><code>&lt;pagefind-keyboard-hints&gt;</code></td><td>キーボード操作の案内</td></tr>
+<tr><td><code>&lt;pagefind-filter-dropdown filter="tag"&gt;</code></td><td>1 つのフィルターのドロップダウン。<code>label</code>・<code>single-select</code>・<code>sort="count-desc"</code></td></tr>
+<tr><td><code>&lt;pagefind-filter-pane&gt;</code></td><td>チェックボックスのサイドバー型フィルター</td></tr>
+<tr><td><code>instance="docs"</code></td><td>どの要素にも付けられる。同じ名前どうしが状態を共有し、別の名前は独立した検索になる（既定 <code>default</code>）</td></tr>
+</tbody></table>
+  </div>
+
+  <div class="panel card table-wrap" id="u-cfg" hidden>
+<table class="cheat"><thead><tr><th><code>&lt;pagefind-config&gt;</code> の属性</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>bundle-path</code></td><td>索引の場所。既定はスクリプトの場所から自動で決まり、失敗すると <code>/pagefind/</code></td></tr>
+<tr><td><code>base-url</code></td><td>結果のリンクの頭に付ける URL（既定 <code>/</code>）。サブパスに置いたサイト向け</td></tr>
+<tr><td><code>preload</code></td><td>最初の検索を待たずにすぐ読み込む</td></tr>
+<tr><td><code>faceted</code></td><td>検索語が空でも全件を出し、フィルターの変更ですぐ絞る（カタログ型）。<code>preload</code> と併用</td></tr>
+<tr><td><code>sort="date:desc"</code></td><td>関連度ではなくソートキーで並べる</td></tr>
+<tr><td><code>excerpt-length</code></td><td>抜粋の長さ（語数、既定 30）</td></tr>
+<tr><td><code>highlight-param</code></td><td>結果のリンクに検索語のクエリを付ける（遷移先で <code>pagefind-highlight.js</code> を使ってハイライト）</td></tr>
+<tr><td><code>lang</code></td><td>検出した言語を上書きする</td></tr>
+<tr><td><code>no-worker</code></td><td>Web Worker を使わずメインスレッドで動かす</td></tr>
+</tbody></table>
+  </div>
+  <div class="panel card" id="u-api" hidden>
+<pre><code><span class="cm">// 初期化（省略可。入力欄のフォーカス時に呼ぶと速く感じる）</span>
+const pagefind = await import("/pagefind/pagefind.js");
+await pagefind.options({ bundlePath: "/docs/pagefind/" }); <span class="cm">// init より前</span>
+pagefind.init();
+
+<span class="cm">// 検索：まず ID だけ返る。中身は 1 件ずつ data() で取る</span>
+const search = await pagefind.search("static");
+const top5 = await Promise.all(search.results.slice(0, 5).map(r =&gt; r.data()));
+<span class="cm">// → { url, excerpt（&lt;mark&gt; 入り）, meta: { title, image }, sub_results: [...] }</span>
+
+<span class="cm">// 入力のたびに呼ぶなら（新しい呼び出しがあると古い方は null）</span>
+const s = await pagefind.debouncedSearch(term, {}, 300);
+if (s === null) return;
+
+<span class="cm">// フィルター・ソート</span>
+const filters = await pagefind.filters();         <span class="cm">// { tag: { Go: 3, ... } }</span>
+await pagefind.search("static", { filters: { tag: "Go" }, sort: { date: "desc" } });
+await pagefind.search(null, { filters: { tag: "Go" } }); <span class="cm">// 検索語なしで絞るだけ</span></code></pre>
+    <p class="note"><code>excerpt</code> はエスケープ済みで <code>innerHTML</code> に入れてよい。<code>meta</code> と <code>content</code> は生の値なので自分でエスケープする。</p>
+  </div>
+
+  <h2 id="attrs">data-pagefind 属性（索引の作り方を HTML で決める）</h2>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: ignore, meta, filter, sort）" aria-label="属性を絞り込む">
+  <div class="table-wrap" id="attr-table">
+<table class="cheat"><thead><tr><th>書き方</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>&lt;main data-pagefind-body&gt;</code></td><td>索引に入れる範囲を本文に絞る（既定は <code>&lt;body&gt;</code> 全体）。<b>サイトのどこかに 1 つでもあると、付いていないページは索引から外れる</b></td></tr>
+<tr><td><code>data-pagefind-ignore</code></td><td>その要素と子を索引から外す。中の meta・filter とタイトル・画像の検出は生きる（値 <code>index</code> と同じ）</td></tr>
+<tr><td><code>data-pagefind-ignore="all"</code></td><td>中の meta・filter も含めて、何も拾わない</td></tr>
+<tr><td><code>data-pagefind-meta="title"</code></td><td>要素の文字をメタデータとして結果に返す（メタデータも検索対象）</td></tr>
+<tr><td><code>data-pagefind-meta="image[src]"</code></td><td>属性の値を取る。<code>"image[src], image_alt[alt]"</code> とカンマで並べられる</td></tr>
+<tr><td><code>data-pagefind-meta="date:2026-11-27"</code></td><td>値をその場で書く（並べるときは最後に 1 つだけ）</td></tr>
+<tr><td><code>data-pagefind-default-meta="image[content]"</code></td><td>ほかで値が取れなかったときの既定値（OGP 画像など）</td></tr>
+<tr><td><code>data-pagefind-filter="tag"</code></td><td>フィルターの値を付ける。1 ページに複数の値を持てる。<code>tag[data-x]</code>・<code>tag:Go</code> も可</td></tr>
+<tr><td><code>data-pagefind-sort="date"</code></td><td>ソートキーを付ける。全部が数値なら数値順、1 つでも違えば文字順。キーの無いページはそのソートの結果から消える</td></tr>
+<tr><td><code>data-pagefind-weight="2"</code></td><td>その部分の重み（0.0〜10.0、既定 1）。二乗で効くので 2 で約 4 倍</td></tr>
+<tr><td><code>id="x" data-pagefind-title="名前"</code></td><td>見出し以外の要素をページ内の結果（sub result）の区切りにする（1.6 から）</td></tr>
+<tr><td><code>data-pagefind-index-attrs="title,alt"</code></td><td>要素の属性の値を本文として索引に入れる</td></tr>
+</tbody></table>
+  </div>
+  <p class="empty" id="empty">該当する属性はありません。</p>
+  <p class="note">自動のメタデータ: <code>title</code> は最初の <code>h1</code>、<code>image</code>・<code>image_alt</code> は <code>h1</code> の後の最初の <code>img</code>。見出しの重みは <code>h1</code> 7 〜 <code>h6</code> 2、ほかは 1。<code>&lt;nav&gt;</code>・<code>&lt;footer&gt;</code>・<code>&lt;script&gt;</code>・<code>&lt;form&gt;</code> などは最初から索引に入らない。<code>any</code>・<code>all</code>・<code>none</code>・<code>not</code> はフィルター名に使えない。</p>
+
+  <h2 id="cli">CLI オプション</h2>
+  <p>CLI フラグ・環境変数・設定ファイルのどれでも書ける。優先は <b>CLI ＞ 環境変数 ＞ 設定ファイル</b>。設定ファイルは実行したフォルダの <code>pagefind.toml</code>・<code>pagefind.yml</code>・<code>pagefind.yaml</code>・<code>pagefind.json</code>。</p>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>CLI（設定キー）</th><th>やること</th></tr></thead><tbody>
+<tr><td><code>--site</code>（<code>site</code>）</td><td><b>必須。</b>ビルド済みサイトのフォルダ</td></tr>
+<tr><td><code>--serve</code></td><td>索引を作ったあと、そのフォルダを配信して確かめる</td></tr>
+<tr><td><code>--output-subdir</code>（<code>output_subdir</code>）</td><td>出力先をサイト内のフォルダ名で（既定 <code>pagefind</code>）</td></tr>
+<tr><td><code>--output-path</code>（<code>output_path</code>）</td><td>出力先を作業フォルダからのパスで（<code>output-subdir</code> より優先）</td></tr>
+<tr><td><code>--glob</code>（<code>glob</code>）</td><td>読む HTML の glob（既定 <code>**/*.{html}</code>）。一部のページだけを索引にする</td></tr>
+<tr><td><code>--exclude-selectors</code>（<code>exclude_selectors</code>）</td><td>テンプレートを変えずに要素を外す。CLI では 1 つだけ（カンマ区切りの CSS セレクターは可）、複数は設定ファイルの配列で</td></tr>
+<tr><td><code>--root-selector</code>（<code>root_selector</code>）</td><td>文書の根にする要素（既定 <code>html</code>）。外側の meta・filter も拾わなくなる</td></tr>
+<tr><td><code>--force-language</code>（<code>force_language</code>）</td><td>言語の検出をやめ、全ページを 1 つの言語の索引にする（例: <code>ja</code>）</td></tr>
+<tr><td><code>--include-characters</code>（<code>include_characters</code>）</td><td>落とさない記号（例: <code>"&lt;&gt;$"</code>）。シェルで化けるなら設定ファイルに書く</td></tr>
+<tr><td><code>--max-fragments</code>（<code>max_fragments</code>）</td><td>出力ファイル数の上限（言語ごと）。ファイル数に制限のあるホスティング向け（1.6 から）</td></tr>
+<tr><td><code>--keep-index-url</code></td><td>結果の URL に <code>index.html</code> を残す</td></tr>
+<tr><td><code>--write-playground</code></td><td>索引を調べる playground を <code>pagefind/playground/</code> に書き出す（<code>--serve</code> 中は常に使える）</td></tr>
+<tr><td><code>--verbose</code> / <code>--quiet</code> / <code>--silent</code> / <code>--logfile</code></td><td>ログの量と出力先</td></tr>
+</tbody></table>
+  </div>
+<pre><code><span class="cm"># pagefind.yml（npx pagefind だけで動く）</span>
+site: public
+exclude_selectors:
+  - "#toc"
+  - ".code-copy"</code></pre>
+  <p class="note">環境変数は <code>PAGEFIND_</code> ＋ 大文字（例: <code>PAGEFIND_SITE=public npx pagefind</code>）。</p>
+
+  <h2 id="ja">日本語・多言語</h2>
+  <ul class="points">
+    <li><code>&lt;html lang&gt;</code> ごとに別の索引ができ、ブラウザは表示中のページと同じ言語の索引だけを検索する。<code>lang</code> が無いと結果 ID の頭が <code>unknown</code> になる</li>
+    <li>日本語は語幹処理（stemming）は無く、空白の無い文の分かち書きで単語に分ける。分かち書きは <b>extended 版だけ</b>（npx は既定で extended、pip は <code>[extended]</code> を付ける）</li>
+    <li>1.6 で分かち書きが ICU4X に変わり、ブラウザ側（<code>Intl.Segmenter</code>）との分け方の差が小さくなった</li>
+    <li>連続した語をそのまま探すなら <code>"…"</code> で囲む（フレーズ検索）</li>
+  </ul>
+
+  <h2 id="hosting">置き場所で困ったら</h2>
+  <div class="table-wrap">
+<table class="cheat"><thead><tr><th>症状</th><th>対処</th></tr></thead><tbody>
+<tr><td>サブパスに置いたらリンクが壊れる</td><td><code>&lt;pagefind-config base-url="/docs/"&gt;</code>（JS API は <code>baseUrl</code>）。索引の場所がずれるなら <code>bundle-path</code></td></tr>
+<tr><td>CSP で WebAssembly が止まる</td><td><code>script-src 'wasm-unsafe-eval'</code> を足す。Worker が止まるなら <code>worker-src 'self' blob:</code> か <code>no-worker</code></td></tr>
+<tr><td>デプロイのファイル数の上限に当たる</td><td><code>--max-fragments</code></td></tr>
+<tr><td>サーバーの gzip 設定</td><td>不要。Pagefind が自分で圧縮して出力する</td></tr>
+</tbody></table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>検索のためにサーバーか外部の検索サービスが要る</summary><p>索引も検索の処理も静的ファイルで、ブラウザの中で動く。<code>--serve</code> は確認用に出力フォルダを配信するだけで、本番には要らない。</p></details>
+  <details class="myth"><summary>hugo serve などの開発サーバーでも検索を試せる</summary><p>Pagefind が読むのはビルドした出力。開発サーバーには <code>/pagefind/</code> が無いので、ビルドして <code>pagefind --site public --serve</code> で確かめる。</p></details>
+  <details class="myth"><summary>data-pagefind-body は付けたページにだけ効く</summary><p>サイトのどこかに 1 つでもあると、付いていないページはすべて索引から外れる。トップページなども検索に出したいなら、そこにも付ける。</p></details>
+  <details class="myth"><summary>data-pagefind-body の外にある meta や filter は無視される</summary><p>メタデータとフィルターは本文の範囲の外（<code>&lt;head&gt;</code> など）でも拾われる。拾わせたくないなら <code>data-pagefind-ignore="all"</code> か <code>--root-selector</code>。</p></details>
+  <details class="myth"><summary>pip install pagefind[bin] でも日本語のページは検索できる</summary><p>標準版には日本語の分かち書きが無く、空白の無い文がうまく単語に分かれない。<code>pagefind[extended]</code> か npx を使う。</p></details>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://pagefind.app/docs/">Getting Started with Pagefind</a></li>
+    <li><a href="https://pagefind.app/docs/installation/">Installing and running Pagefind</a>・<a href="https://pagefind.app/docs/config-options/">CLI config options</a>・<a href="https://pagefind.app/docs/config-sources/">CLI config sources</a></li>
+    <li><a href="https://pagefind.app/docs/search-ui/">Pagefind Component UI</a>・<a href="https://pagefind.app/docs/components/">Component System</a>・<a href="https://pagefind.app/docs/components/config/">&lt;pagefind-config&gt;</a></li>
+    <li><a href="https://pagefind.app/docs/indexing/">Configuring the index</a>・<a href="https://pagefind.app/docs/metadata/">Metadata</a>・<a href="https://pagefind.app/docs/filtering/">Filters</a>・<a href="https://pagefind.app/docs/sorts/">Sorting</a>・<a href="https://pagefind.app/docs/weighting/">Weighting</a>・<a href="https://pagefind.app/docs/sub-results/">Sub results</a></li>
+    <li><a href="https://pagefind.app/docs/api/">Search API</a>・<a href="https://pagefind.app/docs/multilingual/">Multilingual</a>・<a href="https://pagefind.app/docs/hosting/">Troubleshoot Hosting</a></li>
+    <li><a href="https://github.com/pagefind/pagefind/blob/main/CHANGELOG.md">CHANGELOG</a>（v1.6.0）</li>
+  </ul>
+  <p class="note">pagefind 1.6.0（npm）と GitHub の <code>docs/content/docs/</code> と照らして 2026-11-27 に確認。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+
+// 属性の表の絞り込み
+const filter = document.getElementById('filter');
+const empty = document.getElementById('empty');
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  let hit = 0;
+  document.querySelectorAll('#attr-table tbody tr').forEach(tr => {
+    const ok = !q || tr.textContent.toLowerCase().includes(q);
+    tr.hidden = !ok;
+    if (ok) hit++;
+  });
+  empty.style.display = q && hit === 0 ? 'block' : 'none';
+});
+</script>
+
+</body>
+</html>

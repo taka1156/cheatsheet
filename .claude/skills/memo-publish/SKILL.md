@@ -116,7 +116,7 @@ git commit -m "Add memo: <タイトル>"
 git push origin "$BRANCH"
 ```
 
-push すると GitHub Actions（Deploy MEMO）が build して dist ブランチにデプロイし、公開される（数分）。原本のブランチに Actions がコミットすることはない。
+push すると GitHub Actions（Deploy MEMO）が build して GitHub Pages に公開する（数分）。原本のブランチに Actions がコミットすることはない。
 
 ## 8. 報告
 

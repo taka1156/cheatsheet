@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Bedrock 使い方</title>
+<meta name="description" content="Converse API・推論プロファイル ID・API キーと、Knowledge Bases・Guardrails・AgentCore の要点。">
+<meta name="memo:tags" content="生成AI">
+<meta name="memo:date" content="2026-11-27">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.panel pre { background: var(--bg); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れの図 */
+.pipe { display: flex; align-items: stretch; gap: 6px; flex-wrap: nowrap; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.78rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-size: 0.9rem; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+.ep td:first-child code { font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Amazon Bedrock 使い方</h1>
+  <p class="subtitle">Converse API を中心に、モデル ID と推論プロファイル、認証、周辺機能（Knowledge Bases・Guardrails・バッチ・AgentCore）をまとめた早見表</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>AWS のマネージドな生成 AI 基盤で、Claude・Amazon Nova・OpenAI などのモデルを同じ Converse API で呼べる。</li>
+      <li>呼び出しは <code>bedrock-runtime</code> へ。新しいモデルは <code>global.</code>・<code>jp.</code> などの推論プロファイル ID で指定する。</li>
+      <li>モデルは既定で有効（Opus 4.7 より前の Claude だけ初回に利用フォームが要る）。エージェントの新規開発は AgentCore を使う。</li>
+    </ul>
+  </div>
+
+  <h2 id="endpoints">エンドポイント（SDK のクライアント名）</h2>
+  <div class="table-wrap stack ep">
+    <table>
+      <thead><tr><th>クライアント</th><th>役割</th><th>主な操作</th></tr></thead>
+      <tbody>
+        <tr><td><code>bedrock-runtime</code></td><td data-l="役割">推論。新しいアプリはここを使う</td><td data-l="主な操作"><code>Converse</code>・<code>ConverseStream</code>・<code>InvokeModel</code>・<code>ApplyGuardrail</code>、互換 API（<code>/anthropic</code>・<code>/openai/v1</code>）</td></tr>
+        <tr><td><code>bedrock</code></td><td data-l="役割">管理（コントロールプレーン）</td><td data-l="主な操作">モデル・推論プロファイルの一覧、Guardrails の作成、バッチジョブ、カスタムモデル</td></tr>
+        <tr><td><code>bedrock-agent-runtime</code></td><td data-l="役割">Knowledge Bases の検索</td><td data-l="主な操作"><code>Retrieve</code>・<code>RetrieveAndGenerate</code></td></tr>
+        <tr><td><code>bedrock-agent</code></td><td data-l="役割">Knowledge Bases の管理</td><td data-l="主な操作">ナレッジベース・データソースの作成、取り込み（ingestion）</td></tr>
+        <tr><td><code>bedrock-agentcore</code>・<code>bedrock-agentcore-control</code></td><td data-l="役割">AgentCore（エージェント基盤）</td><td data-l="主な操作">Runtime・Memory・Gateway などの呼び出しと管理</td></tr>
+        <tr><td><code>bedrock-mantle</code></td><td data-l="役割">OpenAI 互換 API の別エンドポイント</td><td data-l="主な操作">引き続き使えるが、新規は <code>bedrock-runtime</code> が推奨（2026-08 から）。Web Search・Projects など mantle だけの機能もある</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="setup">使い始める</h2>
+  <ol class="steps">
+    <li><b>IAM の権限</b>試すなら <code>AmazonBedrockLimitedAccess</code> か <code>AmazonBedrockFullAccess</code>。本番は <code>bedrock:InvokeModel</code>・<code>bedrock:InvokeModelWithResponseStream</code>（Converse・ConverseStream もこの権限で呼ぶ）を、対象のモデルとプロファイルに絞る</li>
+    <li><b>モデルアクセス</b>サーバーレスのモデルは 2025-10 から既定で有効（手動の有効化ページは不要）。AWS Marketplace 経由のモデルは、Marketplace の権限を持つ人が最初に 1 回呼ぶとアカウントで購読される</li>
+    <li><b>古い Claude だけ追加の手順</b>Claude Opus 4.7 より前のモデル（Sonnet 4.6・Haiku 4.5 など）は、初回に First Time Use フォーム（会社名・Web サイト・用途など）を出す。コンソールでモデルを選ぶか <code>PutUseCaseForModelAccess</code> API。組織の管理アカウントで出せばメンバーアカウントにも効く。Opus 4.7 以降と <code>bedrock-mantle</code> 経由では不要</li>
+    <li><b>認証</b>通常の AWS 認証情報（SigV4）か、Bedrock の API キー（下の表）</li>
+  </ol>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>API キー</th><th>有効期間</th><th>向いている場面</th></tr></thead>
+      <tbody>
+        <tr><td>短期キー</td><td data-l="有効期間">発行したセッションの残り時間（最長 12 時間）</td><td data-l="向いている場面">本番・CI。<code>aws-bedrock-token-generator</code>（Python・JS・Java）で自動更新できる</td></tr>
+        <tr><td>長期キー</td><td data-l="有効期間">発行時に決めた期限まで（IAM ユーザーに紐づく）</td><td data-l="向いている場面">試すときだけ。本番には使わない</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code>export AWS_BEARER_TOKEN_BEDROCK=発行したキー   # SDK・CLI がこの変数を読む
+# curl なら Authorization: Bearer $AWS_BEARER_TOKEN_BEDROCK</code></pre>
+
+  <h2 id="model-id">モデル ID と推論プロファイル</h2>
+  <p>新しいモデルの多くは、モデル ID を直接指定できず（<code>inferenceTypesSupported</code> が <code>INFERENCE_PROFILE</code> だけ）、推論プロファイル ID を <code>modelId</code> に渡す。プロファイルはリクエストを複数のリージョンに振り分ける（クロスリージョン推論）。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>指定のしかた</th><th>例（Claude Opus 5.5）</th><th>処理されるリージョン</th></tr></thead>
+      <tbody>
+        <tr><td>モデル ID</td><td data-l="例"><code>anthropic.claude-opus-5-5</code></td><td data-l="処理">呼んだリージョンだけ（対応するモデルのみ）</td></tr>
+        <tr><td>地域のプロファイル</td><td data-l="例"><code>jp.anthropic.claude-opus-5-5</code>（ほかに <code>us.</code>・<code>eu.</code>・<code>au.</code> など）</td><td data-l="処理">その地域の中だけ（<code>jp.</code> は東京・大阪）。データの置き場所を地域内に留めたいとき。モデルによっては無い（モデルカードで確かめる）</td></tr>
+        <tr><td>グローバルのプロファイル</td><td data-l="例"><code>global.anthropic.claude-opus-5-5</code></td><td data-l="処理">世界中の対応リージョン。混雑に強い</td></tr>
+        <tr><td>アプリケーション推論プロファイル</td><td data-l="例">自分で作った ARN</td><td data-l="処理">元のプロファイルと同じ。コスト配分タグを付けて用途ごとに集計する</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code>aws bedrock list-foundation-models --by-provider anthropic --region ap-northeast-1 \
+  --query 'modelSummaries[].[modelId,inferenceTypesSupported]' --output table
+aws bedrock list-inference-profiles --region ap-northeast-1 \
+  --query 'inferenceProfileSummaries[].inferenceProfileId' --output text</code></pre>
+
+  <h2 id="converse">モデルを呼ぶ</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="c-py">Converse（boto3）</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-cli">AWS CLI</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-anth">Anthropic SDK</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-oai">OpenAI SDK</button>
+  </div>
+  <div class="panel card" id="c-py">
+    <pre><code>import boto3
+
+brt = boto3.client("bedrock-runtime", region_name="ap-northeast-1")
+MODEL = "jp.anthropic.claude-opus-5-5"
+
+res = brt.converse(
+    modelId=MODEL,
+    system=[{"text": "日本語で簡潔に答える"}],
+    messages=[{"role": "user", "content": [{"text": "LEFT JOIN を一文で"}]}],
+    inferenceConfig={"maxTokens": 1024, "temperature": 0.2},
+)
+print(res["output"]["message"]["content"][0]["text"])
+print(res["usage"], res["stopReason"])   # トークン数・止まった理由
+
+# ストリーミング
+stream = brt.converse_stream(modelId=MODEL, messages=[{"role": "user", "content": [{"text": "短い物語を"}]}])
+for ev in stream["stream"]:
+    if "contentBlockDelta" in ev:
+        print(ev["contentBlockDelta"]["delta"].get("text", ""), end="")</code></pre>
+    <p class="note">会話を続けるときは、返ってきた <code>res["output"]["message"]</code> を <code>messages</code> に足して次の user を送る（サーバーは履歴を持たない）。</p>
+  </div>
+  <div class="panel card" id="c-cli" hidden>
+    <pre><code>aws bedrock-runtime converse \
+  --region ap-northeast-1 \
+  --model-id jp.anthropic.claude-opus-5-5 \
+  --messages '[{"role":"user","content":[{"text":"こんにちは"}]}]' \
+  --inference-config '{"maxTokens":512}' \
+  --query 'output.message.content[0].text' --output text</code></pre>
+  </div>
+  <div class="panel card" id="c-anth" hidden>
+    <pre><code># Anthropic Messages API 互換（bedrock-runtime の /anthropic）
+# pip install anthropic aws-bedrock-token-generator
+from anthropic import Anthropic
+from aws_bedrock_token_generator import provide_token
+
+client = Anthropic(
+    base_url="https://bedrock-runtime.us-east-1.amazonaws.com/anthropic",
+    api_key=provide_token(region="us-east-1"),     # 短期の API キー
+)
+msg = client.messages.create(
+    model="global.anthropic.claude-opus-5-5",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "こんにちは"}],
+)
+print(msg.content[0].text)</code></pre>
+    <p class="note">SigV4 で呼ぶ従来の <code>AnthropicBedrock</code> クライアント（<code>pip install "anthropic[bedrock]"</code>）も使える。</p>
+  </div>
+  <div class="panel card" id="c-oai" hidden>
+    <pre><code># OpenAI 互換（Chat Completions・Responses）。bedrock-runtime の /openai/v1
+from openai import OpenAI
+import os
+
+client = OpenAI(
+    base_url="https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1",
+    api_key=os.environ["AWS_BEARER_TOKEN_BEDROCK"],
+)
+res = client.chat.completions.create(
+    model="モデルカードに書かれた ID",
+    messages=[{"role": "user", "content": "こんにちは"}],
+)
+print(res.choices[0].message.content)</code></pre>
+    <p class="note">どのモデルがどの互換 API に対応するかは、各モデルカードの「エンドポイント」の表で確かめる。</p>
+  </div>
+
+  <h3>Converse と InvokeModel</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th></th><th>Converse / ConverseStream</th><th>InvokeModel / InvokeModelWithResponseStream</th></tr></thead>
+      <tbody>
+        <tr><td>本文の形</td><td data-l="Converse">全モデル共通（<code>messages</code>・<code>system</code>・<code>inferenceConfig</code>・<code>toolConfig</code>）</td><td data-l="InvokeModel">モデルごとのネイティブの JSON</td></tr>
+        <tr><td>モデルの差し替え</td><td data-l="Converse"><code>modelId</code> を変えるだけ</td><td data-l="InvokeModel">本文と応答の解析も書き直す</td></tr>
+        <tr><td>使えないもの</td><td data-l="Converse">埋め込み・画像生成のモデル</td><td data-l="InvokeModel">—（全モデル対応）</td></tr>
+        <tr><td>モデル固有の引数</td><td data-l="Converse"><code>additionalModelRequestFields</code> に入れる</td><td data-l="InvokeModel">本文にそのまま書く</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Converse の主なパラメータ</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>キー</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>inferenceConfig</code></td><td data-l="用途"><code>maxTokens</code>・<code>temperature</code>・<code>topP</code>・<code>stopSequences</code></td></tr>
+        <tr><td><code>toolConfig</code></td><td data-l="用途">ツール定義（<code>tools[].toolSpec</code> に name・description・<code>inputSchema.json</code>）。応答の <code>stopReason</code> が <code>tool_use</code> なら実行して <code>toolResult</code> を返す</td></tr>
+        <tr><td><code>{"cachePoint": {"type": "default"}}</code></td><td data-l="用途">プロンプトキャッシュの区切り。<code>system</code>・<code>messages</code>・<code>tools</code> の中に置く（対応モデルのみ）</td></tr>
+        <tr><td><code>guardrailConfig</code></td><td data-l="用途">Guardrail の ID とバージョンを付けて入出力を検査</td></tr>
+        <tr><td><code>serviceTier</code></td><td data-l="用途"><code>{"type": "priority" | "default" | "flex" | "reserved"}</code>（下のサービス階層）</td></tr>
+        <tr><td><code>requestMetadata</code></td><td data-l="用途">呼び出しログに残すキーと値（用途別の集計）</td></tr>
+        <tr><td><code>additionalModelRequestFields</code></td><td data-l="用途">思考の設定などモデル固有の引数</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="features">周辺機能</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>機能</th><th>何をするか</th><th>使い方の入口</th></tr></thead>
+      <tbody>
+        <tr><td>Knowledge Bases</td><td data-l="何をするか">S3 などの文書を取り込んでベクトル化し、RAG の検索をマネージドで行う</td><td data-l="入口"><code>bedrock-agent-runtime</code> の <code>retrieve</code>（検索だけ）・<code>retrieve_and_generate</code>（回答まで）</td></tr>
+        <tr><td>Guardrails</td><td data-l="何をするか">有害な内容・話題・個人情報・プロンプト攻撃のフィルタ、根拠との照合</td><td data-l="入口">Converse の <code>guardrailConfig</code>、単体なら <code>apply_guardrail</code>（Bedrock 外のモデルの出力にも使える）</td></tr>
+        <tr><td>バッチ推論</td><td data-l="何をするか">S3 の JSONL をまとめて処理。オンデマンドより安い</td><td data-l="入口"><code>aws bedrock create-model-invocation-job</code>。入力は Converse の形式でもよい（2026-02 から）。既定の期限は 24 時間（最長 168 時間）</td></tr>
+        <tr><td>サービス階層</td><td data-l="何をするか">リクエストごとに速さと料金を選ぶ</td><td data-l="入口"><code>priority</code>（割増で速い）・<code>default</code>（Standard）・<code>flex</code>（割安・遅くてよい）・<code>reserved</code>（事前予約）</td></tr>
+        <tr><td>呼び出しログ</td><td data-l="何をするか">入出力とメタデータを CloudWatch Logs・S3 に記録</td><td data-l="入口">コンソールの「Settings」→ Model invocation logging（既定は無効）</td></tr>
+        <tr><td>Prompt Management・Flows</td><td data-l="何をするか">プロンプトのバージョン管理、ノードをつないだワークフロー</td><td data-l="入口">コンソールか <code>bedrock-agent</code> の API</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code># Knowledge Bases で検索して回答まで
+kb = boto3.client("bedrock-agent-runtime", region_name="ap-northeast-1")
+res = kb.retrieve_and_generate(
+    input={"text": "返品の期限は？"},
+    retrieveAndGenerateConfiguration={
+        "type": "KNOWLEDGE_BASE",
+        "knowledgeBaseConfiguration": {
+            "knowledgeBaseId": "KBID1234",
+            "modelArn": "推論プロファイルの ARN",
+        },
+    },
+)
+print(res["output"]["text"])
+for c in res["citations"]:                      # 根拠になった文書
+    print([r["location"] for r in c["retrievedReferences"]])</code></pre>
+
+  <h2 id="agentcore">エージェント（AgentCore）</h2>
+  <p>Bedrock Agents（今は Agents Classic と呼ぶ）は 2026-07-30 から新規の顧客を受け付けていない。新しく作るなら AgentCore を使う。AgentCore はフレームワーク（Strands Agents・LangGraph・CrewAI など）もモデルも選ばず、必要な部品だけを使える。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>部品</th><th>何をするか</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime</td><td data-l="何をするか">エージェント・ツールのコードをサーバーレスで動かす。セッションごとに分離された microVM</td></tr>
+        <tr><td>Memory</td><td data-l="何をするか">会話の短期記憶と、セッションをまたぐ長期記憶</td></tr>
+        <tr><td>Gateway</td><td data-l="何をするか">API・Lambda などを MCP のツールとしてエージェントに公開する</td></tr>
+        <tr><td>Identity</td><td data-l="何をするか">エージェントの ID と、外部サービスへの OAuth トークンの保管</td></tr>
+        <tr><td>Code Interpreter・Browser</td><td data-l="何をするか">隔離された環境でのコード実行、クラウドのブラウザ操作</td></tr>
+        <tr><td>Observability・Evaluations・Policy</td><td data-l="何をするか">CloudWatch・OpenTelemetry での追跡、品質の評価、ツール呼び出しの許可ルール</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="cli">AWS CLI でよく使うもの</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>aws bedrock list-foundation-models</code></td><td data-l="用途">そのリージョンのモデル一覧（<code>--by-provider</code>・<code>--by-output-modality</code> で絞る）</td></tr>
+        <tr><td><code>aws bedrock get-foundation-model --model-identifier ID</code></td><td data-l="用途">モデルの詳細（対応する推論の種類・入出力）</td></tr>
+        <tr><td><code>aws bedrock list-inference-profiles</code></td><td data-l="用途">推論プロファイルの一覧</td></tr>
+        <tr><td><code>aws bedrock-runtime converse</code></td><td data-l="用途">呼び出しの確認</td></tr>
+        <tr><td><code>aws bedrock list-guardrails</code></td><td data-l="用途">Guardrail の一覧</td></tr>
+        <tr><td><code>aws bedrock create-model-invocation-job</code>・<code>list-model-invocation-jobs</code></td><td data-l="用途">バッチ推論の作成・一覧</td></tr>
+        <tr><td><code>aws service-quotas list-service-quotas --service-code bedrock</code></td><td data-l="用途">クォータ（RPM・TPM・1 日のトークン数）の確認</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>使う前にコンソールのモデルアクセスのページで、モデルを 1 つずつ有効にする必要がある</summary><p>2025-10 から、サーバーレスのモデルは商用リージョンで既定で使える。残る手順は、Opus 4.7 より前の Claude の初回フォームと、AWS Marketplace 経由のモデルを最初に呼ぶ人の Marketplace 権限だけ。アクセス拒否のときは IAM と SCP を見る。</p></details>
+  <details class="myth"><summary>modelId には anthropic.claude-… のモデル ID をそのまま書けばよい</summary><p>新しい Claude などは推論プロファイル経由でしか呼べず、モデル ID を直接渡すとエラーになる。<code>jp.</code>・<code>us.</code>・<code>global.</code> などを付けたプロファイル ID を使う。IAM ポリシーではプロファイルと、振り分け先リージョンのモデルの両方を許可する。</p></details>
+  <details class="myth"><summary>Converse API はどのモデルにも使える</summary><p>埋め込みと画像生成のモデルは Converse に対応していないので、InvokeModel でそのモデルのネイティブの形式で呼ぶ。</p></details>
+  <details class="myth"><summary>エージェントを作るなら Bedrock Agents を使う</summary><p>Bedrock Agents（Agents Classic）は 2026-07-30 から新規の顧客を受け付けていない（既存の利用者はそのまま使える）。新しく作るなら AgentCore と、好きなフレームワークを組み合わせる。</p></details>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-ug-doc-history.html">Amazon Bedrock User Guide: Document history</a>（エンドポイントの推奨・Agents Classic など）</li>
+    <li><a href="https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html">API Reference: Converse</a>・<a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5-5.html">Model card: Claude Sonnet 5.5</a></li>
+    <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html">Access Amazon Bedrock foundation models</a>・<a href="https://aws.amazon.com/about-aws/whats-new/2025/10/amazon-bedrock-automatic-enablement-serverless-foundation-models">自動有効化の発表（2025-10-15）</a></li>
+    <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html">API keys</a>・<a href="https://docs.aws.amazon.com/bedrock/latest/userguide/service-tiers-inference.html">Service tiers</a></li>
+    <li><a href="https://aws.amazon.com/about-aws/whats-new/2026/02/amazon-bedrock-batch-inference-supports-converse-api-format">Batch inference supports the Converse API format</a>・<a href="https://aws.amazon.com/blogs/machine-learning/claude-opus-5-5-is-now-available-on-aws/">Claude Opus 5.5 is now available on AWS</a></li>
+    <li><a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html">What is Amazon Bedrock AgentCore?</a>・<a href="https://aws.amazon.com/bedrock/agentcore/faqs/">AgentCore FAQs</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-27</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

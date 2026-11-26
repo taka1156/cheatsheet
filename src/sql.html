@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL チートシート</title>
+<meta name="description" content="SELECT・JOIN・集計・ウィンドウ関数・UPSERT と、PostgreSQL・MySQL・SQLite の書き方の違い。">
+<meta name="memo:tags" content="データベース">
+<meta name="memo:date" content="2026-11-27">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+ul, ol { padding-left: 1.4em; margin: 8px 0; }
+li { margin: 2px 0; }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.panel pre { background: var(--bg); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child { font-weight: 700; }
+}
+
+/* 流れの図 */
+.pipe { display: flex; align-items: stretch; gap: 6px; flex-wrap: nowrap; }
+.pipe .st {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface);
+  font-size: 0.78rem; min-width: 0;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .ar { align-self: center; color: var(--fg-2); font-size: 0.9rem; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.panel > p:first-child { margin-top: 0; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+.venns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.venn { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.8rem; }
+.venn svg { display: block; width: 100%; max-width: 160px; height: auto; margin: 0 auto 6px; }
+.venn b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; }
+.venn span { color: var(--fg-2); }
+.venn .ring { fill: none; stroke: var(--fg-2); stroke-width: 1.5; }
+.venn .hit { fill: var(--c-hl); }
+.venn .hits { opacity: 0.45; }
+.venn .cut { fill: var(--surface); }
+.venn text { fill: var(--fg); font: 700 11px 'JetBrains Mono', ui-monospace, monospace; }
+.legend i.hit { background: color-mix(in srgb, var(--c-hl) 45%, transparent); }
+.order .st b small { font-weight: 400; color: var(--fg-2); font-size: 0.72rem; margin-left: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SQL チートシート</h1>
+  <p class="subtitle">標準 SQL を軸に、PostgreSQL・MySQL・SQLite で書き方が違うところを並べた早見表</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>SQL はテーブルに対して「何がほしいか」を書く言語で、SELECT・JOIN・集計・更新の基本はどの DB でもほぼ同じ。</li>
+      <li>書く順と評価される順が違うので、SELECT の別名は WHERE で使えず、集計の絞り込みは HAVING に書く。</li>
+      <li>UPSERT・RETURNING・連番・文字列連結などは DB ごとに書き方が違うので、下の方言表で確かめる。</li>
+    </ul>
+  </div>
+
+  <h2 id="order">書く順と評価される順</h2>
+  <pre><code>/* 5 */ SELECT   列・式 AS 別名
+/* 1 */ FROM     テーブル JOIN ...
+/* 2 */ WHERE    行の条件
+/* 3 */ GROUP BY まとめる列
+/* 4 */ HAVING   グループの条件
+/* 6 */ ORDER BY 並べ替え
+/* 7 */ LIMIT    件数 OFFSET 開始位置;   -- /* n */ は評価される順番</code></pre>
+  <div class="card">
+    <div class="pipe order" role="img" aria-label="FROM と JOIN、WHERE、GROUP BY、HAVING、SELECT、ORDER BY、LIMIT の順に評価される">
+      <div class="st"><b>FROM / JOIN</b><span>元になる行の集まりを作る</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>WHERE</b><span>行を絞る（集計関数は使えない）</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>GROUP BY</b><span>行をグループにまとめる</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>HAVING</b><span>グループを絞る</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>SELECT</b><span>列・式・別名・ウィンドウ関数、DISTINCT</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>ORDER BY</b><span>別名が使える</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>LIMIT</b><span>件数を切る</span></div>
+    </div>
+  </div>
+  <p class="note">これは結果の決まり方（論理的な順序）で、実際の実行計画は DB が最適化して決める。ウィンドウ関数は WHERE・GROUP BY・HAVING のあとに計算されるので、その結果で絞るにはサブクエリか CTE で包む。</p>
+
+  <h2 id="select">SELECT の基本</h2>
+  <pre><code>SELECT DISTINCT u.id, u.name, lower(u.email) AS email
+FROM users AS u
+WHERE u.status IN ('active', 'trial')
+  AND u.created_at &gt;= '2026-01-01'
+  AND u.deleted_at IS NULL
+  AND u.name LIKE 'Tan%'          -- % は 0 文字以上、_ は 1 文字
+ORDER BY u.created_at DESC, u.id   -- 同点の並びを決めるため一意な列も足す
+LIMIT 20 OFFSET 40;                -- 3 ページ目（1 ページ 20 件）</code></pre>
+
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>範囲</td><td data-l="書き方"><code>x BETWEEN 1 AND 10</code></td><td data-l="メモ">両端を含む。日時は <code>&gt;= 開始 AND &lt; 翌日</code> の半開区間が安全</td></tr>
+        <tr><td>NULL 判定</td><td data-l="書き方"><code>x IS NULL</code>・<code>x IS NOT NULL</code></td><td data-l="メモ"><code>x = NULL</code> は常に真にならない</td></tr>
+        <tr><td>NULL を置き換え</td><td data-l="書き方"><code>COALESCE(x, 0)</code></td><td data-l="メモ">最初の非 NULL を返す</td></tr>
+        <tr><td>値を NULL に</td><td data-l="書き方"><code>NULLIF(x, 0)</code></td><td data-l="メモ">0 除算よけ: <code>a / NULLIF(b, 0)</code></td></tr>
+        <tr><td>条件分岐</td><td data-l="書き方"><code>CASE WHEN x &gt; 0 THEN 'plus' ELSE 'other' END</code></td><td data-l="メモ">どの句の中でも使える</td></tr>
+        <tr><td>型変換</td><td data-l="書き方"><code>CAST(x AS INTEGER)</code></td><td data-l="メモ">PostgreSQL は <code>x::int</code> とも書ける</td></tr>
+        <tr><td>大文字小文字を無視</td><td data-l="書き方"><code>lower(name) LIKE 'tan%'</code></td><td data-l="メモ">PostgreSQL は <code>ILIKE</code>。MySQL は照合順序次第で最初から無視される</td></tr>
+        <tr><td>重複を除く</td><td data-l="書き方"><code>SELECT DISTINCT a, b</code></td><td data-l="メモ">列の組み合わせで判定。PostgreSQL には <code>DISTINCT ON (a)</code> もある</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="join">JOIN</h2>
+  <div class="legend"><span><i class="hit"></i>結果に出る行</span><span>A = 左のテーブル（FROM 側）、B = 右のテーブル</span></div>
+  <div class="venns">
+    <div class="venn">
+      <svg viewBox="0 0 120 70" role="img" aria-label="A と B の重なりだけが結果に出る">
+        <defs><clipPath id="clipA"><circle cx="46" cy="35" r="28"/></clipPath></defs>
+        <g class="hits"><circle class="hit" cx="74" cy="35" r="28" clip-path="url(#clipA)"/></g>
+        <circle class="ring" cx="46" cy="35" r="28"/><circle class="ring" cx="74" cy="35" r="28"/>
+        <text x="24" y="39">A</text><text x="88" y="39">B</text>
+      </svg>
+      <b>INNER JOIN</b><span>両方に一致する行だけ。<code>JOIN</code> だけでも同じ</span>
+    </div>
+    <div class="venn">
+      <svg viewBox="0 0 120 70" role="img" aria-label="A 全体が結果に出る">
+        <g class="hits"><circle class="hit" cx="46" cy="35" r="28"/></g>
+        <circle class="ring" cx="46" cy="35" r="28"/><circle class="ring" cx="74" cy="35" r="28"/>
+        <text x="24" y="39">A</text><text x="88" y="39">B</text>
+      </svg>
+      <b>LEFT JOIN</b><span>A は全部残し、B が無い行は B の列が NULL</span>
+    </div>
+    <div class="venn">
+      <svg viewBox="0 0 120 70" role="img" aria-label="A から重なりを除いた部分だけが結果に出る">
+        <g class="hits"><circle class="hit" cx="46" cy="35" r="28"/></g>
+        <circle class="cut" cx="74" cy="35" r="28" clip-path="url(#clipA)"/>
+        <circle class="ring" cx="46" cy="35" r="28"/><circle class="ring" cx="74" cy="35" r="28"/>
+        <text x="24" y="39">A</text><text x="88" y="39">B</text>
+      </svg>
+      <b>A にだけある行</b><span><code>LEFT JOIN … WHERE b.id IS NULL</code> か <code>NOT EXISTS</code></span>
+    </div>
+    <div class="venn">
+      <svg viewBox="0 0 120 70" role="img" aria-label="A と B の両方全体が結果に出る">
+        <g class="hits"><circle class="hit" cx="46" cy="35" r="28"/><circle class="hit" cx="74" cy="35" r="28"/></g>
+        <circle class="ring" cx="46" cy="35" r="28"/><circle class="ring" cx="74" cy="35" r="28"/>
+        <text x="24" y="39">A</text><text x="88" y="39">B</text>
+      </svg>
+      <b>FULL OUTER JOIN</b><span>両方を全部残す。MySQL には無い（LEFT と RIGHT を UNION）</span>
+    </div>
+  </div>
+  <pre><code>-- 注文と顧客（顧客が消えた注文も残す）
+SELECT o.id, o.total, c.name
+FROM orders AS o
+LEFT JOIN customers AS c ON c.id = o.customer_id
+WHERE o.created_at &gt;= '2026-11-01';
+
+-- LEFT JOIN の右側の条件は ON に書く（WHERE に書くと INNER JOIN と同じ結果になる）
+SELECT c.id, count(o.id) AS paid_orders
+FROM customers AS c
+LEFT JOIN orders AS o ON o.customer_id = c.id AND o.status = 'paid'
+GROUP BY c.id;
+
+-- 両方のテーブルに同じ名前の列（ここでは order_id）があるなら USING
+SELECT * FROM orders JOIN order_items USING (order_id);
+
+-- 全組み合わせ
+SELECT * FROM sizes CROSS JOIN colors;</code></pre>
+
+  <h2 id="aggregate">集計</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>関数</th><th>返すもの</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>count(*)</code></td><td data-l="返すもの">行数</td><td data-l="メモ">NULL の行も数える</td></tr>
+        <tr><td><code>count(col)</code></td><td data-l="返すもの">col が NULL でない行数</td><td data-l="メモ"><code>count(DISTINCT col)</code> で種類の数</td></tr>
+        <tr><td><code>sum</code>・<code>avg</code></td><td data-l="返すもの">合計・平均</td><td data-l="メモ">NULL は無視。対象が 0 行だと NULL を返す（<code>COALESCE(sum(x), 0)</code>）</td></tr>
+        <tr><td><code>min</code>・<code>max</code></td><td data-l="返すもの">最小・最大</td><td data-l="メモ">文字列・日時にも使える</td></tr>
+        <tr><td>文字列をつなぐ</td><td data-l="返すもの">グループ内の値を連結</td><td data-l="メモ">PostgreSQL <code>string_agg(name, ',')</code>・MySQL / SQLite <code>group_concat(name)</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code>SELECT customer_id,
+       count(*)                                        AS orders,
+       sum(total)                                      AS revenue,
+       sum(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid   -- 条件付き集計（どの DB でも動く）
+FROM orders
+WHERE created_at &gt;= '2026-01-01'   -- 行の条件
+GROUP BY customer_id
+HAVING sum(total) &gt;= 10000         -- グループの条件
+ORDER BY revenue DESC;
+
+-- PostgreSQL・SQLite は FILTER も使える
+SELECT count(*) FILTER (WHERE status = 'paid') AS paid FROM orders;</code></pre>
+  <p class="note">SELECT に書く集計以外の列は GROUP BY に入れる。MySQL は既定（<code>ONLY_FULL_GROUP_BY</code>）でエラーにし、SQLite は通してしまう（どの行の値になるかは決まらない）。PostgreSQL は主キーで GROUP BY すれば同じテーブルのほかの列を書ける。</p>
+
+  <h2 id="window">ウィンドウ関数</h2>
+  <p>行をまとめずに、行ごとに「グループ内での順位・累計・前後の行」を計算する。MySQL 8.0・SQLite 3.25 から使える。</p>
+  <pre><code>関数(…) OVER (PARTITION BY 区切る列 ORDER BY 並べる列 [フレーム])</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>関数</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>row_number()</code></td><td data-l="用途">1, 2, 3 …（同点でも別の番号）</td></tr>
+        <tr><td><code>rank()</code>・<code>dense_rank()</code></td><td data-l="用途">同点は同順位。rank は次を飛ばす（1,1,3）、dense_rank は飛ばさない（1,1,2）</td></tr>
+        <tr><td><code>lag(x)</code>・<code>lead(x)</code></td><td data-l="用途">前の行・次の行の値（前日比など）。<code>lag(x, 1, 0)</code> で既定値</td></tr>
+        <tr><td><code>sum(x) OVER (…)</code></td><td data-l="用途">累計・移動合計（集計関数はそのままウィンドウ関数になる）</td></tr>
+        <tr><td><code>first_value(x)</code>・<code>last_value(x)</code></td><td data-l="用途">フレームの最初・最後の値（last_value は下の注意を参照）</td></tr>
+        <tr><td><code>ntile(4)</code></td><td data-l="用途">4 等分したときの何番目か</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code>-- 顧客ごとに最新の注文 1 件（グループごとの上位 N 件）
+SELECT *
+FROM (
+  SELECT o.*,
+         row_number() OVER (PARTITION BY customer_id ORDER BY created_at DESC) AS rn
+  FROM orders AS o
+) AS t
+WHERE rn = 1;
+
+-- 日別売上の累計と前日比
+SELECT day, sales,
+       sum(sales) OVER (ORDER BY day)                 AS running_total,
+       sales - lag(sales) OVER (ORDER BY day)         AS diff,
+       avg(sales) OVER (ORDER BY day
+                        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS avg_7d
+FROM daily_sales;</code></pre>
+  <p class="note">ORDER BY を書いたときの既定のフレームは「先頭から今の行（と同じ値の行）まで」。<code>last_value</code> がグループの最後にならないのはこのため。グループ全体にしたいなら <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code> を付ける。</p>
+
+  <h2 id="cte">CTE（WITH）とサブクエリ</h2>
+  <pre><code>-- 名前を付けた一時的な結果。上から順に読める
+WITH monthly AS (
+  SELECT customer_id, date_trunc('month', created_at) AS m, sum(total) AS amount  -- date_trunc は PostgreSQL
+  FROM orders GROUP BY 1, 2
+), ranked AS (
+  SELECT *, rank() OVER (PARTITION BY m ORDER BY amount DESC) AS r FROM monthly
+)
+SELECT * FROM ranked WHERE r &lt;= 3;
+
+-- 再帰 CTE: 木構造（部署・カテゴリ・コメントのスレッド）をたどる
+WITH RECURSIVE tree AS (
+  SELECT id, parent_id, name, 1 AS depth FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, c.parent_id, c.name, t.depth + 1
+  FROM categories AS c JOIN tree AS t ON c.parent_id = t.id
+)
+SELECT * FROM tree ORDER BY depth;</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>書き方</th><th>使いどころ</th></tr></thead>
+      <tbody>
+        <tr><td><code>WHERE EXISTS (SELECT 1 FROM … WHERE …)</code></td><td data-l="使いどころ">関連する行が 1 件でもあるか。<code>NOT EXISTS</code> は「無いもの」探しの定番</td></tr>
+        <tr><td><code>WHERE id IN (SELECT …)</code></td><td data-l="使いどころ">値の一覧に入っているか。<code>NOT IN</code> は NULL に注意（よくある誤解を参照）</td></tr>
+        <tr><td><code>(SELECT max(x) FROM …) AS m</code></td><td data-l="使いどころ">スカラーサブクエリ。1 行 1 列を返す式として使う</td></tr>
+        <tr><td><code>JOIN LATERAL (SELECT … LIMIT 3) AS t ON true</code></td><td data-l="使いどころ">外側の行ごとに副問い合わせを回す（行ごとの上位 N 件）。別名（<code>AS t</code>）が要る。PostgreSQL・MySQL 8.0.14 以降</td></tr>
+        <tr><td><code>UNION</code> / <code>UNION ALL</code></td><td data-l="使いどころ">結果を縦につなぐ。<code>UNION</code> は重複を除く分だけ重い</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="dml">追加・更新・削除</h2>
+  <pre><code>INSERT INTO users (name, email) VALUES ('Tanaka', 't@example.com'), ('Sato', 's@example.com');
+INSERT INTO archive (id, name) SELECT id, name FROM users WHERE deleted_at IS NOT NULL;
+
+UPDATE users SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
+WHERE last_login_at &lt; '2026-01-01';
+
+DELETE FROM sessions WHERE expires_at &lt; CURRENT_TIMESTAMP;</code></pre>
+  <p>UPDATE・DELETE は、先に同じ WHERE で <code>SELECT count(*)</code> して件数を確かめ、トランザクションの中で実行すると戻せる。</p>
+
+  <h3>UPSERT（あれば更新、なければ追加）と RETURNING</h3>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="up-pg">PostgreSQL</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="up-my">MySQL</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="up-lite">SQLite</button>
+  </div>
+  <div class="panel card" id="up-pg">
+    <pre><code>INSERT INTO users (email, name) VALUES ('t@example.com', 'Tanaka')
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name   -- EXCLUDED = 入れようとした行
+RETURNING id, name;
+
+INSERT INTO tags (name) VALUES ('sql') ON CONFLICT DO NOTHING;
+
+-- 標準 SQL の MERGE（PostgreSQL 15 以降。RETURNING は 17 以降）
+MERGE INTO stock AS s
+USING incoming AS i ON s.sku = i.sku
+WHEN MATCHED THEN UPDATE SET qty = s.qty + i.qty
+WHEN NOT MATCHED THEN INSERT (sku, qty) VALUES (i.sku, i.qty);</code></pre>
+    <p class="note"><code>ON CONFLICT (列)</code> の列には一意制約か一意インデックスが要る。</p>
+  </div>
+  <div class="panel card" id="up-my" hidden>
+    <pre><code>-- 8.0.19 以降: 入れようとした行に別名を付けて参照する
+INSERT INTO users (email, name) VALUES ('t@example.com', 'Tanaka') AS new
+ON DUPLICATE KEY UPDATE name = new.name;
+
+-- 重複は無視（ほかのエラーまで警告に変わるので注意）
+INSERT IGNORE INTO tags (name) VALUES ('sql');
+
+-- 追加した AUTO_INCREMENT の値
+SELECT LAST_INSERT_ID();</code></pre>
+    <p class="note">MySQL（9.7 LTS まで）には RETURNING と MERGE が無い。古い書き方の <code>VALUES(name)</code> は 8.0.20 で非推奨になった。</p>
+  </div>
+  <div class="panel card" id="up-lite" hidden>
+    <pre><code>-- 3.24 以降。書き方は PostgreSQL とほぼ同じ
+INSERT INTO users (email, name) VALUES ('t@example.com', 'Tanaka')
+ON CONFLICT (email) DO UPDATE SET name = excluded.name
+RETURNING id;            -- RETURNING は 3.35 以降
+
+INSERT OR IGNORE INTO tags (name) VALUES ('sql');
+INSERT OR REPLACE INTO kv (k, v) VALUES ('a', 1);   -- 行を消して入れ直す（ほかの列は既定値に戻る）</code></pre>
+  </div>
+
+  <h2 id="ddl">テーブル定義（DDL）</h2>
+  <pre><code>CREATE TABLE orders (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,   -- PostgreSQL の連番（下の表）
+  customer_id BIGINT NOT NULL REFERENCES customers (id) ON DELETE CASCADE,
+  status      VARCHAR(20) NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending', 'paid', 'canceled')),
+  total       NUMERIC(12, 2) NOT NULL,          -- お金は浮動小数点にしない
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (customer_id, created_at)
+);
+
+CREATE INDEX idx_orders_customer_created ON orders (customer_id, created_at);
+ALTER TABLE orders ADD COLUMN note TEXT;
+ALTER TABLE orders RENAME COLUMN note TO memo;
+DROP TABLE IF EXISTS tmp_orders;</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>用途</th><th>PostgreSQL</th><th>MySQL</th><th>SQLite</th></tr></thead>
+      <tbody>
+        <tr><td>自動採番</td><td data-l="PostgreSQL"><code>GENERATED ALWAYS AS IDENTITY</code>（古い書き方は <code>SERIAL</code>）</td><td data-l="MySQL"><code>AUTO_INCREMENT</code></td><td data-l="SQLite"><code>INTEGER PRIMARY KEY</code>（rowid の別名になる）</td></tr>
+        <tr><td>真偽値</td><td data-l="PostgreSQL"><code>BOOLEAN</code></td><td data-l="MySQL"><code>BOOLEAN</code> = <code>TINYINT(1)</code></td><td data-l="SQLite">型は無く 0 / 1（<code>TRUE</code>・<code>FALSE</code> は 1・0 の別名）</td></tr>
+        <tr><td>日時</td><td data-l="PostgreSQL"><code>TIMESTAMPTZ</code>（タイムゾーン付き推奨）</td><td data-l="MySQL"><code>DATETIME</code>（変換せずそのまま保存）・<code>TIMESTAMP</code>（UTC に変換して保存。2038 年まで）</td><td data-l="SQLite">型は無く、TEXT（ISO 8601）か INTEGER（UNIX 時刻）</td></tr>
+        <tr><td>JSON</td><td data-l="PostgreSQL"><code>JSONB</code></td><td data-l="MySQL"><code>JSON</code></td><td data-l="SQLite">TEXT に入れて <code>json_extract()</code> など（3.45 以降はバイナリ形式の JSONB も使える）</td></tr>
+        <tr><td>列の型の厳しさ</td><td data-l="PostgreSQL">厳密</td><td data-l="MySQL">厳密モード（既定で有効）なら厳密</td><td data-l="SQLite">緩い（型アフィニティ）。<code>STRICT</code> テーブルで厳密にできる（3.37 以降）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="tx">トランザクション</h2>
+  <pre><code>BEGIN;                       -- MySQL は START TRANSACTION とも書く
+UPDATE accounts SET balance = balance - 1000 WHERE id = 1;
+SAVEPOINT before_credit;
+UPDATE accounts SET balance = balance + 1000 WHERE id = 2;
+-- ROLLBACK TO SAVEPOINT before_credit;   -- 途中まで戻す
+COMMIT;                      -- 全部取り消すなら ROLLBACK
+
+-- 読んだ行をほかのトランザクションに更新させない（在庫の引き当てなど）
+SELECT qty FROM stock WHERE sku = 'A-1' FOR UPDATE;   -- SQLite には無い</code></pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>分離レベル</th><th>防げるもの</th><th>既定にしている DB</th></tr></thead>
+      <tbody>
+        <tr><td><code>READ COMMITTED</code></td><td data-l="防げるもの">未コミットの値を読む（ダーティリード）</td><td data-l="既定">PostgreSQL</td></tr>
+        <tr><td><code>REPEATABLE READ</code></td><td data-l="防げるもの">上に加え、同じ行を読み直すと値が変わる</td><td data-l="既定">MySQL（InnoDB）</td></tr>
+        <tr><td><code>SERIALIZABLE</code></td><td data-l="防げるもの">順番に実行したのと同じ結果を保証。競合したら失敗するので再試行を書く</td><td data-l="既定">SQLite（書き込みはデータベース全体で 1 つずつ）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code>SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;   -- PostgreSQL は BEGIN の直後、MySQL は次のトランザクションの前に</code></pre>
+
+  <h2 id="dialects">方言の違い早見表</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>やりたいこと</th><th>PostgreSQL</th><th>MySQL</th><th>SQLite</th></tr></thead>
+      <tbody>
+        <tr><td>件数を切る</td><td data-l="PostgreSQL"><code>LIMIT n OFFSET m</code>・<code>FETCH FIRST n ROWS ONLY</code></td><td data-l="MySQL"><code>LIMIT n OFFSET m</code>・<code>LIMIT m, n</code></td><td data-l="SQLite"><code>LIMIT n OFFSET m</code></td></tr>
+        <tr><td>文字列連結</td><td data-l="PostgreSQL"><code>a || b</code>・<code>concat(a, b)</code></td><td data-l="MySQL"><code>concat(a, b)</code>（<code>||</code> は既定で OR）</td><td data-l="SQLite"><code>a || b</code>・<code>concat(a, b)</code>（3.44 以降）</td></tr>
+        <tr><td>識別子のクォート</td><td data-l="PostgreSQL"><code>"order"</code></td><td data-l="MySQL"><code>`order`</code></td><td data-l="SQLite"><code>"order"</code>（<code>`order`</code> も可）</td></tr>
+        <tr><td>現在日時</td><td data-l="PostgreSQL"><code>now()</code>・<code>CURRENT_TIMESTAMP</code></td><td data-l="MySQL"><code>NOW()</code>・<code>CURRENT_TIMESTAMP</code></td><td data-l="SQLite"><code>CURRENT_TIMESTAMP</code>（UTC の文字列）・<code>datetime('now')</code></td></tr>
+        <tr><td>日付を月で丸める</td><td data-l="PostgreSQL"><code>date_trunc('month', t)</code></td><td data-l="MySQL"><code>DATE_FORMAT(t, '%Y-%m-01')</code></td><td data-l="SQLite"><code>strftime('%Y-%m-01', t)</code></td></tr>
+        <tr><td>N 日前</td><td data-l="PostgreSQL"><code>now() - interval '7 days'</code></td><td data-l="MySQL"><code>NOW() - INTERVAL 7 DAY</code></td><td data-l="SQLite"><code>datetime('now', '-7 days')</code></td></tr>
+        <tr><td>NULL も等しいとみなす比較</td><td data-l="PostgreSQL"><code>a IS NOT DISTINCT FROM b</code></td><td data-l="MySQL"><code>a &lt;=&gt; b</code></td><td data-l="SQLite"><code>a IS b</code></td></tr>
+        <tr><td>FULL OUTER JOIN</td><td data-l="PostgreSQL">あり</td><td data-l="MySQL">無い（9.7 LTS まで）</td><td data-l="SQLite">3.39 以降</td></tr>
+        <tr><td>実行計画を見る</td><td data-l="PostgreSQL"><code>EXPLAIN ANALYZE …</code></td><td data-l="MySQL"><code>EXPLAIN ANALYZE …</code>（8.0.18 以降）</td><td data-l="SQLite"><code>EXPLAIN QUERY PLAN …</code></td></tr>
+        <tr><td>テーブル一覧（CLI）</td><td data-l="PostgreSQL"><code>\dt</code>（psql）</td><td data-l="MySQL"><code>SHOW TABLES;</code></td><td data-l="SQLite"><code>.tables</code>（sqlite3）</td></tr>
+        <tr><td>テーブル定義（CLI）</td><td data-l="PostgreSQL"><code>\d users</code></td><td data-l="MySQL"><code>SHOW CREATE TABLE users;</code></td><td data-l="SQLite"><code>.schema users</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>NOT IN (サブクエリ) は NOT EXISTS と同じ結果になる</summary><p>サブクエリの結果に NULL が 1 つでも混じると、<code>x NOT IN (…)</code> は真にならず 0 件になる（NULL との比較は「不明」になるため）。「無いもの」を探すときは <code>NOT EXISTS</code> を使うか、サブクエリ側で <code>WHERE col IS NOT NULL</code> を付ける。</p></details>
+  <details class="myth"><summary>ORDER BY を書かなくても主キー順や追加順で返ってくる</summary><p>ORDER BY の無い結果の並びは決まっていない。同じクエリでも実行計画やデータ量で変わる。ページングするときは、同点が出ないよう一意な列（<code>id</code> など）を最後に足す。</p></details>
+  <details class="myth"><summary>count(列) は count(*) と同じ件数になる</summary><p><code>count(列)</code> はその列が NULL の行を数えない。行数がほしいなら <code>count(*)</code>。LEFT JOIN で「0 件」を出したいときは、右側の列で <code>count(o.id)</code> と数えるのが正しい。</p></details>
+  <details class="myth"><summary>LEFT JOIN の右テーブルの条件は WHERE に書いてよい</summary><p>WHERE は JOIN のあとに評価されるので、右側が NULL の行（相手が無い行）が消え、INNER JOIN と同じ結果になる。右側を絞る条件は <code>ON … AND o.status = 'paid'</code> のように ON に書く。</p></details>
+  <details class="myth"><summary>WHERE で SELECT に付けた別名を使える</summary><p>WHERE は SELECT より先に評価されるので、別名はまだ無い。式をもう一度書くか、サブクエリ・CTE で包む。ORDER BY では別名を使える。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="sqlc.html">sqlc</a>・<a href="drizzle.html">Drizzle ORM</a> — ここで書いた SQL を型付きのコードから使う</li>
+    <li><a href="skeema.html">Skeema</a> — CREATE TABLE のファイルで MySQL のスキーマを管理する</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://www.postgresql.org/docs/current/sql-commands.html">PostgreSQL: SQL Commands</a>・<a href="https://www.postgresql.org/docs/current/sql-insert.html">INSERT（ON CONFLICT）</a>・<a href="https://www.postgresql.org/docs/current/sql-merge.html">MERGE</a>・<a href="https://www.postgresql.org/docs/current/transaction-iso.html">Transaction Isolation</a></li>
+    <li><a href="https://dev.mysql.com/doc/refman/8.4/en/insert-on-duplicate.html">MySQL 8.4: INSERT … ON DUPLICATE KEY UPDATE</a>・<a href="https://dev.mysql.com/doc/refman/8.4/en/window-functions.html">Window Functions</a>・<a href="https://dev.mysql.com/doc/refman/8.4/en/group-by-handling.html">GROUP BY の扱い</a></li>
+    <li><a href="https://sqlite.org/lang_upsert.html">SQLite: UPSERT</a>・<a href="https://sqlite.org/lang_returning.html">RETURNING</a>・<a href="https://sqlite.org/windowfunctions.html">Window Functions</a>・<a href="https://sqlite.org/stricttables.html">STRICT Tables</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-27。機能の最小バージョンは各 DB の公式ドキュメントに合わせた。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAS と通常 JS の互換性 早見表</title>
+<meta name="description" content="GAS で通常の JS がどこまで動くか、fetch・時間などの書き換えとメール・スプシ操作の早見表。">
+<meta name="memo:tags" content="開発ツール, Google Workspace">
+<meta name="memo:date" content="2026-11-27">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 8px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+pre code { background: none; padding: 0; overflow-wrap: normal; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 3 区分の図 */
+.zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.zone {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--zc);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+}
+.zone h3 { margin: 0 0 6px; font-size: 0.9rem; }
+.zone h3 span { color: var(--zc); font-family: 'JetBrains Mono', ui-monospace, monospace; margin-right: 4px; }
+.zone ul { padding-left: 1.1em; }
+.zone.ok { --zc: var(--c-ok); }
+.zone.warn { --zc: var(--c-warn); }
+.zone.ng { --zc: var(--c-ng); }
+@media (max-width: 599px) { .zones { grid-template-columns: 1fr; } }
+
+/* 対応表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.78rem; color: var(--fg-2); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; }
+.st {
+  display: inline-block;
+  font: 700 0.72rem/1.5 'JetBrains Mono', ui-monospace, monospace;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.st { color: var(--fg-2); }
+.st.ok { color: var(--c-ok); }
+.st.warn { color: var(--c-warn); }
+.st.ng { color: var(--c-ng); }
+/* スマホ幅: 1 行ずつ縦積み */
+@media (max-width: 599px) {
+  table { min-width: 0; }
+  thead { display: none; }
+  tbody tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  tbody tr[hidden] { display: none; }
+  tbody tr:last-child { border-bottom: none; }
+  td, td:first-child { display: block; position: relative; padding: 2px 0 2px 3.4em; border: none; white-space: normal; }
+  td::before { position: absolute; left: 0; top: 4px; color: var(--fg-2); font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+  td:nth-child(1)::before { content: "JS"; }
+  td:nth-child(2)::before { content: "GAS"; }
+  td:nth-child(3)::before { content: "状態"; }
+  td:nth-child(4)::before { content: "メモ"; }
+  td:empty { display: none; }
+  .svc td { padding-left: 0; }
+  .svc td::before { position: static; display: block; }
+  .svc td:nth-child(1) { font-weight: 600; }
+  .svc td:nth-child(1)::before { content: none; }
+  .svc td:nth-child(2)::before { content: none; }
+  .svc td:nth-child(3)::before { content: none; }
+  .svc td:nth-child(3) { color: var(--fg-2); font-size: 0.8rem; }
+}
+
+/* 絞り込み */
+.filter {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GAS と通常 JS の互換性</h1>
+  <p class="subtitle">Google Apps Script（V8 ランタイム）で「いつもの JS」がどこまで動くか ＋ よく使う関数の対応表 ＋ GAS 専用の処理一覧</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>GAS は V8 で動くので、<code>let</code>・アロー関数・<code>class</code> など ECMAScript の構文はほぼそのまま書ける。</li>
+      <li>ブラウザや Node.js の API（<code>fetch</code>・<code>setTimeout</code>・<code>localStorage</code> など）は無く、GAS のサービスで置き換える。</li>
+      <li>処理はすべて同期で 1 回 6 分まで。<code>import</code> も npm も無いので、使うなら clasp とバンドラでまとめる。</li>
+    </ul>
+  </div>
+
+  <h2 id="zones">何が動いて何が動かないか</h2>
+  <div class="legend">
+    <span><i style="background:var(--c-ok)"></i>そのまま使える</span>
+    <span><i style="background:var(--c-warn)"></i>使えるが挙動が違う</span>
+    <span><i style="background:var(--c-ng)"></i>無い（GAS のサービスで代替）</span>
+  </div>
+  <div class="zones">
+    <div class="zone ok">
+      <h3><span>OK</span>言語そのもの（ECMAScript）</h3>
+      <ul>
+        <li><code>let</code> / <code>const</code>、アロー関数、<code>class</code></li>
+        <li>分割代入、スプレッド、テンプレート文字列</li>
+        <li><code>Map</code> / <code>Set</code>、<code>Array</code> のメソッド</li>
+        <li><code>JSON</code>、<code>Math</code>、<code>RegExp</code></li>
+        <li><code>encodeURIComponent</code> など</li>
+      </ul>
+    </div>
+    <div class="zone warn">
+      <h3><span>△</span>あるが違う</h3>
+      <ul>
+        <li><code>Promise</code> / <code>async</code>：書けるが I/O は全部同期</li>
+        <li><code>Date</code>：タイムゾーンはスクリプトの設定</li>
+        <li><code>console.log</code>：実行ログ・Cloud Logging に出る</li>
+        <li>グローバル：全 <code>.gs</code> ファイルで 1 つの空間を共有</li>
+      </ul>
+    </div>
+    <div class="zone ng">
+      <h3><span>NG</span>ブラウザ・Node の API</h3>
+      <ul>
+        <li><code>fetch</code>、<code>XMLHttpRequest</code></li>
+        <li><code>setTimeout</code> / <code>setInterval</code></li>
+        <li><code>localStorage</code>、<code>process.env</code></li>
+        <li><code>btoa</code> / <code>atob</code>、<code>crypto</code>、<code>URL</code></li>
+        <li><code>import</code> / <code>require</code>、npm</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="map">よく使う関数の対応表</h2>
+  <p>左が通常の JS（ブラウザ・Node.js）、右が GAS での書き方。カテゴリのタブで切り替え、入力欄で全カテゴリを絞り込める。</p>
+  <p class="note">状態: <span class="st ok">同じ</span> そのまま動く／<span class="st warn">差あり</span> 動くが挙動が違う／<span class="st">代替</span> 別の GAS の API で書く／<span class="st ng">無い</span> 相当する API が無く自作する</p>
+  <input class="filter" id="filter" type="search" placeholder="絞り込み（例: fetch、base64、sleep）" aria-label="対応表を絞り込む">
+  <div class="tabs" role="tablist" id="map-tabs">
+    <button class="tab" role="tab" aria-selected="true" data-panel="t-http">HTTP</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-time">時間・日付</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-enc">文字列・暗号</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-store">保存・設定</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="t-misc">ログ・その他</button>
+  </div>
+
+  <div class="panel card table-wrap" id="t-http">
+    <table>
+      <thead><tr><th>通常の JS</th><th>GAS</th><th>状態</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>fetch(url)</code></td><td><code>UrlFetchApp.fetch(url)</code></td><td><span class="st">代替</span></td><td>同期で <code>HTTPResponse</code> を返す。<code>await</code> 不要</td></tr>
+        <tr><td><code>fetch(url, { method, headers, body })</code></td><td><code>UrlFetchApp.fetch(url, { method, headers, payload, contentType })</code></td><td><span class="st">代替</span></td><td><code>body</code> ではなく <code>payload</code>。<code>Content-Type</code> は <code>contentType</code> で指定</td></tr>
+        <tr><td><code>res.ok</code> / <code>res.status</code></td><td><code>res.getResponseCode()</code></td><td><span class="st">代替</span></td><td>4xx・5xx で例外になる。<code>muteHttpExceptions: true</code> で例外にせず受け取る</td></tr>
+        <tr><td><code>await res.text()</code></td><td><code>res.getContentText()</code></td><td><span class="st">代替</span></td><td>文字コード指定は <code>getContentText('Shift_JIS')</code></td></tr>
+        <tr><td><code>await res.json()</code></td><td><code>JSON.parse(res.getContentText())</code></td><td><span class="st">代替</span></td><td><code>json()</code> メソッドは無い</td></tr>
+        <tr><td><code>res.headers.get(name)</code></td><td><code>res.getHeaders()[name]</code></td><td><span class="st">代替</span></td><td>プレーンなオブジェクトで返る。<code>headers.get()</code> と違い、キーの大文字・小文字を区別する</td></tr>
+        <tr><td><code>await res.blob()</code></td><td><code>res.getBlob()</code></td><td><span class="st">代替</span></td><td>そのまま <code>DriveApp.createFile(blob)</code> に渡せる</td></tr>
+        <tr><td><code>Promise.all(urls.map(fetch))</code></td><td><code>UrlFetchApp.fetchAll(requests)</code></td><td><span class="st">代替</span></td><td>並列に投げられる唯一の手段</td></tr>
+        <tr><td><code>new URLSearchParams(obj)</code></td><td>自作（<code>encodeURIComponent</code> で組み立て）</td><td><span class="st ng">無い</span></td><td><code>payload</code> にオブジェクトを渡すとフォーム形式で送られる</td></tr>
+        <tr><td>Express の <code>app.get</code> / <code>app.post</code></td><td><code>function doGet(e)</code> / <code>doPost(e)</code></td><td><span class="st">代替</span></td><td>ウェブアプリとしてデプロイ。クエリは <code>e.parameter</code>、本文は <code>e.postData.contents</code></td></tr>
+        <tr><td><code>res.json(obj)</code></td><td><code>ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON)</code></td><td><span class="st">代替</span></td><td>ステータスコードやレスポンスヘッダは自由に設定できない</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-time" hidden>
+    <table>
+      <thead><tr><th>通常の JS</th><th>GAS</th><th>状態</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>new Date()</code> / <code>Date.now()</code></td><td>同じ</td><td><span class="st warn">差あり</span></td><td>ローカル時刻はスクリプトのタイムゾーン（<code>appsscript.json</code> の <code>timeZone</code>）</td></tr>
+        <tr><td><code>date.toLocaleString()</code> / <code>dayjs().format()</code></td><td><code>Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss')</code></td><td><span class="st">代替</span></td><td>書式は Java の <code>SimpleDateFormat</code> 形式（<code>yyyy</code>・<code>MM</code>・<code>dd</code>・<code>HH</code>）</td></tr>
+        <tr><td><code>Intl.DateTimeFormat().resolvedOptions().timeZone</code></td><td><code>Session.getScriptTimeZone()</code></td><td><span class="st">代替</span></td><td>スクリプトに設定されたタイムゾーンを返す</td></tr>
+        <tr><td><code>await new Promise(r =&gt; setTimeout(r, ms))</code></td><td><code>Utilities.sleep(ms)</code></td><td><span class="st">代替</span></td><td>最大 300000 ms（5 分）。実行時間の上限に含まれる</td></tr>
+        <tr><td><code>setTimeout(fn, ms)</code>（後で 1 回）</td><td><code>ScriptApp.newTrigger('fn').timeBased().after(ms).create()</code></td><td><span class="st">代替</span></td><td>関数名を文字列で渡す。実行タイミングは正確ではない</td></tr>
+        <tr><td><code>setInterval(fn, ms)</code> / cron</td><td><code>ScriptApp.newTrigger('fn').timeBased().everyMinutes(5).create()</code></td><td><span class="st">代替</span></td><td><code>everyMinutes</code> は 1・5・10・15・30 のみ。<code>everyHours(n)</code>・<code>atHour(h)</code> もある</td></tr>
+        <tr><td><code>clearTimeout</code> / <code>clearInterval</code></td><td><code>ScriptApp.deleteTrigger(trigger)</code></td><td><span class="st">代替</span></td><td>一覧は <code>ScriptApp.getProjectTriggers()</code></td></tr>
+        <tr><td><code>performance.now()</code></td><td><code>Date.now()</code> の差分</td><td><span class="st ng">無い</span></td><td>ミリ秒精度で十分なら <code>Date.now()</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-enc" hidden>
+    <table>
+      <thead><tr><th>通常の JS</th><th>GAS</th><th>状態</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>btoa(str)</code></td><td><code>Utilities.base64Encode(str)</code></td><td><span class="st">代替</span></td><td>日本語を確実に UTF-8 で扱うなら <code>Utilities.base64Encode(str, Utilities.Charset.UTF_8)</code> と文字コードを指定する</td></tr>
+        <tr><td><code>atob(b64)</code></td><td><code>Utilities.newBlob(Utilities.base64Decode(b64)).getDataAsString()</code></td><td><span class="st">代替</span></td><td><code>base64Decode</code> はバイト配列を返すので文字列に戻す</td></tr>
+        <tr><td>Base64URL</td><td><code>Utilities.base64EncodeWebSafe(str)</code></td><td><span class="st">代替</span></td><td>JWT などで使う形式</td></tr>
+        <tr><td><code>crypto.randomUUID()</code></td><td><code>Utilities.getUuid()</code></td><td><span class="st">代替</span></td><td>UUID の文字列を返す</td></tr>
+        <tr><td><code>crypto.subtle.digest('SHA-256', data)</code></td><td><code>Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str)</code></td><td><span class="st">代替</span></td><td>符号付きバイト（-128〜127）の配列。16 進にするときは <code>(b &amp; 0xff)</code> してから変換</td></tr>
+        <tr><td>HMAC（<code>crypto.createHmac</code>）</td><td><code>Utilities.computeHmacSha256Signature(value, key)</code></td><td><span class="st">代替</span></td><td>Webhook の署名検証などに</td></tr>
+        <tr><td><code>new TextEncoder().encode(str)</code></td><td><code>Utilities.newBlob(str).getBytes()</code></td><td><span class="st">代替</span></td><td>バイト配列が欲しいとき</td></tr>
+        <tr><td><code>JSON.parse</code> / <code>JSON.stringify</code></td><td>同じ</td><td><span class="st ok">同じ</span></td><td></td></tr>
+        <tr><td><code>str.replaceAll</code>・<code>arr.includes</code> など</td><td>同じ</td><td><span class="st ok">同じ</span></td><td>標準の組み込みメソッドは使える</td></tr>
+        <tr><td>CSV のパース</td><td><code>Utilities.parseCsv(text)</code></td><td><span class="st">代替</span></td><td>二次元配列で返る。そのまま <code>setValues</code> に渡せる</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-store" hidden>
+    <table>
+      <thead><tr><th>通常の JS</th><th>GAS</th><th>状態</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>process.env.API_KEY</code></td><td><code>PropertiesService.getScriptProperties().getProperty('API_KEY')</code></td><td><span class="st">代替</span></td><td>エディタの「プロジェクトの設定 › スクリプト プロパティ」で値を入れる。コードに秘密を書かない</td></tr>
+        <tr><td><code>localStorage.setItem(k, v)</code></td><td><code>PropertiesService.getUserProperties().setProperty(k, v)</code></td><td><span class="st">代替</span></td><td>値は文字列のみ。オブジェクトは <code>JSON.stringify</code></td></tr>
+        <tr><td><code>localStorage.getItem(k)</code></td><td><code>…getProperty(k)</code></td><td><span class="st">代替</span></td><td>無いと <code>null</code></td></tr>
+        <tr><td>Redis などのキャッシュ</td><td><code>CacheService.getScriptCache().put(k, v, 秒)</code></td><td><span class="st">代替</span></td><td>有効期限は最大 21600 秒（6 時間）。消えている前提で使う</td></tr>
+        <tr><td>ミューテックス</td><td><code>LockService.getScriptLock().waitLock(ms)</code></td><td><span class="st">代替</span></td><td>同時実行で同じシートを書き換えるときに。終わったら <code>releaseLock()</code></td></tr>
+        <tr><td><code>fs.writeFileSync</code></td><td><code>DriveApp.createFile(name, content)</code></td><td><span class="st">代替</span></td><td>ファイルは Google ドライブに置く</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel card table-wrap" id="t-misc" hidden>
+    <table>
+      <thead><tr><th>通常の JS</th><th>GAS</th><th>状態</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>console.log</code> / <code>console.error</code></td><td>同じ（または <code>Logger.log</code>）</td><td><span class="st warn">差あり</span></td><td>出力先は実行ログと Cloud Logging。ブラウザの開発者ツールには出ない</td></tr>
+        <tr><td><code>import</code> / <code>export</code></td><td>使えない</td><td><span class="st ng">無い</span></td><td>全ファイルが 1 つのグローバル空間。名前の衝突に注意</td></tr>
+        <tr><td><code>npm install</code></td><td>ライブラリ（スクリプト ID で追加）／バンドルして貼る</td><td><span class="st ng">無い</span></td><td>npm を使うなら clasp ＋ esbuild・Rollup などで 1 ファイルにまとめて push</td></tr>
+        <tr><td><code>alert</code> / <code>prompt</code></td><td><code>SpreadsheetApp.getUi().alert(msg)</code></td><td><span class="st">代替</span></td><td>コンテナにバインドしたスクリプトで、エディタやメニューから実行したときだけ</td></tr>
+        <tr><td><code>try { } catch { }</code></td><td>同じ</td><td><span class="st ok">同じ</span></td><td>GAS のサービスのエラーも例外として拾える</td></tr>
+        <tr><td><code>throw new Error()</code></td><td>同じ</td><td><span class="st ok">同じ</span></td><td>トリガー実行で投げると、設定によっては失敗通知メールが届く</td></tr>
+        <tr><td><code>Math.random()</code></td><td>同じ</td><td><span class="st ok">同じ</span></td><td>乱数はこれで足りる。<code>Utilities.getUuid()</code> も一意性・暗号的な強さは保証されないので、鍵や秘密の値の生成には使わない</td></tr>
+        <tr><td>TypeScript</td><td>そのままは動かない</td><td><span class="st ng">無い</span></td><td>ローカルで JS にしてから clasp で push する（詳しくは <a href="clasp.html">clasp 使い方</a>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note" id="filter-empty" hidden>一致する行がありません。</p>
+
+  <h2 id="services">GAS 専用の処理（メール・スプシ・ドライブなど）</h2>
+  <p>通常の JS には対応するものが無い、Google のサービスを操作する API。初回実行時にそのサービスへの権限の承認を求められる。</p>
+  <div class="tabs" role="tablist" id="svc-tabs">
+    <button class="tab" role="tab" aria-selected="true" data-panel="s-mail">メール</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-sheet">スプレッドシート</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-drive">ドライブ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-cal">カレンダー</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="s-docs">ドキュメント・フォーム</button>
+  </div>
+  <div class="panel card table-wrap svc" id="s-mail">
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>メールを送る（送信だけ）</td><td><code>MailApp.sendEmail(to, subject, body)</code></td><td>送信専用で、必要な権限が狭い。送るだけならこちら</td></tr>
+        <tr><td>HTML・CC・添付付きで送る</td><td><code>MailApp.sendEmail(to, subject, body, { htmlBody, cc, bcc, name, replyTo, attachments })</code></td><td><code>attachments</code> は Blob の配列（<code>file.getBlob()</code> など）</td></tr>
+        <tr><td>Gmail から送る</td><td><code>GmailApp.sendEmail(to, subject, body, options)</code></td><td>引数は <code>MailApp</code> とほぼ同じ。受信箱の読み書きもできる分、権限が広い</td></tr>
+        <tr><td>下書きを作る</td><td><code>GmailApp.createDraft(to, subject, body, options)</code></td><td>送る前に人が確認したいときに</td></tr>
+        <tr><td>メールを検索する</td><td><code>GmailApp.search('from:foo@example.com is:unread', 0, 50)</code></td><td>Gmail の検索演算子がそのまま使える。スレッド（<code>GmailThread</code>）の配列を返す</td></tr>
+        <tr><td>スレッドのメッセージを読む</td><td><code>thread.getMessages()</code></td><td><code>getSubject()</code>・<code>getFrom()</code>・<code>getDate()</code>・<code>getPlainBody()</code>・<code>getAttachments()</code></td></tr>
+        <tr><td>既読にする・ラベルを付ける</td><td><code>thread.markRead() / thread.addLabel(GmailApp.getUserLabelByName('処理済み') || GmailApp.createLabel('処理済み'))</code></td><td>処理済みの印にすると、次回の検索で除外できる。ラベルが無いときに備えて作る処理も書く</td></tr>
+        <tr><td>残りの送信数を調べる</td><td><code>MailApp.getRemainingDailyQuota()</code></td><td>1 日の宛先数に上限がある（無料アカウントと Workspace で違う）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap svc" id="s-sheet" hidden>
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>スプレッドシートを開く</td><td><code>SpreadsheetApp.getActiveSpreadsheet() / SpreadsheetApp.openById(id)</code></td><td>バインドしたスクリプトなら <code>getActive…</code>、別のファイルは ID か <code>openByUrl(url)</code></td></tr>
+        <tr><td>シートを取る・作る</td><td><code>ss.getSheetByName('シート1') / ss.insertSheet('新規')</code></td><td>無い名前だと <code>getSheetByName</code> は <code>null</code></td></tr>
+        <tr><td>範囲を指定する</td><td><code>sheet.getRange('A1:C10') / sheet.getRange(row, col, numRows, numCols)</code></td><td>行・列は 1 始まり</td></tr>
+        <tr><td>値をまとめて読む</td><td><code>sheet.getDataRange().getValues()</code></td><td>2 次元配列（<code>[行][列]</code>、0 始まり）。日付は <code>Date</code>、数値は number で返る</td></tr>
+        <tr><td>表示どおりの文字列で読む</td><td><code>range.getDisplayValues()</code></td><td>書式（桁区切り・日付の形）を適用した文字列</td></tr>
+        <tr><td>値をまとめて書く</td><td><code>sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows)</code></td><td>配列の行数・列数と範囲の大きさが一致しないとエラー</td></tr>
+        <tr><td>1 行追加する</td><td><code>sheet.appendRow([a, b, c])</code></td><td>最後のデータ行の次に足す</td></tr>
+        <tr><td>最終行・最終列</td><td><code>sheet.getLastRow() / sheet.getLastColumn()</code></td><td>中身のある最後の行・列の位置を返す（データが無いシートでの値は実際に確かめる）</td></tr>
+        <tr><td>数式を入れる</td><td><code>range.setFormula('=SUM(A1:A10)')</code></td><td>複数セルは <code>setFormulas(2 次元配列)</code></td></tr>
+        <tr><td>並べ替え</td><td><code>range.sort({ column: 2, ascending: false })</code></td><td><code>column</code> は 1 始まりの列番号（範囲が A 列からなら 2 は B 列）。範囲が A 列以外から始まるときは動きを確かめる</td></tr>
+        <tr><td>消す</td><td><code>range.clearContent() / sheet.clearContents() / sheet.clear()</code></td><td>範囲の値だけは Range の <code>clearContent()</code>（s なし）、シート全体の値だけは <code>sheet.clearContents()</code>、<code>clear()</code> は書式も消す</td></tr>
+        <tr><td>書き込みを今すぐ反映</td><td><code>SpreadsheetApp.flush()</code></td><td>まとめて反映される前に、続きの処理で読み直したいとき</td></tr>
+        <tr><td>独自メニューを足す</td><td><code>SpreadsheetApp.getUi().createMenu('ツール').addItem('実行', 'main').addToUi()</code></td><td><code>onOpen()</code> の中に書く</td></tr>
+        <tr><td>編集されたら動かす</td><td><code>function onEdit(e) { e.range; e.value; }</code></td><td>シンプルトリガー。人の編集でだけ動き、スクリプトからの書き込みでは動かない</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap svc" id="s-drive" hidden>
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>ID でファイル・フォルダを取る</td><td><code>DriveApp.getFileById(id) / DriveApp.getFolderById(id)</code></td><td>ID は URL の <code>/d/</code> や <code>/folders/</code> の後ろ</td></tr>
+        <tr><td>フォルダの中を列挙する</td><td><code>const it = folder.getFiles(); while (it.hasNext()) { const f = it.next(); }</code></td><td>配列ではなくイテレータ（<code>hasNext()</code> / <code>next()</code>）</td></tr>
+        <tr><td>名前で探す</td><td><code>DriveApp.getFilesByName(name)</code></td><td>同名が複数あり得るのでイテレータで返る</td></tr>
+        <tr><td>ファイルを作る</td><td><code>folder.createFile(blob) / DriveApp.createFile(name, content, MimeType.PLAIN_TEXT)</code></td><td><code>UrlFetchApp</code> の <code>getBlob()</code> をそのまま保存できる</td></tr>
+        <tr><td>中身を読む</td><td><code>file.getBlob().getDataAsString()</code></td><td>テキストファイルのとき</td></tr>
+        <tr><td>コピー・ゴミ箱</td><td><code>file.makeCopy(name, folder) / file.setTrashed(true)</code></td><td><code>setTrashed</code> は完全削除ではない</td></tr>
+        <tr><td>スプシ・ドキュメントを PDF にする</td><td><code>DriveApp.getFileById(id).getAs(MimeType.PDF)</code></td><td>返る Blob をメールに添付したりドライブに保存したりできる</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap svc" id="s-cal" hidden>
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>カレンダーを取る</td><td><code>CalendarApp.getDefaultCalendar() / CalendarApp.getCalendarById(id)</code></td><td>自分のメインカレンダーは <code>getDefaultCalendar</code></td></tr>
+        <tr><td>予定を作る</td><td><code>cal.createEvent(title, start, end, { description, location, guests })</code></td><td><code>start</code>・<code>end</code> は <code>Date</code>。<code>guests</code> はカンマ区切りのメールアドレス</td></tr>
+        <tr><td>終日の予定を作る</td><td><code>cal.createAllDayEvent(title, date)</code></td><td></td></tr>
+        <tr><td>期間の予定を読む</td><td><code>cal.getEvents(start, end)</code></td><td><code>getTitle()</code>・<code>getStartTime()</code>・<code>getEndTime()</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel card table-wrap svc" id="s-docs" hidden>
+    <table>
+      <thead><tr><th>やりたいこと</th><th>書き方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>ドキュメントを作る・開く</td><td><code>DocumentApp.create(name) / DocumentApp.openById(id)</code></td><td></td></tr>
+        <tr><td>本文に書く</td><td><code>doc.getBody().appendParagraph(text)</code></td><td>表は <code>appendTable(2 次元配列)</code></td></tr>
+        <tr><td>テンプレートを差し込む</td><td><code>doc.getBody().replaceText('{{name}}', value)</code></td><td>第 1 引数は正規表現（RE2）の文字列。<code>.</code> や <code>*</code> は記号として扱われ、バックスラッシュは <code>\\</code> と二重に書く</td></tr>
+        <tr><td>フォーム送信で動かす（スプシ側）</td><td><code>function onFormSubmit(e) { e.values; e.namedValues; }</code></td><td>インストール型トリガーで「フォーム送信時」を設定する</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>スプシ: 1 セルずつではなくまとめて読み書きする</h3>
+<pre><code>// 遅い: 行ごとに API を呼ぶ
+for (let r = 2; r &lt;= last; r++) sheet.getRange(r, 3).setValue(sheet.getRange(r, 1).getValue() * 2);
+
+// 速い: 1 回で読んで、配列で計算して、1 回で書く
+const values = sheet.getRange(2, 1, last - 1, 1).getValues();
+const out = values.map(([v]) =&gt; [v * 2]);
+sheet.getRange(2, 3, out.length, 1).setValues(out);</code></pre>
+
+  <h3>未読メールをスプシに書き出して既読にする</h3>
+  <p class="note">検索はスレッド単位なので、<code>isUnread()</code> で未読のメッセージだけに絞る。シート「受信」は先に作っておく。</p>
+<pre><code>function exportUnread() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('受信');
+  const threads = GmailApp.search('is:unread label:inbox', 0, 50);
+  const rows = threads.flatMap(t =&gt; t.getMessages().filter(m =&gt; m.isUnread()).map(m =&gt;
+    [m.getDate(), m.getFrom(), m.getSubject(), m.getPlainBody().slice(0, 200)]));
+  if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 4).setValues(rows);
+  threads.forEach(t =&gt; t.markRead());
+}</code></pre>
+
+  <h2 id="snippets">書き換えの例</h2>
+  <h3>fetch → UrlFetchApp（JSON を POST）</h3>
+<pre><code>// 通常の JS
+const res = await fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify(data),
+});
+if (!res.ok) throw new Error(res.status);
+const json = await res.json();
+
+// GAS
+const res = UrlFetchApp.fetch(url, {
+  method: 'post',
+  contentType: 'application/json',
+  headers: { Authorization: `Bearer ${token}` },
+  payload: JSON.stringify(data),
+  muteHttpExceptions: true,   // 4xx・5xx でも例外にしない
+});
+if (res.getResponseCode() &gt;= 400) throw new Error(res.getContentText());
+const json = JSON.parse(res.getContentText());</code></pre>
+
+  <h3>待ち・リトライ</h3>
+<pre><code>function fetchWithRetry(url, retries = 3) {
+  for (let i = 0; i &lt; retries; i++) {
+    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (res.getResponseCode() &lt; 500) return res;
+    Utilities.sleep(1000 * 2 ** i);   // setTimeout の代わり
+  }
+  throw new Error('retry over');
+}</code></pre>
+
+  <h3>日付を日本時間で整形</h3>
+<pre><code>const now = new Date();
+Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm');   // 2026/11/27 09:30
+Utilities.formatDate(now, 'UTC', "yyyy-MM-dd'T'HH:mm:ss'Z'");  // ISO 形式（toISOString() はミリ秒 .000Z 付き）</code></pre>
+
+  <h2 id="limits">押さえておく制限</h2>
+  <ol class="steps">
+    <li><b>1 回の実行は 6 分まで</b>長い処理は途中経過をプロパティに保存し、時間トリガーで続きから再開する。</li>
+    <li><b>処理はすべて同期</b><code>async</code> を付けても <code>UrlFetchApp</code> などは待つ間ブロックする。並列にしたいときは <code>fetchAll</code>。</li>
+    <li><b>サービスごとに 1 日の割り当てがある</b>URL Fetch の回数などは無料アカウントと Workspace で上限が違う。最新の値は公式の割り当て表で確認する。</li>
+    <li><b>グローバルのコードは毎回走る</b>関数の外に書いたコードは、どの関数を実行しても全ファイル分が先に実行される。重い初期化は関数の中に入れる。</li>
+  </ol>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>V8 になったので async/await で fetch を並列にできる</summary><p><code>async</code>・<code>await</code>・<code>Promise</code> は構文として書けるが、<code>fetch</code> は無く、<code>UrlFetchApp.fetch</code> は同期で結果を返す。並列にしたいときは <code>UrlFetchApp.fetchAll</code> にリクエストの配列を渡す。</p></details>
+  <details class="myth"><summary>new Date() は常に UTC で動く</summary><p><code>Date</code> の内部値は UTC だが、<code>getHours()</code> などのローカル時刻はスクリプトのタイムゾーンで計算される。<code>appsscript.json</code> の <code>timeZone</code> を確認し、表示は <code>Utilities.formatDate</code> でタイムゾーンを明示する。</p></details>
+  <details class="myth"><summary>ファイルを分ければスコープも分かれる</summary><p>すべての <code>.gs</code> ファイルは 1 つのグローバル空間を共有する。別ファイルの同名の関数・変数は衝突するので、オブジェクトや <code>class</code> にまとめて名前空間の代わりにする。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="clasp.html">clasp 使い方</a> — ローカルで書いた JS を GAS に push する手段</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://developers.google.com/apps-script/guides/v8-runtime">V8 runtime overview</a>（Apps Script 公式）</li>
+    <li><a href="https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app">Class UrlFetchApp</a></li>
+    <li><a href="https://developers.google.com/apps-script/reference/utilities/utilities">Class Utilities</a></li>
+    <li><a href="https://developers.google.com/apps-script/reference/properties/properties-service">Class PropertiesService</a>・<a href="https://developers.google.com/apps-script/reference/cache/cache">Class Cache</a></li>
+    <li><a href="https://developers.google.com/apps-script/guides/triggers/installable">Installable Triggers</a></li>
+    <li><a href="https://developers.google.com/apps-script/reference/mail/mail-app">Class MailApp</a>・<a href="https://developers.google.com/apps-script/reference/gmail/gmail-app">Class GmailApp</a></li>
+    <li><a href="https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet-app">Class SpreadsheetApp</a>・<a href="https://developers.google.com/apps-script/reference/spreadsheet/range">Class Range</a></li>
+    <li><a href="https://developers.google.com/apps-script/reference/drive/drive-app">Class DriveApp</a>・<a href="https://developers.google.com/apps-script/reference/calendar/calendar-app">Class CalendarApp</a>・<a href="https://developers.google.com/apps-script/reference/document/document-app">Class DocumentApp</a></li>
+    <li><a href="https://developers.google.com/apps-script/guides/triggers">Simple Triggers</a></li>
+    <li><a href="https://developers.google.com/apps-script/guides/services/quotas">Quotas for Google Services</a></li>
+  </ul>
+  <p class="note">確認日: 2026-11-27（V8 ランタイム前提）</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+const tabGroup = document.getElementById('map-tabs');
+const panels = [...tabGroup.querySelectorAll('.tab')].map(t => document.getElementById(t.dataset.panel));
+const filter = document.getElementById('filter');
+const empty = document.getElementById('filter-empty');
+
+function selectTab(tab) {
+  tabGroup.querySelectorAll('.tab').forEach(t => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', String(on));
+    document.getElementById(t.dataset.panel).hidden = !on;
+  });
+}
+tabGroup.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  filter.value = '';
+  applyFilter();
+  selectTab(tab);
+});
+
+function applyFilter() {
+  const q = filter.value.trim().toLowerCase();
+  let hits = 0;
+  panels.forEach(p => {
+    let n = 0;
+    p.querySelectorAll('tbody tr').forEach(tr => {
+      const show = !q || tr.textContent.toLowerCase().includes(q);
+      tr.hidden = !show;
+      if (show) n++;
+    });
+    if (q) p.hidden = n === 0;
+    hits += n;
+  });
+  if (!q) selectTab(tabGroup.querySelector('[aria-selected="true"]'));
+  tabGroup.style.opacity = q ? '0.5' : '';
+  empty.hidden = !q || hits > 0;
+}
+filter.addEventListener('input', applyFilter);
+
+const svcTabs = document.getElementById('svc-tabs');
+svcTabs.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  svcTabs.querySelectorAll('.tab').forEach(t => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', String(on));
+    document.getElementById(t.dataset.panel).hidden = !on;
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub PAT・API 使い方</title>
+<meta name="description" content="PAT の作り方と使い分け、REST・GraphQL API の呼び方・使い分け・レート制限をまとめたチートシート。">
+<meta name="memo:tags" content="API・バックエンド, 開発ツール">
+<meta name="memo:date" content="2026-11-28">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+ul.plain { margin: 6px 0 6px 1.3em; }
+ul.plain li { margin: 2px 0; }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.ui { font-weight: 600; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { overflow-wrap: anywhere; }
+.nowrap code { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* どのトークンを使うか */
+.pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pick .q {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.pick .q span { display: block; color: var(--fg-2); font-size: 0.82rem; }
+.pick .q b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.9rem; margin-top: 4px; }
+.pick .q small { display: block; font-size: 0.8rem; margin-top: 2px; }
+@media (max-width: 600px) { .pick { grid-template-columns: 1fr; } }
+
+/* REST と GraphQL の比較 */
+.vs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vs .side { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.vs .side h3 { margin: 0 0 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.vs .side .ep { font-size: 0.8rem; color: var(--fg-2); margin: 0 0 8px; }
+.vs .side ul { margin: 0 0 0 1.2em; font-size: 0.86rem; }
+.vs .side pre { font-size: 0.74rem; margin: 8px 0 0; padding: 8px 10px; background: var(--bg); }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* リクエストの流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; margin-bottom: 2px; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .st code { overflow-wrap: anywhere; }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+ul.plain + .tabs { margin-top: 12px; }
+
+/* 絞り込み */
+.filter {
+  width: 100%;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+}
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+tr[hidden] { display: none !important; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GitHub PAT・API 使い方</h1>
+  <p class="subtitle">個人用アクセストークン (personal access token, PAT) の作り方・使い分けと、REST API・GraphQL API を curl・gh で呼ぶときの決まりごと（REST の API バージョン 2026-03-10 時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>PAT は自分の権限の範囲で API や HTTPS の Git を使うための鍵で、できる限り fine-grained を使う。</li>
+      <li>API は REST と GraphQL の 2 つで、同じトークンで呼べるが、片方にしかない機能もある。</li>
+      <li>単発の操作は REST、入れ子のデータをまとめて読むなら GraphQL を使い、PAT には必ず有効期限を付ける。</li>
+    </ul>
+  </div>
+
+  <h2 id="pick">どのトークンを使うか</h2>
+  <div class="pick">
+    <div class="q"><span>手元のターミナルで Git・gh を使いたい</span><b>gh auth login</b><small>GitHub CLI か Git Credential Manager に任せる。PAT を作らずに済む</small></div>
+    <div class="q"><span>Actions のワークフローから API を呼びたい</span><b>GITHUB_TOKEN</b><small>ジョブごとに自動で発行。<code>permissions:</code> で権限を絞る</small></div>
+    <div class="q"><span>自分のスクリプト・ツールから API を呼びたい</span><b>fine-grained PAT</b><small>リポジトリと権限を絞れる。できないことがあれば classic</small></div>
+    <div class="q"><span>組織のための長く動く連携・Bot</span><b>GitHub App</b><small>個人に紐づかず、トークンは 1 時間で切れる。レート制限も増える</small></div>
+  </div>
+
+  <h2 id="types">トークンの種類と接頭辞</h2>
+  <p>トークンは先頭の接頭辞 (prefix) で種類が分かる。漏えいの検出やログのマスクに使える。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>種類</th><th>接頭辞</th><th>有効期間</th><th>主な使い道</th></tr></thead>
+      <tbody>
+        <tr><td>fine-grained PAT</td><td data-l="接頭辞" class="nowrap"><code>github_pat_</code></td><td data-l="有効期間">作成時に選ぶ（最長 1 年か、無期限）</td><td data-l="使い道">自分のスクリプト・ツール</td></tr>
+        <tr><td>PAT (classic)</td><td data-l="接頭辞" class="nowrap"><code>ghp_</code></td><td data-l="有効期間">作成時に選ぶ（無期限も可）</td><td data-l="使い道">fine-grained でできない操作</td></tr>
+        <tr><td>OAuth アプリのトークン</td><td data-l="接頭辞" class="nowrap"><code>gho_</code></td><td data-l="有効期間">長期</td><td data-l="使い道">OAuth アプリがユーザーとして呼ぶ</td></tr>
+        <tr><td>GitHub App のユーザー用トークン</td><td data-l="接頭辞" class="nowrap"><code>ghu_</code></td><td data-l="有効期間">8 時間（既定）</td><td data-l="使い道">App がユーザーの代わりに呼ぶ</td></tr>
+        <tr><td>GitHub App のインストール用トークン</td><td data-l="接頭辞" class="nowrap"><code>ghs_</code></td><td data-l="有効期間">1 時間</td><td data-l="使い道">App 自身として呼ぶ（<code>GITHUB_TOKEN</code> もこの仕組み）</td></tr>
+        <tr><td>GitHub App のリフレッシュトークン</td><td data-l="接頭辞" class="nowrap"><code>ghr_</code></td><td data-l="有効期間">6 か月</td><td data-l="使い道"><code>ghu_</code> の更新</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note"><code>ghs_</code> は 2026 年に、約 520 文字・ドット入りの JWT 形式（<code>ghs_APPID_JWT</code>）へ移行済み。「<code>ghs_</code> + 36 文字」のような正規表現や、40 文字前提の DB 列・マスク処理は見直す。GitHub は形式で検証せず中身の分からない文字列として扱うよう勧めており、DB の列は 520 文字以上を入れられるようにする。</p>
+
+  <h2 id="compare">fine-grained と classic の違い</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="c-diff">比較</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-gap">classic が要る場面</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="c-scope">classic のスコープ</button>
+  </div>
+  <div class="panel" id="c-diff">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>項目</th><th>fine-grained</th><th>classic</th></tr></thead>
+        <tbody>
+          <tr><td>届く範囲</td><td data-l="fine-grained">選んだ 1 つのリソース所有者（ユーザーか組織）だけ。リポジトリも個別に選べる</td><td data-l="classic">自分が触れる全リポジトリ（個人・所属組織すべて）</td></tr>
+          <tr><td>権限の指定</td><td data-l="fine-grained">権限ごとに Read / Read and write（GitHub App と同じ権限の体系）</td><td data-l="classic"><code>repo</code> などの大まかなスコープ</td></tr>
+          <tr><td>組織の承認</td><td data-l="fine-grained">組織が承認制にできる。承認待ちの間は公開リソースの読み取りだけ</td><td data-l="classic">承認の仕組みなし（組織は classic を禁止できる）</td></tr>
+          <tr><td>作れる数</td><td data-l="fine-grained">50 個まで</td><td data-l="classic">上限の記載なし</td></tr>
+          <tr><td>共通</td><td data-l="両方" colspan="2">持ち主の権限を超えない。持ち主がアクセスを失うと使えなくなる。1 年使わないと自動で削除。公開リポジトリや Gist に push すると自動で失効</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="c-gap" hidden>
+    <p>fine-grained PAT はまだ次のことができない（GitHub は順次ふさぐとしている）。ここに当たるときだけ classic を使う。</p>
+    <ul class="plain">
+      <li>メンバーでない公開リポジトリへの貢献（fork 先への書き込みなど）</li>
+      <li>外部コラボレーター・リポジトリのコラボレーターとして参加しているリポジトリへの貢献</li>
+      <li>複数の組織に 1 つのトークンでまたがってアクセスする</li>
+      <li>GitHub Packages へのアクセス</li>
+      <li>Checks API の呼び出し</li>
+      <li>ユーザーアカウントが持つ Projects へのアクセス</li>
+    </ul>
+    <p class="note">ほかに、classic でしか使えない REST API のエンドポイントが一部ある。各エンドポイントのリファレンスに、使えるトークンの種類が書いてある。</p>
+  </div>
+  <div class="panel" id="c-scope" hidden>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>スコープ</th><th>できること</th></tr></thead>
+        <tbody>
+          <tr><td>（なし）</td><td>公開情報の読み取りだけ</td></tr>
+          <tr><td><code>repo</code></td><td>非公開を含むリポジトリへのフルアクセス。HTTPS の Git に使うならこれ</td></tr>
+          <tr><td><code>public_repo</code></td><td>公開リポジトリだけ</td></tr>
+          <tr><td><code>workflow</code></td><td><code>.github/workflows/</code> のファイルの追加・更新。無いとワークフローを含む push が拒否される</td></tr>
+          <tr><td><code>read:org</code> / <code>admin:org</code></td><td>組織・チームのメンバーの読み取り ／ 組織の管理</td></tr>
+          <tr><td><code>read:packages</code> / <code>write:packages</code></td><td>GitHub Packages の取得 ／ 公開</td></tr>
+          <tr><td><code>gist</code></td><td>Gist の書き込み</td></tr>
+          <tr><td><code>delete_repo</code></td><td>管理者であるリポジトリの削除</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">トークンが持つスコープはレスポンスヘッダー <code>x-oauth-scopes</code>、その API が求めるスコープは <code>x-accepted-oauth-scopes</code> で分かる（<code>curl -I</code> で確認）。</p>
+  </div>
+
+  <h2 id="create">fine-grained PAT を作る</h2>
+  <ol class="steps">
+    <li><b>設定を開く</b>右上のアイコン → <span class="ui">Settings</span> → 左の <span class="ui">Developer settings</span> → <span class="ui">Personal access tokens</span> → <span class="ui">Fine-grained tokens</span> → <span class="ui">Generate new token</span></li>
+    <li><b>名前と有効期限</b><span class="ui">Token name</span> と <span class="ui">Expiration</span> を入れる。組織のポリシーで上限があると、それより長くできない</li>
+    <li><b>リソース所有者</b><span class="ui">Resource owner</span> に自分か組織を選ぶ。fine-grained を禁止している組織は出てこない。承認制の組織なら理由を書ける</li>
+    <li><b>リポジトリ</b><span class="ui">Repository access</span> で必要最小限を選ぶ（<span class="ui">Only select repositories</span> なら個別に指定）。公開リポジトリの読み取りは常に付く</li>
+    <li><b>権限</b><span class="ui">Permissions</span> で必要な権限だけ Read / Read and write にする。Metadata の読み取りは必ず付く</li>
+    <li><b>発行してすぐ保管</b><span class="ui">Generate token</span>。値はこの画面でしか見られないので、パスワードマネージャーや Secrets に入れる</li>
+  </ol>
+  <p>作成画面は URL のパラメータで中身を埋めておける。チームに「この権限で作って」と渡すときに便利（最後は本人が確認して発行する）。</p>
+<pre><code>https://github.com/settings/personal-access-tokens/new
+  ?name=Repo-reading+token
+  &amp;description=Just+contents:read
+  &amp;target_name=octodemo      # リソース所有者
+  &amp;expires_in=45             # 日数（1〜366）か none
+  &amp;contents=read             # 権限名=read|write|admin（権限による）</code></pre>
+  <p class="note">classic は <b>Tokens (classic)</b> → <b>Generate new token (classic)</b> で作り、<b>Note</b>・<b>Expiration</b>・スコープを選ぶ。SAML SSO の組織で使うなら、作ったあとトークンごとに SSO の承認 (Configure SSO) が要る。</p>
+
+  <h2 id="use">PAT を使う</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="u-curl">curl</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-gh">gh</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-git">git (HTTPS)</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-actions">Actions</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-octokit">Octokit.js</button>
+  </div>
+  <div class="panel" id="u-curl">
+<pre><code>export GH_PAT=github_pat_xxxxxxxx   # 履歴に残したくないなら read -s GH_PAT
+
+# 自分の情報（-i でヘッダーも表示 → レート制限やスコープが見える）
+curl -i https://api.github.com/user \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "X-GitHub-Api-Version: 2026-03-10"
+
+# Issue を作る（fine-grained なら Issues: Read and write が必要）
+curl -X POST https://api.github.com/repos/OWNER/REPO/issues \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "X-GitHub-Api-Version: 2026-03-10" \
+  -d '{"title":"バグ報告","body":"再現手順…","labels":["bug"]}'</code></pre>
+  </div>
+  <div class="panel" id="u-gh" hidden>
+<pre><code>gh auth login                       # ブラウザでログイン（PAT 不要）
+gh auth status                      # ログイン状態・スコープを確認
+echo "$GH_PAT" | gh auth login --with-token   # PAT でログイン
+
+# 環境変数で渡す（保存済みのログインより優先。GH_TOKEN → GITHUB_TOKEN の順）
+GH_TOKEN=$GH_PAT gh api user
+
+# {owner} {repo} は今いるリポジトリ（か GH_REPO）で置き換わる
+gh api repos/{owner}/{repo}/issues --jq '.[].title'
+gh api repos/{owner}/{repo}/issues -f title='バグ報告' -f body='…'   # パラメータがあると POST
+gh api -X PATCH repos/{owner}/{repo}/issues/12 -f state=closed
+gh api user/repos --paginate --jq '.[].full_name'             # 全ページ</code></pre>
+    <p class="note"><code>-f</code> は文字列、<code>-F</code> は <code>true</code>・<code>false</code>・<code>null</code>・数値を JSON の型に変換し、<code>@file</code> でファイルから読む。GitHub Enterprise Server 向けは <code>GH_ENTERPRISE_TOKEN</code> と <code>--hostname</code>。</p>
+  </div>
+  <div class="panel" id="u-git" hidden>
+<pre><code># 推奨: gh に Git の認証を任せる
+gh auth setup-git
+
+# PAT を直接使うなら、パスワードを聞かれたところに PAT を貼る
+git clone https://github.com/OWNER/REPO.git
+Username: your-github-name     # ユーザー名は省略できない
+Password: github_pat_xxxxxxxx  # ← アカウントのパスワードではなく PAT
+
+# SSH の remote には使えない。HTTPS に切り替える
+git remote set-url origin https://github.com/OWNER/REPO.git</code></pre>
+    <p class="note">URL に <code>https://TOKEN@github.com/…</code> と埋め込むと <code>.git/config</code> やシェル履歴に残る。資格情報ヘルパー（Git Credential Manager・<code>gh auth setup-git</code>）に保存させる。</p>
+  </div>
+  <div class="panel" id="u-actions" hidden>
+<pre><code>permissions:            # 書かない権限は none になる
+  contents: read
+  issues: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue comment "$NUMBER" --body "Thanks!"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # gh には GH_TOKEN で渡す
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+
+      # 別リポジトリを触るなら、PAT を Secrets に入れて使う
+      - run: gh api repos/OTHER_OWNER/OTHER_REPO/dispatches -f event_type=sync
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_PAT }}</code></pre>
+    <ul class="plain">
+      <li><code>GITHUB_TOKEN</code> はジョブの開始時に発行され、ジョブが終わると失効する（GitHub ホストのランナーでは最長 6 時間。セルフホストでは更新できるのは 24 時間まで）。手動で失効させる方法はない</li>
+      <li>届くのはワークフローがあるリポジトリだけ。ほかのリポジトリには PAT か GitHub App のトークンを使う</li>
+      <li><code>GITHUB_TOKEN</code> で起こしたイベント（push・Issue 作成など）では、原則として新しいワークフローは動かない（<code>workflow_dispatch</code>・<code>repository_dispatch</code> は例外）。PR の作成・更新（<code>opened</code>・<code>synchronize</code>・<code>reopened</code>）は、書き込み権限のある人が承認すると動く。承認なしで連鎖させたいなら PAT か App のトークンを使う</li>
+    </ul>
+  </div>
+  <div class="panel" id="u-octokit" hidden>
+<pre><code>import { Octokit } from 'octokit';
+
+const octokit = new Octokit({ auth: process.env.GH_PAT });
+
+const { data: me } = await octokit.request('GET /user', {
+  headers: { 'X-GitHub-Api-Version': '2026-03-10' },
+});
+
+// 全ページを 1 つの配列で受け取る
+const issues = await octokit.paginate('GET /repos/{owner}/{repo}/issues', {
+  owner: 'OWNER', repo: 'REPO', state: 'open', per_page: 100,
+});</code></pre>
+    <p class="note">Octokit は <code>Accept</code> と <code>User-Agent</code> を自動で付ける。</p>
+  </div>
+
+  <h2 id="rest-vs-graphql">REST と GraphQL</h2>
+  <p>GitHub の API は 2 つある。どちらも同じトークン（PAT・<code>GITHUB_TOKEN</code>・App のトークン）で呼べ、gh・curl・Octokit から使える。違いは「返す中身を誰が決めるか」。</p>
+  <div class="vs">
+    <div class="side">
+      <h3>REST</h3>
+      <p class="ep">URL がたくさんある: <code>https://api.github.com/…</code></p>
+      <ul>
+        <li>URL ごとに返す中身が決まっていて、使わないフィールドも返る</li>
+        <li>関連データは URL を変えて何回も呼ぶ</li>
+        <li>操作は HTTP メソッド（GET・POST・PATCH・DELETE）で表す</li>
+        <li>レート制限は回数で数える</li>
+      </ul>
+<pre><code>GET /repos/cli/cli
+GET /repos/cli/cli/issues?per_page=3
+GET /users/{login}   # 作者ごとに…</code></pre>
+    </div>
+    <div class="side">
+      <h3>GraphQL</h3>
+      <p class="ep">入口は 1 つ: <code>POST https://api.github.com/graphql</code></p>
+      <ul>
+        <li>欲しいフィールドをクエリに書くと、その形のまま返る</li>
+        <li>入れ子のデータも 1 回で取れる</li>
+        <li>読み取りは <code>query</code>、書き込みは <code>mutation</code></li>
+        <li>レート制限はクエリの重さ（ポイント）で数える</li>
+      </ul>
+<pre><code>query {
+  repository(owner: "cli", name: "cli") {
+    issues(first: 3) { nodes { title author { login } } }
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>片方にしかない機能</h3>
+  <p>大部分は重なっているが、一方にしかない機能もある。使う前に、目的の機能がどちらのリファレンスにあるかを確かめる。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>機能</th><th>REST</th><th>GraphQL</th></tr></thead>
+      <tbody>
+        <tr><td>Discussions</td><td data-l="REST">なし</td><td data-l="GraphQL">取得・作成・編集・削除</td></tr>
+        <tr><td>Projects</td><td data-l="REST">一覧・取得、アイテムの追加・削除、フィールドの値の更新（2025 年に追加）。その後フィールドの追加もできるようになった</td><td data-l="GraphQL">上に加えて、プロジェクトそのものの作成・削除と、フィールドの削除</td></tr>
+        <tr><td>Packages（コンテナ・npm など）</td><td data-l="REST">あり</td><td data-l="GraphQL">新しい仕組みのレジストリ（コンテナ・npm など）のデータは返さない</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">傾向として、Actions（実行・Secrets・ログ）や Webhook の設定のような管理系は REST が中心、Issue・PR・リポジトリをまたいでまとめて読む用途は GraphQL が得意。</p>
+
+  <h3>使い分けの目安</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>やりたいこと</th><th>向いている方</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>Issue を 1 件作る・ファイルを 1 つ取る</td><td data-l="向き">REST</td><td data-l="理由">1 回で済み、curl でもすぐ書ける</td></tr>
+        <tr><td>一覧画面・集計（リポジトリ → Issue → 作者・コメント数）</td><td data-l="向き">GraphQL</td><td data-l="理由">何回も呼ぶ代わりに 1 回で取れ、余計なデータも来ない</td></tr>
+        <tr><td>Actions・Secrets・Webhook の操作</td><td data-l="向き">REST</td><td data-l="理由">多くは REST にしかない</td></tr>
+        <tr><td>Discussions・プロジェクト自体の作成</td><td data-l="向き">GraphQL</td><td data-l="理由">GraphQL にしかない</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>混ぜて使ってよい。REST のレスポンスの <code>node_id</code> は GraphQL の <code>id</code> と同じもので、両方の API の間で受け渡せる。</p>
+
+  <h2 id="request">REST API の決まりごと</h2>
+  <div class="card">
+    <div class="pipe" role="img" aria-label="トークンと 3 つのヘッダーを付けて api.github.com にリクエストを送り、レスポンスのヘッダーでレート制限と次のページの URL を受け取る">
+      <div class="st"><b>トークン</b><span><code>Authorization: Bearer …</code>。無くても公開データは読めるが 60 回/時</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>ヘッダー</b><span><code>Accept</code>・<code>X-GitHub-Api-Version</code>・<code>User-Agent</code></span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>api.github.com</b><span>パスの <code>{owner}</code> などは実際の値に置き換える</span></div>
+      <div class="ar" aria-hidden="true"></div>
+      <div class="st"><b>レスポンスのヘッダー</b><span><code>x-ratelimit-*</code>（残り回数）・<code>link</code>（次のページ）</span></div>
+    </div>
+  </div>
+
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>ヘッダー</th><th>値</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td><code>Authorization</code></td><td data-l="値"><code>Bearer TOKEN</code></td><td data-l="メモ"><code>token TOKEN</code> もたいてい通るが、JWT（App の認証）は <code>Bearer</code> だけ</td></tr>
+        <tr><td><code>Accept</code></td><td data-l="値"><code>application/vnd.github+json</code></td><td data-l="メモ">中身だけ欲しいときは <code>application/vnd.github.raw+json</code>、PR やコミットの差分は <code>application/vnd.github.diff</code></td></tr>
+        <tr><td><code>X-GitHub-Api-Version</code></td><td data-l="値"><code>2026-03-10</code></td><td data-l="メモ">省くと <code>2022-11-28</code> 扱い。対応していない版を指定すると <code>410 Gone</code></td></tr>
+        <tr><td><code>User-Agent</code></td><td data-l="値">ユーザー名やアプリ名</td><td data-l="メモ">無いと拒否される。curl・gh・Octokit は自動で付ける</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>API バージョン</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>バージョン</th><th>状態</th></tr></thead>
+      <tbody>
+        <tr><td><code>2026-03-10</code></td><td>最新。サポート終了日は未定</td></tr>
+        <tr><td><code>2022-11-28</code></td><td>ヘッダーを省いたときの既定。2028-03-10 にサポート終了</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><code>2026-03-10</code> に上げるときに引っかかりやすい破壊的変更（全体の一覧は参考の「Breaking changes」）:</p>
+  <ul class="plain">
+    <li><code>GET /rate_limit</code> の <code>rate</code> が無くなった → <code>resources.core</code> を読む</li>
+    <li>ワークフローの手動実行（<code>POST …/dispatches</code>）が <code>204</code> ではなく、実行の情報付きの <code>200</code> を返す</li>
+    <li>Issue・PR の単数の <code>assignee</code> が無くなった → <code>assignees</code> 配列を読む</li>
+    <li>PR の <code>merge_commit_sha</code>、リポジトリの <code>has_downloads</code> が無くなった</li>
+    <li>ディレクトリ一覧の中のサブモジュールが <code>type: "submodule"</code> になった（以前は <code>file</code>）</li>
+  </ul>
+
+  <h2 id="endpoints">REST のよく使うエンドポイント</h2>
+  <input class="filter" type="search" id="ep-filter" placeholder="絞り込み（例: issue, pulls, 書き込み）" aria-label="エンドポイントを絞り込む">
+  <div class="table-wrap stack">
+    <table id="ep-table">
+      <thead><tr><th>やりたいこと</th><th>メソッドとパス</th><th>fine-grained の権限</th></tr></thead>
+      <tbody>
+        <tr><td>自分の情報</td><td data-l="パス"><code>GET /<wbr>user</code></td><td data-l="権限">なし</td></tr>
+        <tr><td>自分のリポジトリ一覧</td><td data-l="パス"><code>GET /<wbr>user/<wbr>repos</code></td><td data-l="権限">Metadata（読み取り）</td></tr>
+        <tr><td>リポジトリの情報</td><td data-l="パス"><code>GET /<wbr>repos/<wbr>{owner}/<wbr>{repo}</code></td><td data-l="権限">Metadata（読み取り）</td></tr>
+        <tr><td>ファイルの中身を取る</td><td data-l="パス"><code>GET /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>contents/<wbr>{path}</code></td><td data-l="権限">Contents（読み取り）</td></tr>
+        <tr><td>Issue 一覧（PR も混ざる）</td><td data-l="パス"><code>GET /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>issues</code></td><td data-l="権限">Issues（読み取り）</td></tr>
+        <tr><td>Issue を作る（書き込み）</td><td data-l="パス"><code>POST /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>issues</code></td><td data-l="権限">Issues（書き込み）</td></tr>
+        <tr><td>Issue・PR にコメント（書き込み）</td><td data-l="パス"><code>POST /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>issues/<wbr>{number}/<wbr>comments</code></td><td data-l="権限">Issues か Pull requests（書き込み）</td></tr>
+        <tr><td>PR 一覧</td><td data-l="パス"><code>GET /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>pulls</code></td><td data-l="権限">Pull requests（読み取り）</td></tr>
+        <tr><td>PR を作る（書き込み）</td><td data-l="パス"><code>POST /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>pulls</code></td><td data-l="権限">Pull requests（書き込み）</td></tr>
+        <tr><td>ワークフローを手動実行（書き込み）</td><td data-l="パス"><code>POST /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>actions/<wbr>workflows/<wbr>{id}/<wbr>dispatches</code></td><td data-l="権限">Actions（書き込み）</td></tr>
+        <tr><td>リリースの一覧</td><td data-l="パス"><code>GET /<wbr>repos/<wbr>{owner}/<wbr>{repo}/<wbr>releases</code></td><td data-l="権限">Contents（読み取り）</td></tr>
+        <tr><td>Issue・PR を検索</td><td data-l="パス"><code>GET /<wbr>search/<wbr>issues?q=repo:OWNER/<wbr>REPO+is:open</code></td><td data-l="権限">なし（非公開は対象の読み取り権限）。検索は別の、より厳しい制限</td></tr>
+        <tr><td>レート制限の残り</td><td data-l="パス"><code>GET /<wbr>rate_limit</code></td><td data-l="権限">なし（呼んでも回数を減らさない）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">必要な権限は、各エンドポイントのリファレンスの「Fine-grained access tokens for …」の欄に書いてある。足りないと 403 か 404 になる。</p>
+
+  <h2 id="paginate">REST のページネーション</h2>
+  <ul class="plain">
+    <li>一覧系は <code>per_page</code>（多くは最大 100）と <code>page</code> で区切って返す。100 を超えて指定してもエラーにならず、黙って 100 に下げられる</li>
+    <li>次のページはレスポンスの <code>link</code> ヘッダーの <code>rel="next"</code> の URL を使う（<code>first</code>・<code>prev</code>・<code>last</code> もある）。URL を自分で組み立てない。<code>before</code>・<code>after</code> で区切るエンドポイントもあるため</li>
+    <li>まとめて取るなら <code>gh api --paginate</code>（<code>--slurp</code> で 1 つの配列に）か <code>octokit.paginate()</code></li>
+  </ul>
+<pre><code>link: &lt;https://api.github.com/repositories/1300192/issues?page=2&gt;; rel="next",
+      &lt;https://api.github.com/repositories/1300192/issues?page=515&gt;; rel="last"</code></pre>
+
+  <h2 id="graphql">GraphQL API の使い方</h2>
+  <ul class="plain">
+    <li>エンドポイントは <code>POST https://api.github.com/graphql</code> の 1 つだけ。本文は <code>{"query": "…", "variables": {…}}</code> の JSON</li>
+    <li>REST の <code>X-GitHub-Api-Version</code> は使わない。変更はスキーマの非推奨 → 削除として告知される（GraphQL の「Breaking changes」）</li>
+    <li>ドキュメントにあった GraphQL Explorer は 2025 年 11 月に廃止。試すなら <code>gh api graphql</code> か、好きな GraphQL クライアントを <code>https://api.github.com/graphql</code> に向ける</li>
+  </ul>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="g-query">query</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-mutation">mutation</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-page">ページ送り</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-curl">curl</button>
+  </div>
+  <div class="panel" id="g-query">
+<pre><code># 変数は -F / -f で渡す（query と operationName 以外は全部 GraphQL の変数になる）
+gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
+  query($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) {
+      stargazerCount
+      issues(first: 10, states: OPEN, orderBy: {field: CREATED_AT, direction: DESC}) {
+        totalCount
+        nodes { number title author { login } comments { totalCount } }
+      }
+    }
+  }' --jq '.data.repository.issues.nodes[] | "\(.number) \(.title)"'</code></pre>
+    <p class="note">接続（<code>issues</code> などの一覧）には必ず <code>first</code> か <code>last</code>（1〜100）を付ける。</p>
+  </div>
+  <div class="panel" id="g-mutation" hidden>
+    <p>GraphQL の書き込みは「対象の ID（ノード ID）を引く → その ID を mutation に渡す」の 2 段階になることが多い。REST の <code>POST /repos/OWNER/REPO/issues</code> なら 1 回で済む。</p>
+<pre><code># 1. リポジトリの ID を引く（REST の node_id と同じ値）
+REPO_ID=$(gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
+  query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { id } }' \
+  --jq '.data.repository.id')
+
+# 2. その ID で Issue を作る
+gh api graphql -f repo="$REPO_ID" -f title='バグ報告' -f query='
+  mutation($repo: ID!, $title: String!) {
+    createIssue(input: {repositoryId: $repo, title: $title}) { issue { number url } }
+  }'</code></pre>
+  </div>
+  <div class="panel" id="g-page" hidden>
+    <p>ページ送りはカーソル方式。<code>pageInfo { hasNextPage endCursor }</code> を取り、次は <code>after: endCursor</code> で続きを取る。<code>gh api graphql --paginate</code> を使うなら、クエリに <code>$endCursor: String</code> 変数と <code>pageInfo { hasNextPage endCursor }</code> が要る。</p>
+<pre><code>gh api graphql --paginate -f query='
+  query($endCursor: String) {
+    viewer {
+      repositories(first: 100, after: $endCursor) {
+        nodes { nameWithOwner }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }' --jq '.data.viewer.repositories.nodes[].nameWithOwner'</code></pre>
+  </div>
+  <div class="panel" id="g-curl" hidden>
+<pre><code>curl https://api.github.com/graphql \
+  -H "Authorization: Bearer $GH_PAT" \
+  -d '{"query": "query { viewer { login } }"}'
+
+# 変数付き
+curl https://api.github.com/graphql \
+  -H "Authorization: Bearer $GH_PAT" \
+  -d '{"query": "query($n: Int!) { viewer { repositories(first: $n) { nodes { name } } } }",
+       "variables": {"n": 5}}'</code></pre>
+    <p class="note">クエリの文字列の中で改行するなら <code>\n</code> にエスケープする。長いクエリは gh か GraphQL クライアントのほうが楽。</p>
+  </div>
+
+  <h3>GraphQL の制限</h3>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>1 時間の上限</td><td data-l="内容">ユーザー（PAT）5,000 ポイント。App のインストールは REST と同じく 5,000〜12,500、<code>GITHUB_TOKEN</code> はリポジトリごとに 1,000。Enterprise Cloud では App のインストールが 10,000、<code>GITHUB_TOKEN</code> が 15,000。REST とは別の枠</td></tr>
+        <tr><td>ポイントの数え方</td><td data-l="内容">各接続が <code>first</code>/<code>last</code> の上限まで返すと仮定して必要なリクエスト数を足し、100 で割って丸める（最低 1）</td></tr>
+        <tr><td>1 回のクエリ</td><td data-l="内容">ノードは合計 50 万まで。10 秒を超えると打ち切られ（502・504）、ポイントも余分に引かれる</td></tr>
+        <tr><td>短時間の制限</td><td data-l="内容">1 分に 2,000 ポイントまで（query は 1、mutation は 5 ポイント）。同時 100 リクエストは REST と合算</td></tr>
+        <tr><td>残りを見る</td><td data-l="内容">ヘッダーの <code>x-ratelimit-*</code>（<code>x-ratelimit-resource</code> は <code>graphql</code>）か、クエリに <code>rateLimit { cost remaining resetAt }</code> を足す</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>query {
+  rateLimit { limit cost remaining resetAt }   # このクエリが何ポイントかも分かる
+  viewer { login }
+}</code></pre>
+  <p class="note">上限に達しても、ステータスは 200 のまま本文に <code>errors</code> が入る。GraphQL は一部だけ失敗して <code>data</code> と <code>errors</code> が両方返ることもあるので、200 でも必ず <code>errors</code> を確かめる。</p>
+
+  <h2 id="ratelimit">REST のレート制限</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="r-primary">1 時間あたり</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-secondary">短時間の制限</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-headers">ヘッダー</button>
+  </div>
+  <div class="panel" id="r-primary">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>認証のしかた</th><th>上限（1 時間）</th><th>メモ</th></tr></thead>
+        <tbody>
+          <tr><td>認証なし</td><td data-l="上限">60</td><td data-l="メモ">送信元の IP アドレスごと</td></tr>
+          <tr><td>PAT（ユーザーとして）</td><td data-l="上限">5,000</td><td data-l="メモ">同じユーザーの代わりに動く OAuth アプリ・App のユーザー用トークンと合算</td></tr>
+          <tr><td>GitHub App のインストール</td><td data-l="上限">5,000〜12,500</td><td data-l="メモ">リポジトリ・ユーザーが 20 を超えると 1 つごとに +50。Enterprise Cloud の組織なら 15,000</td></tr>
+          <tr><td><code>GITHUB_TOKEN</code></td><td data-l="上限">1,000</td><td data-l="メモ">リポジトリごと。Enterprise Cloud のリソースなら 15,000</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="r-secondary" hidden>
+    <ul class="plain">
+      <li>同時に 100 リクエストまで（REST と GraphQL の合計）</li>
+      <li>1 分あたり REST は 900 ポイントまで。GET などは 1、POST・PATCH・PUT・DELETE は 5 ポイント</li>
+      <li>何かを作るリクエストは 1 分に 80・1 時間に 500 まで（Web 画面での操作も数える）</li>
+      <li>状態を確かめる方法はない。超えたら <code>retry-after</code> に従う</li>
+    </ul>
+  </div>
+  <div class="panel" id="r-headers" hidden>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ヘッダー</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>x-ratelimit-limit</code></td><td>1 時間の上限</td></tr>
+          <tr><td><code>x-ratelimit-remaining</code></td><td>今の枠で残っている回数</td></tr>
+          <tr><td><code>x-ratelimit-used</code></td><td>今の枠で使った回数</td></tr>
+          <tr><td><code>x-ratelimit-reset</code></td><td>枠が戻る時刻（UTC の epoch 秒）</td></tr>
+          <tr><td><code>x-ratelimit-resource</code></td><td>どの枠で数えたか（<code>core</code>・<code>search</code> など）</td></tr>
+          <tr><td><code>retry-after</code></td><td>短時間の制限に当たったとき、待つ秒数</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>403・429 が返ってきたら</h3>
+  <ol class="steps">
+    <li><b>retry-after を見る</b>あれば、その秒数だけ待つ</li>
+    <li><b>remaining が 0 か見る</b><code>x-ratelimit-remaining: 0</code> なら <code>x-ratelimit-reset</code> の時刻まで待つ</li>
+    <li><b>どちらも無ければ 1 分待つ</b>それでも続くなら、待ち時間を倍々にして (exponential backoff) 決めた回数で諦める</li>
+    <li class="is-ng"><b>待たずに叩き続けない</b>制限中にリクエストを続けると、連携ごと止められることがある</li>
+  </ol>
+  <p class="note">最後の手順だけ赤いのは「してはいけないこと」だから。</p>
+
+  <h2 id="errors">よく見るエラー（REST）</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>ステータス</th><th>よくある原因</th></tr></thead>
+      <tbody>
+        <tr><td><code>401</code></td><td data-l="原因">トークンが間違い・期限切れ・削除済み</td></tr>
+        <tr><td><code>403</code></td><td data-l="原因">権限・スコープ不足、SSO の承認がない、組織が PAT を禁止・承認待ち、レート制限、<code>User-Agent</code> が無い</td></tr>
+        <tr><td><code>404</code></td><td data-l="原因">非公開リポジトリに届かないトークン（存在を隠すため 403 ではなく 404）、リソース所有者やリポジトリの選び忘れ</td></tr>
+        <tr><td><code>410</code></td><td data-l="原因">サポートが終わった API バージョンを指定した</td></tr>
+        <tr><td><code>422</code></td><td data-l="原因">送ったパラメータが不正（必須の欠け・値の誤り）</td></tr>
+        <tr><td><code>429</code></td><td data-l="原因">レート制限</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">GraphQL は失敗してもステータスが 200 のことが多い。本文の <code>errors</code> を見る。問い合わせるときは、レスポンスの <code>x-github-request-id</code> を添える。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>admin:org のスコープを付ければ組織の管理ができる</summary><p>トークンは持ち主の権限を超えない。組織のオーナーでない人の PAT に <code>admin:org</code> を付けても、管理の操作はできない。</p></details>
+  <details class="myth"><summary>無期限のトークンはずっと使える</summary><p>1 年使われなかった PAT は自動で削除される。公開リポジトリや Gist に push されたものも自動で失効する。組織のポリシーで有効期限の上限がかかることもある。</p></details>
+  <details class="myth"><summary>GITHUB_TOKEN があれば同じ組織のほかのリポジトリも触れる</summary><p>届くのはワークフローがあるリポジトリだけ。ほかのリポジトリには、そのリポジトリを選んだ fine-grained PAT か GitHub App のトークンを使う。</p></details>
+  <details class="myth"><summary>Issues の API では Issue だけが返ってくる</summary><p>REST API では PR も Issue の一種として返る。PR には <code>pull_request</code> キーが付くので、それで見分ける。</p></details>
+  <details class="myth"><summary>REST と GraphQL はどちらでも同じことができる</summary><p>大部分は重なっているが、Discussions は GraphQL だけ、Packages の新しい仕組みのレジストリ（コンテナ・npm など）のデータは REST だけ、のように片方にしかない機能がある。目的の機能がどちらのリファレンスにあるかを先に確かめる。</p></details>
+  <details class="myth"><summary>GraphQL なら 1 回で取れるのでレート制限を気にしなくてよい</summary><p>GraphQL はクエリの重さでポイントを消費する。<code>first: 100</code> を何段も入れ子にすると 1 回で大きく減る。<code>rateLimit { cost }</code> で重さを確かめる。</p></details>
+  <details class="myth"><summary>404 が返ったのでリソースは存在しない</summary><p>非公開のものはトークンに権限が無いと 404 になる。fine-grained ならリソース所有者・リポジトリの選択・権限を見直す。</p></details>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens">Managing your personal access tokens</a></li>
+    <li><a href="https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/github-credential-types">GitHub credential types</a></li>
+    <li><a href="https://github.blog/changelog/2026-10-02-stateless-github-app-installation-tokens-rolled-out/">Stateless GitHub App installation tokens rolled out</a>（GitHub Changelog）</li>
+    <li><a href="https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps">Scopes for OAuth apps</a>（classic のスコープ）</li>
+    <li><a href="https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api">Getting started with the REST API</a></li>
+    <li><a href="https://docs.github.com/en/rest/about-the-rest-api/api-versions">API Versions</a>・<a href="https://docs.github.com/en/rest/about-the-rest-api/breaking-changes">Breaking changes</a></li>
+    <li><a href="https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api">Using pagination in the REST API</a></li>
+    <li><a href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api">Rate limits for the REST API</a></li>
+    <li><a href="https://docs.github.com/en/actions/concepts/security/github_token">GITHUB_TOKEN</a>（Actions）</li>
+    <li><a href="https://github.blog/changelog/2026-04-24-notice-about-upcoming-new-format-for-github-app-installation-tokens/">Notice about upcoming new format for GitHub App installation tokens</a>（GitHub Changelog）</li>
+    <li><a href="https://docs.github.com/en/rest/about-the-rest-api/comparing-githubs-rest-api-and-graphql-api">Comparing GitHub's REST API and GraphQL API</a></li>
+    <li><a href="https://docs.github.com/en/graphql/guides/forming-calls-with-graphql">Forming calls with GraphQL</a>・<a href="https://docs.github.com/en/graphql/guides/using-graphql-clients">Using GraphQL Clients</a></li>
+    <li><a href="https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api">Rate limits and query limits for the GraphQL API</a></li>
+    <li><a href="https://docs.github.com/en/graphql/guides/using-the-graphql-api-for-discussions">Using the GraphQL API for Discussions</a></li>
+    <li><a href="https://github.blog/changelog/2025-09-11-a-rest-api-for-github-projects-sub-issues-improvements-and-more/">A REST API for GitHub Projects, sub-issues improvements, and more</a>（GitHub Changelog）</li>
+    <li><a href="https://docs.github.com/en/rest/projects/fields">REST API endpoints for Project fields</a></li>
+    <li><a href="https://github.blog/changelog/2022-08-18-deprecation-notice-graphql-for-packages/">Deprecation notice: GraphQL for Packages</a>（GitHub Changelog）</li>
+    <li><a href="https://github.blog/changelog/2025-08-22-graphql-explorer-removal-from-api-documentation-on-november-1-2025/">GraphQL Explorer removal from API documentation</a>（GitHub Changelog）</li>
+    <li><a href="https://cli.github.com/manual/gh_api">gh api</a>・<a href="https://cli.github.com/manual/gh_help_environment">gh environment</a>（GitHub CLI マニュアル）</li>
+  </ul>
+  <p class="note">2026-11-28 に確認。対象は github.com（GitHub Enterprise Server は API の URL が REST は <code>https://HOST/api/v3</code>、GraphQL は <code>https://HOST/api/graphql</code> になり、レート制限は管理者の設定による）。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+const filter = document.getElementById('ep-filter');
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelectorAll('#ep-table tbody tr').forEach(tr => {
+    tr.hidden = q !== '' && !tr.textContent.toLowerCase().includes(q);
+  });
+});
+</script>
+
+</body>
+</html>

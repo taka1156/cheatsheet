@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 拡張機能 使い方</title>
+<meta name="description" content="CLAUDE.md・スキル・サブエージェント・フック・MCP・プラグイン・権限の置き場所と書き方を一覧で引ける。">
+<meta name="memo:tags" content="生成AI, 開発ツール">
+<meta name="memo:date" content="2026-11-28">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+/* 共通部品（ざっくり言うと・よくある誤解・番号付きの手順・表やリストの中のリンク）と
+   解説用の色（--c-ok・--c-ng・--c-warn・--c-hl）は assets/memo-parts.css にある（build・preview が読み込む）。
+   ここで書き直さない。ページ独自の色分けが要るときは、意味ごとの --c-名前 を :root に足し、凡例やラベルを付ける。
+   アクセント色（--accent）は h1・h2 の左線・段落のリンク・ボタンやタブの操作状態にだけ使う */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+p { margin: 8px 0; }
+a { color: var(--accent); }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);  /* 小さい文字の中でも 10px を下回らない */
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code { overflow-wrap: anywhere; }
+td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+ul { margin: 8px 0 8px 1.3em; }
+ul li { margin: 4px 0; }
+pre { margin: 10px 0; line-height: 1.55; }
+.lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0 10px; }
+.lanes + .table-wrap { margin-top: 10px; }
+.lane b { display: block; margin-bottom: 4px; }
+.lane code { white-space: nowrap; }
+.lane p { margin: 0; font-size: 0.86rem; color: var(--fg-2); }
+.panel { margin-top: 4px; }
+@media (max-width: 600px) {
+  td:first-child { white-space: normal; }
+  .lanes { grid-template-columns: 1fr; }
+  .lanes + .stack tr:first-child { margin-top: 0; }
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; }
+  .stack td:first-child { font-weight: 700; }
+  .stack td:first-child code { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Claude Code 拡張機能 使い方</h1>
+  <p class="subtitle">CLAUDE.md・スキル・サブエージェント・フック・MCP・プラグイン・権限を、置き場所と書き方で引く</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>Claude Code は <code>.claude/</code>（プロジェクト）と <code>~/.claude/</code>（個人）に置いたファイルで振る舞いを足せる。</li>
+      <li>事実・規約は CLAUDE.md、手順はスキル、別コンテキストでの作業はサブエージェント、必ず実行したい処理はフックに書く。</li>
+      <li>CLAUDE.md やスキルは Claude への「お願い」で、確実に止めたい操作はフックか権限の deny で止める。</li>
+    </ul>
+  </div>
+
+  <h2 id="choose">どれを使うか</h2>
+  <div class="lanes">
+    <div class="card lane">
+      <b>あなたが起動する</b>
+      <p><code>/スキル名</code>・<code>@"名前 (agent)"</code>・<code>/コマンド</code></p>
+    </div>
+    <div class="card lane">
+      <b>Claude が判断して使う</b>
+      <p>スキル（description を見て読み込む）・サブエージェント（description を見て委譲）・MCP ツール</p>
+    </div>
+    <div class="card lane">
+      <b>イベントで必ず動く</b>
+      <p>フック（ツール実行の前後・セッション開始・応答終了など）。Claude の判断を通さない</p>
+    </div>
+  </div>
+
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>機能</th><th>置き場所（プロジェクト／個人）</th><th>読み込まれ方</th><th>向いている用途</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#memory">CLAUDE.md</a></td><td data-l="置き場所（プロジェクト／個人）"><code>./CLAUDE.md</code>／<code>~/.claude/CLAUDE.md</code></td><td data-l="読み込まれ方">毎セッション全文</td><td data-l="向いている用途">ビルド・テストのコマンド、コーディング規約などの事実</td></tr>
+        <tr><td><a href="#memory">ルール</a></td><td data-l="置き場所（プロジェクト／個人）"><code>.claude/rules/*.md</code>／<code>~/.claude/rules/</code></td><td data-l="読み込まれ方"><code>paths</code> 指定なしは毎回、ありは該当ファイルを扱うときだけ</td><td data-l="向いている用途">特定のディレクトリ・拡張子だけの規約</td></tr>
+        <tr><td><a href="#skills">スキル</a></td><td data-l="置き場所（プロジェクト／個人）"><code>.claude/skills/&lt;名前&gt;/SKILL.md</code>／<code>~/.claude/skills/</code></td><td data-l="読み込まれ方">description だけ常に。本文は使うときだけ</td><td data-l="向いている用途">デプロイ・レビューなど繰り返す手順、<code>/</code> コマンド</td></tr>
+        <tr><td><a href="#agents">サブエージェント</a></td><td data-l="置き場所（プロジェクト／個人）"><code>.claude/agents/*.md</code>／<code>~/.claude/agents/</code></td><td data-l="読み込まれ方">委譲したときだけ、別のコンテキストで動く</td><td data-l="向いている用途">調査・レビューなど、結果だけ欲しい作業。ツールやモデルを絞りたいとき</td></tr>
+        <tr><td><a href="#hooks">フック</a></td><td data-l="置き場所（プロジェクト／個人）"><code>.claude/settings.json</code> の <code>hooks</code>／<code>~/.claude/settings.json</code></td><td data-l="読み込まれ方">イベントが起きるたびに実行</td><td data-l="向いている用途">編集後の整形、危険なコマンドの拒否、通知</td></tr>
+        <tr><td><a href="#mcp">MCP</a></td><td data-l="置き場所（プロジェクト／個人）"><code>.mcp.json</code>／<code>~/.claude.json</code></td><td data-l="読み込まれ方">ツールとして常に使える</td><td data-l="向いている用途">GitHub・DB・社内 API などの外部ツール</td></tr>
+        <tr><td><a href="#plugins">プラグイン</a></td><td data-l="置き場所（プロジェクト／個人）">マーケットプレイスからインストール</td><td data-l="読み込まれ方">有効にした範囲で、中身の各機能として</td><td data-l="向いている用途">上のものを束ねてチームや他のプロジェクトに配る</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="tree">ファイルの置き場所</h2>
+<pre>your-project/
+├── CLAUDE.md               # プロジェクトの指示（.claude/CLAUDE.md でもよい）
+├── CLAUDE.local.md         # 自分だけの指示（.gitignore に入れる）
+├── .mcp.json               # プロジェクト共有の MCP サーバー
+└── .claude/
+    ├── settings.json       # チーム共有の設定（権限・フック・プラグイン・env）
+    ├── settings.local.json # 自分だけの設定（git から外す）
+    ├── rules/*.md          # 分割した指示。paths で対象ファイルを絞れる
+    ├── skills/&lt;名前&gt;/SKILL.md
+    ├── agents/&lt;名前&gt;.md
+    └── commands/&lt;名前&gt;.md   # 旧形式のカスタムコマンド（今も動く）
+
+~/.claude/
+├── CLAUDE.md  rules/  skills/  agents/  settings.json   # 全プロジェクト共通
+└── projects/&lt;project&gt;/memory/MEMORY.md                 # 自動メモリ（Claude が書く）
+~/.claude.json              # MCP（local・user スコープ）・アカウントなど。手で触らない</pre>
+
+  <h2 id="memory">CLAUDE.md とルール</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ファイル</th><th>場所</th><th>誰に効くか</th></tr></thead>
+      <tbody>
+        <tr><td>組織のポリシー</td><td>macOS <code>/Library/Application Support/ClaudeCode/CLAUDE.md</code>・Linux <code>/etc/claude-code/CLAUDE.md</code></td><td>組織の全員</td></tr>
+        <tr><td>ユーザー</td><td><code>~/.claude/CLAUDE.md</code></td><td>自分（全プロジェクト）</td></tr>
+        <tr><td>プロジェクト</td><td><code>./CLAUDE.md</code> か <code>./.claude/CLAUDE.md</code></td><td>リポジトリを使う全員</td></tr>
+        <tr><td>ローカル</td><td><code>./CLAUDE.local.md</code></td><td>自分（このプロジェクト）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li>起動したディレクトリと<b>その上の階層</b>の CLAUDE.md は起動時に全部読まれ、上書きではなく連結される（近いものほど後）。サブディレクトリの CLAUDE.md は、Claude がそこのファイルを触ったときに読まれる。</li>
+    <li><code>@path/to/file</code> で別ファイルを取り込める（相対パスは書いたファイルから。入れ子は 4 段まで）。バッククォートで囲めば取り込まれない。</li>
+    <li>1 ファイル 200 行以内が目安。<code>/init</code> でコードベースから下書きを作れる。<code>CLAUDE.md</code> が無く <code>AGENTS.md</code> があれば、そちらを読む。</li>
+    <li><b>自動メモリ</b>: Claude が自分で <code>~/.claude/projects/&lt;project&gt;/memory/</code> にメモを書く。<code>MEMORY.md</code> の先頭 200 行（または 25KB）が毎回読まれる。オン・オフは <code>/memory</code>。</li>
+  </ul>
+<pre>---
+paths:
+  - "src/api/**/*.ts"
+---
+# API のルール
+- エンドポイントは必ず入力を検証する</pre>
+  <p class="note"><code>.claude/rules/api.md</code> の例。<code>paths</code> に合うファイルを扱うときだけ読み込まれる。</p>
+
+  <h2 id="skills">スキル（SKILL.md）</h2>
+  <p>フォルダ名が <code>/コマンド名</code> になる。<code>.claude/commands/deploy.md</code> と <code>.claude/skills/deploy/SKILL.md</code> はどちらも <code>/deploy</code> を作る（カスタムコマンドはスキルに統合された）。同名なら企業 &gt; 個人 &gt; プロジェクトの順で優先。プラグインのスキルは <code>/プラグイン名:スキル名</code>。</p>
+<pre>~/.claude/skills/summarize-changes/SKILL.md
+---
+description: 未コミットの変更を要約し危険な点を挙げる。変更点やコミットメッセージを聞かれたときに使う。
+allowed-tools: Bash(git diff *)
+---
+## 今の変更
+!`git diff HEAD`
+
+## 指示
+上の変更を 2〜3 点に要約し、リスクを挙げる。</pre>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="sk-fm">フロントマター</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="sk-args">引数・変数</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="sk-inv">起動の制御</button>
+  </div>
+  <div class="panel" id="sk-fm">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>キー</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td><code>/</code> メニューの名前。省略時はフォルダ名</td></tr>
+          <tr><td><code>description</code></td><td>何をするか・いつ使うか。Claude はこれで読み込むかを決める（<code>when_to_use</code> と合わせて 1,536 字で切られる）</td></tr>
+          <tr><td><code>argument-hint</code></td><td>補完に出す引数のヒント（例: <code>[issue-number]</code>）</td></tr>
+          <tr><td><code>arguments</code></td><td>名前付き引数。<code>$name</code> で参照</td></tr>
+          <tr><td><code>disable-model-invocation</code></td><td><code>true</code> で自分の <code>/名前</code> だけが起動できる</td></tr>
+          <tr><td><code>user-invocable</code></td><td><code>false</code> で <code>/</code> メニューから隠し、Claude だけが使う</td></tr>
+          <tr><td><code>allowed-tools</code></td><td>そのターンの間、確認なしで使えるツール</td></tr>
+          <tr><td><code>disallowed-tools</code></td><td>スキルが有効な間、使えなくするツール</td></tr>
+          <tr><td><code>model</code>・<code>effort</code></td><td>そのターンのモデル・effort（<code>low</code>〜<code>max</code>）</td></tr>
+          <tr><td><code>context: fork</code>・<code>agent</code></td><td>フォークしたサブエージェントで実行。<code>agent</code> で種類（<code>Explore</code> など）を指定</td></tr>
+          <tr><td><code>paths</code></td><td>自動で読み込む対象ファイルを glob で絞る</td></tr>
+          <tr><td><code>hooks</code></td><td>スキルを起動したときに登録するフック</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="sk-args" hidden>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>書き方</th><th>展開されるもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>$ARGUMENTS</code></td><td>引数全体</td></tr>
+          <tr><td><code>$0</code>・<code>$1</code>…（<code>$ARGUMENTS[N]</code>）</td><td>0 始まりの N 番目の引数。空白を含む値は <code>"…"</code> で囲む</td></tr>
+          <tr><td><code>$name</code></td><td><code>arguments</code> で名前を付けた引数</td></tr>
+          <tr><td><code>${CLAUDE_SKILL_DIR}</code></td><td>SKILL.md のあるフォルダ（同梱スクリプトの参照に）</td></tr>
+          <tr><td><code>${CLAUDE_PROJECT_DIR}</code>・<code>${CLAUDE_SESSION_ID}</code></td><td>プロジェクトのルート・セッション ID</td></tr>
+          <tr><td><code>!`コマンド`</code></td><td>Claude が読む前にシェルで実行し、出力に置き換える。失敗するとスキル全体が止まるので、失敗しうるものは <code>|| true</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">どこにも引数の置き場が無いと、本文の末尾に <code>ARGUMENTS: 値</code> が足される。<code>$1</code> のように引数として置き換えられる形をそのまま残したいときは、<code>\$1.00</code> のように <code>\</code> を前に付ける（ほかの <code>$</code> の前の <code>\</code> はそのまま残る）。</p>
+  </div>
+  <div class="panel" id="sk-inv" hidden>
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>設定</th><th>自分が起動</th><th>Claude が起動</th><th>description がコンテキストに</th></tr></thead>
+        <tbody>
+          <tr><td>（既定）</td><td data-l="自分が起動">できる</td><td data-l="Claude が起動">できる</td><td data-l="description がコンテキストに">常に入る</td></tr>
+          <tr><td><code>disable-model-invocation: true</code></td><td data-l="自分が起動">できる</td><td data-l="Claude が起動">できない</td><td data-l="description がコンテキストに">入らない</td></tr>
+          <tr><td><code>user-invocable: false</code></td><td data-l="自分が起動">できない</td><td data-l="Claude が起動">できる</td><td data-l="description がコンテキストに">常に入る</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">デプロイのように勝手に走られると困る手順は <code>disable-model-invocation: true</code> にする。</p>
+  </div>
+  <p>SKILL.md は 500 行以内にし、詳細は同じフォルダの <code>reference.md</code> や <code>scripts/</code> に分けて本文から参照する。一覧は <code>/skills</code>。同梱スキルには <code>/doctor</code>・<code>/code-review</code>・<code>/debug</code>・<code>/batch</code>・<code>/loop</code> などがある。</p>
+
+  <h2 id="agents">サブエージェント</h2>
+  <p>自分専用のコンテキストで動く別の Claude。調査の途中経過でメインの会話を埋めずに、結果だけを返させられる。ツール・モデル・権限を絞れる。</p>
+<pre>.claude/agents/code-reviewer.md
+---
+name: code-reviewer
+description: コードの品質をレビューする。コードを変更したあとに積極的に使う。
+tools: Read, Glob, Grep
+model: sonnet
+---
+あなたはコードレビュアーです。品質・セキュリティ・ベストプラクティスの観点で、具体的な指摘を返してください。</pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>キー</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>name</code>・<code>description</code></td><td>必須。<code>description</code> を見て Claude が委譲するかを決める</td></tr>
+        <tr><td><code>tools</code>・<code>disallowedTools</code></td><td>使えるツールの許可リスト・拒否リスト。<code>tools</code> を省くと使えるツールを全部引き継ぐ</td></tr>
+        <tr><td><code>model</code></td><td><code>sonnet</code>・<code>opus</code>・<code>haiku</code>・モデル ID・<code>inherit</code></td></tr>
+        <tr><td><code>permissionMode</code></td><td><code>default</code>・<code>acceptEdits</code>・<code>auto</code>・<code>dontAsk</code>・<code>bypassPermissions</code>・<code>plan</code></td></tr>
+        <tr><td><code>skills</code>・<code>mcpServers</code></td><td>起動時に全文を読み込むスキル・使わせる MCP サーバー</td></tr>
+        <tr><td><code>maxTurns</code>・<code>effort</code></td><td>最大ターン数・effort</td></tr>
+        <tr><td><code>isolation: worktree</code></td><td>一時的な git worktree の中で動かす</td></tr>
+        <tr><td><code>memory</code></td><td>サブエージェント自身の永続メモリ（<code>user</code>・<code>project</code>・<code>local</code>）</td></tr>
+        <tr><td><code>hooks</code>・<code>color</code></td><td>このサブエージェントだけのフック・表示色</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>呼び出し方</th><th>書き方</th></tr></thead>
+      <tbody>
+        <tr><td>自然文で頼む</td><td><code>code-reviewer サブエージェントで最近の変更を見て</code></td></tr>
+        <tr><td>@ メンション（確実に使わせる）</td><td><code>@"code-reviewer (agent)" 認証まわりを見て</code></td></tr>
+        <tr><td>セッション全体をそのエージェントに</td><td><code>claude --agent code-reviewer</code>（既定にするなら設定の <code>"agent"</code>）</td></tr>
+        <tr><td>そのセッションだけ定義する</td><td><code>claude --agents '{"名前": {"description": "…", "prompt": "…"}}'</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>組み込みは <code>Explore</code>（読み取り専用の調査）・<code>Plan</code>（プランモードの調査）・<code>general-purpose</code> など。同名ならマネージド設定 &gt; <code>--agents</code> &gt; <code>.claude/agents/</code> &gt; <code>~/.claude/agents/</code> &gt; プラグインの順で優先。サブエージェントは既定でメインから 3 段下までサブエージェントを起動できる（<code>CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH</code> で変更）。</p>
+
+  <h2 id="hooks">フック</h2>
+  <p>決まったタイミングで必ず動く、シェルコマンド・HTTP・プロンプトなどの処理。<code>settings.json</code> の <code>hooks</code> に「イベント → matcher → 処理」の 3 段で書く（プラグインの <code>hooks/hooks.json</code>、スキル・サブエージェントのフロントマターにも書ける）。登録済みのフックは <code>/hooks</code> で見られる。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="hk-ev">主なイベント</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="hk-conf">書き方</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="hk-out">終了コードと JSON</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="hk-ex">例</button>
+  </div>
+  <div class="panel" id="hk-ev">
+    <div class="table-wrap stack">
+      <table>
+        <thead><tr><th>イベント</th><th>いつ</th><th>止められるか</th><th>matcher で絞るもの</th></tr></thead>
+        <tbody>
+          <tr><td><code>SessionStart</code></td><td data-l="いつ">セッションの開始・再開</td><td data-l="止められるか">いいえ</td><td data-l="matcher で絞るもの"><code>startup|resume|clear|compact|fork</code></td></tr>
+          <tr><td><code>UserPromptSubmit</code></td><td data-l="いつ">プロンプト送信後、Claude が処理する前</td><td data-l="止められるか">はい</td><td data-l="matcher で絞るもの">—</td></tr>
+          <tr><td><code>PreToolUse</code></td><td data-l="いつ">ツールを実行する前</td><td data-l="止められるか">はい</td><td data-l="matcher で絞るもの">ツール名</td></tr>
+          <tr><td><code>PermissionRequest</code></td><td data-l="いつ">権限の確認が必要になったとき</td><td data-l="止められるか">JSON の <code>decision</code> で許可・拒否</td><td data-l="matcher で絞るもの">ツール名</td></tr>
+          <tr><td><code>PostToolUse</code></td><td data-l="いつ">ツールが成功したあと</td><td data-l="止められるか">いいえ（理由を Claude に返せる）</td><td data-l="matcher で絞るもの">ツール名</td></tr>
+          <tr><td><code>Notification</code></td><td data-l="いつ">入力待ち・権限待ちなどの通知</td><td data-l="止められるか">いいえ</td><td data-l="matcher で絞るもの">通知の種類</td></tr>
+          <tr><td><code>Stop</code></td><td data-l="いつ">Claude が応答を終えたとき</td><td data-l="止められるか">はい（続けさせる）</td><td data-l="matcher で絞るもの">—</td></tr>
+          <tr><td><code>SubagentStart</code>・<code>SubagentStop</code></td><td data-l="いつ">サブエージェントの開始・終了</td><td data-l="止められるか">Stop のみ はい</td><td data-l="matcher で絞るもの">エージェントの種類</td></tr>
+          <tr><td><code>PreCompact</code>・<code>PostCompact</code></td><td data-l="いつ">コンテキスト圧縮の前後</td><td data-l="止められるか">Pre のみ はい</td><td data-l="matcher で絞るもの"><code>manual|auto</code></td></tr>
+          <tr><td><code>ConfigChange</code>・<code>FileChanged</code></td><td data-l="いつ">設定ファイル・監視中のファイルが変わったとき</td><td data-l="止められるか">ConfigChange のみ はい</td><td data-l="matcher で絞るもの">設定の種類・ファイル名</td></tr>
+          <tr><td><code>SessionEnd</code></td><td data-l="いつ">セッションの終了</td><td data-l="止められるか">いいえ</td><td data-l="matcher で絞るもの">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">ほかに <code>PostToolUseFailure</code>・<code>TaskCreated</code>・<code>InstructionsLoaded</code>・<code>CwdChanged</code>・<code>WorktreeCreate</code>・<code>Elicitation</code> などがある（全一覧は参考の Hooks reference）。</p>
+  </div>
+  <div class="panel" id="hk-conf" hidden>
+<pre>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(rm *)",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-rm.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}</pre>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>項目</th><th>書き方</th></tr></thead>
+        <tbody>
+          <tr><td><code>matcher</code></td><td>省略・<code>"*"</code> で全部。英数字・<code>_</code>・<code>-</code>・空白・<code>,</code>・<code>|</code> だけなら完全一致のリスト（<code>Edit|Write</code>）。それ以外の文字を含むと、前後を固定しない正規表現になる（<code>mcp__github__.*</code>。全体一致は <code>^…$</code>）</td></tr>
+          <tr><td><code>if</code></td><td>権限ルールの書き方でさらに絞る（ツールのイベントだけ。<code>Bash(git *)</code>・<code>Edit(*.ts)</code>）</td></tr>
+          <tr><td><code>type</code></td><td><code>command</code>（stdin に JSON）・<code>http</code>（JSON を POST）・<code>mcp_tool</code>・<code>prompt</code>（LLM で判定）・<code>agent</code>（実験的）</td></tr>
+          <tr><td><code>timeout</code></td><td>秒。<code>command</code> などは既定 600 秒</td></tr>
+          <tr><td><code>async</code></td><td><code>true</code> で裏で実行して待たない（ログ・通知向け）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">スクリプトは <code>chmod +x</code> しておく。プロジェクトのスクリプトは <code>${CLAUDE_PROJECT_DIR}</code>、プラグインのものは <code>${CLAUDE_PLUGIN_ROOT}</code> から書く。stdin の JSON には <code>session_id</code>・<code>cwd</code>・<code>hook_event_name</code>、ツールのイベントなら <code>tool_name</code>・<code>tool_input</code> が入る。</p>
+  </div>
+  <div class="panel" id="hk-out" hidden>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>終了コード</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>成功。stdout が JSON なら読み取る。<code>UserPromptSubmit</code>・<code>SessionStart</code> ではプレーンテキストの stdout がコンテキストに入る</td></tr>
+          <tr><td><code>2</code></td><td><b>ブロック</b>。stderr が理由として Claude に渡り、止められるイベントなら操作が止まる</td></tr>
+          <tr><td>それ以外（<code>1</code> など）</td><td>止まらないエラー。操作はそのまま進み、エラーの通知だけ出る</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>JSON（stdout）</th><th>効果</th></tr></thead>
+        <tbody>
+          <tr><td><code>"continue": false</code> ＋ <code>stopReason</code></td><td>Claude をまるごと止める</td></tr>
+          <tr><td><code>"decision": "block"</code> ＋ <code>reason</code></td><td><code>UserPromptSubmit</code>・<code>PostToolUse</code>・<code>Stop</code> などで止める・やり直させる</td></tr>
+          <tr><td><code>hookSpecificOutput.permissionDecision</code></td><td><code>PreToolUse</code> で <code>allow</code>・<code>deny</code>・<code>ask</code>・<code>defer</code>。<code>updatedInput</code> で入力を書き換えられる</td></tr>
+          <tr><td><code>hookSpecificOutput.additionalContext</code></td><td>Claude に文脈を足す（<code>PostToolUse</code>・<code>SessionStart</code> など）</td></tr>
+          <tr><td><code>systemMessage</code></td><td>ユーザーに警告を表示する</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel" id="hk-ex" hidden>
+    <p><b>編集したファイルを Prettier で整形する</b>（<code>PostToolUse</code>）</p>
+<pre>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write" }
+        ]
+      }
+    ]
+  }
+}</pre>
+    <p><b><code>rm -rf</code> を止める</b>（<code>PreToolUse</code> のスクリプト。exit 2 でブロック）</p>
+<pre>#!/bin/bash
+cmd=$(jq -r '.tool_input.command')
+if echo "$cmd" | grep -q 'rm -rf'; then
+  echo "rm -rf は禁止です" &gt;&amp;2
+  exit 2
+fi
+exit 0</pre>
+    <p><b>入力待ちになったら通知する</b>（<code>Notification</code>・macOS）</p>
+<pre>{ "hooks": { "Notification": [ { "hooks": [
+  { "type": "command",
+    "command": "osascript -e 'display notification \"入力待ちです\" with title \"Claude Code\"'" }
+] } ] } }</pre>
+  </div>
+
+  <h2 id="mcp">MCP サーバー</h2>
+<pre># リモート（HTTP。推奨）
+claude mcp add --transport http secure-api https://api.example.com/mcp \
+  --header "Authorization: Bearer $TOKEN"
+
+# ローカル（stdio）: オプションは名前の前、サーバーのコマンドは -- の後
+claude mcp add --env AIRTABLE_API_KEY=xxx --transport stdio airtable \
+  -- npx -y airtable-mcp-server
+
+claude mcp list | get &lt;名前&gt; | remove &lt;名前&gt;</pre>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>スコープ（<code>--scope</code>）</th><th>使える範囲</th><th>保存先</th></tr></thead>
+      <tbody>
+        <tr><td><code>local</code>（既定）</td><td data-l="使える範囲">このプロジェクト・自分だけ</td><td data-l="保存先"><code>~/.claude.json</code></td></tr>
+        <tr><td><code>project</code></td><td data-l="使える範囲">このプロジェクト・チームで共有</td><td data-l="保存先"><code>.mcp.json</code></td></tr>
+        <tr><td><code>user</code></td><td data-l="使える範囲">自分の全プロジェクト</td><td data-l="保存先"><code>~/.claude.json</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre>.mcp.json
+{
+  "mcpServers": {
+    "api-server": {
+      "type": "http",
+      "url": "${API_BASE_URL:-https://api.example.com}/mcp",
+      "headers": { "Authorization": "Bearer ${API_KEY}" }
+    }
+  }
+}</pre>
+  <p class="note"><code>${VAR}</code>・<code>${VAR:-既定値}</code> は環境変数で展開される。接続状態の確認・OAuth の認証はセッション内の <code>/mcp</code>。MCP のツール名は <code>mcp__サーバー名__ツール名</code> になり、フックの matcher や権限ルールでもこの名前を使う。</p>
+
+  <h2 id="plugins">プラグイン</h2>
+  <p>スキル・サブエージェント・フック・MCP サーバーを 1 つのフォルダに束ねて配る仕組み。公式マーケットプレイス（<code>claude-plugins-official</code>）は初回起動時に自動で登録される。それ以外のマーケットプレイス（プラグインの一覧を載せたリポジトリ）は登録してからインストールする。</p>
+<pre>/plugin                                              # メニューで探す・管理
+/plugin marketplace add &lt;owner&gt;/&lt;repo&gt;               # 公式以外のマーケットプレイスを登録
+/plugin install github@claude-plugins-official       # &lt;プラグイン&gt;@&lt;マーケットプレイス&gt;
+/reload-plugins                                      # 変更を再起動なしで反映
+claude --plugin-dir ./my-plugin                      # 開発中のものを直接読み込む</pre>
+<pre>my-plugin/
+├── .claude-plugin/plugin.json   # {"name": "my-plugin", "description": "…", "version": "1.0.0"}
+├── skills/&lt;名前&gt;/SKILL.md
+├── agents/&lt;名前&gt;.md
+├── hooks/hooks.json
+└── .mcp.json</pre>
+  <p class="note">自分でマーケットプレイスを作るときは、リポジトリのルートに <code>.claude-plugin/marketplace.json</code>（<code>name</code>・<code>owner</code>・<code>plugins</code> が必須）を置く。チームに配るなら <code>.claude/settings.json</code> の <code>extraKnownMarketplaces</code>・<code>enabledPlugins</code> に書く。</p>
+
+  <h2 id="settings">設定と権限</h2>
+  <p>同じキーは上ほど優先（配列の <code>permissions.allow</code> などは上書きでなく結合）。<code>/status</code> の <code>Setting sources</code> で、読み込まれたファイルを確かめられる。</p>
+  <ol class="steps">
+    <li><b>マネージド設定</b>組織が配る。ユーザー・プロジェクト・<code>--settings</code> からは原則上書きできない（一部のセキュリティ系キーは、より厳しい値なら下位の設定も効く）</li>
+    <li><b>コマンドライン</b><code>claude --settings '{"model": "…"}'</code>。そのセッションだけ</li>
+    <li><b>.claude/settings.local.json</b>自分だけ・このプロジェクトだけ。「今後は聞かない」を選ぶとここに allow が書かれる</li>
+    <li><b>.claude/settings.json</b>チーム共有。コミットする</li>
+    <li><b>~/.claude/settings.json</b>自分の全プロジェクト</li>
+  </ol>
+<pre>{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": ["Bash(npm run lint)", "Bash(npm run test *)"],
+    "ask":   ["Bash(git push *)"],
+    "deny":  ["Read(./.env)", "Read(./.env.*)"]
+  }
+}</pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ルール</th><th>当てはまるもの</th></tr></thead>
+      <tbody>
+        <tr><td><code>Bash(npm run build)</code></td><td>そのコマンドだけ（<code>--watch</code> 付きは別）</td></tr>
+        <tr><td><code>Bash(npm run *)</code></td><td><code>npm run</code> で始まるもの全部（<code>npm run</code> 単体も）</td></tr>
+        <tr><td><code>Bash(ls *)</code> と <code>Bash(ls*)</code></td><td>空白ありは <code>lsof</code> に当たらない。空白なしは当たる</td></tr>
+        <tr><td><code>Read(./.env)</code>・<code>Edit(…)</code></td><td>ファイルのパス</td></tr>
+        <tr><td><code>WebFetch(domain:example.com)</code></td><td>そのドメインへの取得</td></tr>
+        <tr><td><code>mcp__github__*</code></td><td>github サーバーのツール全部</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>評価は <b>deny → ask → allow</b> の順で、最初に当たったものに決まる（具体的なルールが優先されるわけではない）。<code>&amp;&amp;</code>・<code>|</code> などでつないだコマンドは、1 つずつ照合される。対話でルールを編集するなら <code>/permissions</code>。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>権限モード</th><th>動き</th></tr></thead>
+      <tbody>
+        <tr><td><code>default</code>（Manual）</td><td>ツールの初回使用ごとに確認する</td></tr>
+        <tr><td><code>acceptEdits</code></td><td>作業ディレクトリ内のファイル編集と <code>mkdir</code>・<code>mv</code> などを自動で許可</td></tr>
+        <tr><td><code>plan</code></td><td>読むだけで計画を立てる。ソースは編集しない（<code>/plan</code> で入る）</td></tr>
+        <tr><td><code>auto</code></td><td>確認なしで進め、裏の分類器が依頼に合う操作か確かめる</td></tr>
+        <tr><td><code>dontAsk</code></td><td>確認が必要なものは全部自動で拒否（allow 済みだけ動く）</td></tr>
+        <tr><td><code>bypassPermissions</code></td><td>確認を省く。隔離した環境向け</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">起動時に <code>--permission-mode</code> で指定でき、既定は <code>permissions.defaultMode</code>。<code>auto</code>・<code>bypassPermissions</code> はプロジェクトの設定ファイルからは効かない（ユーザー設定かマネージド設定に書く）。</p>
+
+  <h2 id="commands">よく使うコマンド</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>/init</code></td><td>コードベースを調べて CLAUDE.md を作る（あれば改善案）</td></tr>
+        <tr><td><code>/memory</code></td><td>CLAUDE.md を開く・自動メモリのオン・オフ</td></tr>
+        <tr><td><code>/skills</code>・<code>/hooks</code>・<code>/mcp</code>・<code>/plugin</code></td><td>スキル・フック・MCP・プラグインの一覧と管理</td></tr>
+        <tr><td><code>/permissions</code></td><td>allow・ask・deny のルールを見る・足す</td></tr>
+        <tr><td><code>/config</code>・<code>/status</code></td><td>設定画面・読み込まれた設定の確認</td></tr>
+        <tr><td><code>/context</code></td><td>コンテキストの使用量と、読み込まれた CLAUDE.md・ルールの確認</td></tr>
+        <tr><td><code>/compact</code>・<code>/clear</code></td><td>会話を要約して空きを作る・新しい会話にする</td></tr>
+        <tr><td><code>/rewind</code></td><td>会話やコードを前の時点に戻す</td></tr>
+        <tr><td><code>/resume</code></td><td>過去の会話を再開する</td></tr>
+        <tr><td><code>/model</code>・<code>/effort</code></td><td>モデル・effort の切り替え</td></tr>
+        <tr><td><code>/add-dir</code></td><td>作業ディレクトリを足す</td></tr>
+        <tr><td><code>/doctor</code></td><td>インストール・設定・CLAUDE.md の問題を診断する（同梱スキル）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>CLAUDE.md に「〇〇しない」と書けば必ず守られる</summary><p>CLAUDE.md は文脈として読まれるだけで、強制力はない。確実に止めたい操作は、<code>PreToolUse</code> のフック（exit 2）か、権限の <code>deny</code> ルールで止める。</p></details>
+  <details class="myth"><summary>フックのスクリプトは exit 1 で失敗させれば操作が止まる</summary><p>既定で止めるのは exit 2 だけ。exit 1 などは「止まらないエラー」で、操作はそのまま進む。失敗やタイムアウトでも止めたいときは、フックに <code>"onFailure": "block"</code> を付ける。</p></details>
+  <details class="myth"><summary>具体的な allow ルールを書けば、広い deny ルールの例外にできる</summary><p>評価は deny → ask → allow の順で、具体性は関係ない。<code>Bash(aws *)</code> を deny にすると、<code>Bash(aws s3 ls)</code> を allow にしても止まる。</p></details>
+  <details class="myth"><summary>スキルができたので .claude/commands/ のファイルは動かなくなった</summary><p>今も動く。<code>.claude/commands/deploy.md</code> も <code>/deploy</code> になる。補助ファイルや起動の制御が要るときだけスキルの形に移せばよい。</p></details>
+  <details class="myth"><summary>サブエージェントの中からはサブエージェントを呼べない</summary><p>既定ではメインの会話から 3 段下まで呼べる。止めたいサブエージェントは <code>tools</code> から <code>Agent</code> を外すか、<code>disallowedTools</code> に入れる。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="skills-cli.html">Skills CLI（npx skills）使い方</a> — 他人のスキルを <code>.claude/skills/</code> に入れる・配る</li>
+    <li><a href="security-audit-skill.html">Security Audit Skill 使い方</a> — スキルとサブエージェントを使った実例</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://code.claude.com/docs/en/memory">How Claude remembers your project</a>（CLAUDE.md・ルール・自動メモリ）</li>
+    <li><a href="https://code.claude.com/docs/en/skills">Extend Claude with skills</a></li>
+    <li><a href="https://code.claude.com/docs/en/sub-agents">Create custom subagents</a></li>
+    <li><a href="https://code.claude.com/docs/en/hooks">Hooks reference</a>・<a href="https://code.claude.com/docs/en/hooks-guide">Automate actions with hooks</a></li>
+    <li><a href="https://code.claude.com/docs/en/mcp">Connect Claude Code to tools via MCP</a></li>
+    <li><a href="https://code.claude.com/docs/en/plugins/install">Install and manage plugins</a>・<a href="https://code.claude.com/docs/en/plugins/anthropic-marketplaces">Anthropic marketplaces</a>・<a href="https://code.claude.com/docs/en/plugins/marketplace-reference">Marketplace reference</a></li>
+    <li><a href="https://code.claude.com/docs/en/settings">Settings files and precedence</a>・<a href="https://code.claude.com/docs/en/permissions">Configure permissions</a>・<a href="https://code.claude.com/docs/en/commands">Commands</a></li>
+  </ul>
+  <p class="note">2026-11-28 に公式ドキュメントで確認（Claude Code v2.1 系）。機能の追加・変更が多いので、細かい挙動は参考のページで確かめる。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+</script>
+
+</body>
+</html>

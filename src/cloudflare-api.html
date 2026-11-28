@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloudflare API 使い方</title>
+<meta name="description" content="API トークンの種類と作り方、REST API と GraphQL Analytics API の呼び方・制限をまとめたチートシート。">
+<meta name="memo:tags" content="Cloudflare, API・バックエンド">
+<meta name="memo:date" content="2026-11-28">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #5a6376;
+  --line: #dde1e8;
+  --accent: #0077b6; /* 実際の色は memo.config.json の branding で決まり、memo:head が上書きする */
+  --chip: #eceff4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0e14;
+    --surface: #111823;
+    --fg: #cdd9e5;
+    --fg-2: #7d8b9d;
+    --line: #1e2d3d;
+    --accent: #00d4ff;
+    --chip: #18222f;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 40px 16px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.subtitle { color: var(--fg-2); font-size: 0.85rem; margin: 4px 0 28px; }
+h2 {
+  font-size: 1.1rem;
+  margin: 36px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+h3 { font-size: 0.95rem; margin: 18px 0 6px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+ul.plain { margin: 6px 0 6px 1.3em; }
+ul.plain li { margin: 2px 0; }
+code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: max(0.85em, 0.68rem);
+  background: var(--chip);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.ui { font-weight: 600; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+td code, th code { overflow-wrap: anywhere; }
+.nowrap code { white-space: nowrap; }
+@media (max-width: 600px) {
+  .stack table, .stack tbody { display: block; }
+  .stack thead { display: none; }
+  .stack tr { display: block; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 8px 12px; background: var(--surface); }
+  .stack td { display: block; border: none; padding: 1px 0; white-space: normal; }
+  .stack td[data-l]::before { content: attr(data-l) '：'; color: var(--fg-2); font-size: 0.78rem; white-space: nowrap; }
+  .stack td:first-child code { font-weight: 700; }
+}
+
+/* どのトークンを使うか */
+.pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pick .q {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.pick .q span { display: block; color: var(--fg-2); font-size: 0.82rem; }
+.pick .q b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.9rem; margin-top: 4px; }
+.pick .q small { display: block; font-size: 0.8rem; margin-top: 2px; }
+@media (max-width: 600px) { .pick { grid-template-columns: 1fr; } }
+
+/* REST と GraphQL の比較 */
+.vs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vs .side { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.vs .side h3 { margin: 0 0 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.vs .side .ep { font-size: 0.8rem; color: var(--fg-2); margin: 0 0 8px; }
+.vs .side ul { margin: 0 0 0 1.2em; font-size: 0.86rem; }
+.vs .side pre { font-size: 0.74rem; margin: 8px 0 0; padding: 8px 10px; background: var(--bg); }
+@media (max-width: 600px) { .vs { grid-template-columns: 1fr; } }
+
+/* リクエストの流れ */
+.pipe { display: flex; align-items: stretch; gap: 8px; }
+.pipe .st {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+}
+.pipe .st b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; margin-bottom: 2px; }
+.pipe .st span { color: var(--fg-2); }
+.pipe .st code { overflow-wrap: anywhere; }
+.pipe .ar { align-self: center; color: var(--fg-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.pipe .ar::before { content: '→'; }
+@media (max-width: 600px) {
+  .pipe { flex-direction: column; }
+  .pipe .ar { align-self: center; }
+  .pipe .ar::before { content: '↓'; }
+}
+
+/* タブ */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab {
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+  min-height: 30px;
+  font: 600 0.78rem 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+}
+.tab:hover { border-color: var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.panel[hidden] { display: none; }
+ul.plain + .tabs { margin-top: 12px; }
+
+/* 絞り込み */
+.filter {
+  width: 100%;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+}
+.filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+tr[hidden] { display: none !important; }
+
+footer#memo-backlink {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+footer#memo-backlink a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg-2);
+  font: 600 12px/1.4 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+footer#memo-backlink a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cloudflare API 使い方</h1>
+  <p class="subtitle">管理用の REST API（<code>api.cloudflare.com/client/v4</code>）と GraphQL Analytics API を、API トークン・curl・cf CLI・SDK から使うときの決まりごと（2026 年 11 月時点）</p>
+
+  <div class="card summary">
+    <strong>ざっくり言うと</strong>
+    <ul>
+      <li>設定の取得・変更は REST API、トラフィックなどの分析データの取得は GraphQL Analytics API で行う。</li>
+      <li>認証は API トークンを <code>Authorization: Bearer</code> で送る。ユーザー用とアカウント用の 2 種類がある。</li>
+      <li>トークンは必要な権限・ゾーンだけに絞り、既定では無期限なので有効期限か IP 制限を付ける。</li>
+    </ul>
+  </div>
+
+  <h2 id="pick">どの認証を使うか</h2>
+  <div class="pick">
+    <div class="q"><span>自分のスクリプト・手元での作業</span><b>ユーザー API トークン</b><small>My Profile で作る。作った人の権限の範囲で動く</small></div>
+    <div class="q"><span>CI/CD・監視などの長く動く連携</span><b>アカウント API トークン</b><small>Manage Account で作る。作った人が抜けても動き続ける</small></div>
+    <div class="q"><span>Workers の開発（wrangler / cf）</span><b>OAuth でログイン</b><small><code>wrangler login</code> などでブラウザから。CI ではトークンを環境変数で渡す</small></div>
+    <div class="q"><span>どうしても必要な一部の API だけ</span><b>Global API Key</b><small>旧来の方式で、ユーザーと同じ全権限。新しく使わない</small></div>
+  </div>
+
+  <h2 id="types">認証情報の種類と接頭辞</h2>
+  <p>2026 年から、新しく作る（またはロールする）認証情報は接頭辞付きの形式になった。接頭辞とチェックサムで、漏えいの検出ツールが見つけられる。</p>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>種類</th><th>接頭辞</th><th>送り方</th><th>メモ</th></tr></thead>
+      <tbody>
+        <tr><td>ユーザー API トークン</td><td data-l="接頭辞" class="nowrap"><code>cfut_</code></td><td data-l="送り方"><code>Authorization: Bearer</code></td><td data-l="メモ">1 ユーザー 50 個まで</td></tr>
+        <tr><td>アカウント API トークン</td><td data-l="接頭辞" class="nowrap"><code>cfat_</code></td><td data-l="送り方"><code>Authorization: Bearer</code></td><td data-l="メモ">1 アカウント 500 個まで。一部の製品は未対応</td></tr>
+        <tr><td>Global API Key（旧来）</td><td data-l="接頭辞" class="nowrap"><code>cfk_</code></td><td data-l="送り方"><code>X-Auth-Email</code> + <code>X-Auth-Key</code></td><td data-l="メモ">ユーザーと同じ全権限。トークンに置き換える</td></tr>
+        <tr><td>Wrangler の OAuth トークン</td><td data-l="接頭辞" class="nowrap"><code>cfoat_</code></td><td data-l="送り方">（CLI が使う）</td><td data-l="メモ"><code>wrangler login</code> で発行される</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">それ以前に作ったものは接頭辞なし（トークンは英数字 40 文字、Global API Key は 16 進の小文字 37〜45 文字）で、そのまま使える。GitHub の Secret Scanning と連携していて、公開リポジトリに push された接頭辞付きトークンは自動で失効し、メールで知らせが来る。<code>X-Auth-User-Service-Key</code> の Service Key は 2026-09-30 で使えなくなった。</p>
+
+  <h2 id="compare">ユーザー用とアカウント用の違い</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>項目</th><th>ユーザー API トークン</th><th>アカウント API トークン</th></tr></thead>
+      <tbody>
+        <tr><td>作る場所</td><td data-l="ユーザー">My Profile → API Tokens</td><td data-l="アカウント">Manage Account → API Tokens</td></tr>
+        <tr><td>持ち主</td><td data-l="ユーザー">作ったユーザー。その人の権限の一部を受け継ぐ</td><td data-l="アカウント">アカウント（サービス用の主体）。作った人が組織を抜けても動く</td></tr>
+        <tr><td>作れる人</td><td data-l="ユーザー">そのユーザー本人</td><td data-l="アカウント">Super Administrator か、トークンを発行できる権限を持つメンバー。自分の権限の範囲内でしか付けられない</td></tr>
+        <tr><td>向いている用途</td><td data-l="ユーザー">手元のスクリプト・その場の作業</td><td data-l="アカウント">CI/CD・SIEM 連携など長く動くもの</td></tr>
+        <tr><td>確認 API</td><td data-l="ユーザー"><code>GET /user/tokens/verify</code></td><td data-l="アカウント"><code>GET /accounts/{account_id}/tokens/verify</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">アカウント API トークンが使えない製品: Intel Data Platform・Page Rules・Registrar・Super Bot Fight Mode・Turnstile・Zero Trust Client Platform。これらはユーザー API トークンを使う。</p>
+
+  <h2 id="create">API トークンを作る</h2>
+  <ol class="steps">
+    <li><b>ゾーン ID・アカウント ID を控える</b>ダッシュボードの各ドメインの概要ページで確認できる。API のパスに入れる</li>
+    <li><b>作成画面を開く</b>ユーザー用は <span class="ui">My Profile</span> → <span class="ui">API Tokens</span>、アカウント用は <span class="ui">Manage Account</span> → <span class="ui">API Tokens</span> で <span class="ui">Create Token</span></li>
+    <li><b>テンプレートを選ぶ</b><span class="ui">Edit zone DNS</span> などのテンプレートか、一から作る（Custom Token）</li>
+    <li><b>ポリシーを作る</b>種類（<span class="ui">Account</span>・<span class="ui">Zone</span>・<span class="ui">User</span>）→ 権限名 → <span class="ui">Read</span> か <span class="ui">Edit</span> を選び、対象のアカウント・ゾーンを絞る。Edit は作成・取得・更新・削除・一覧、Read は取得・一覧</li>
+    <li><b>使える条件を絞る</b><span class="ui">Client IP Address Filtering</span>（CIDR で Is in / Is not in）と <span class="ui">Token expiration</span>（有効期間）。何もしないと、どの IP からでも、期限なしで使える</li>
+    <li><b>発行してすぐ保管</b><span class="ui">Continue to summary</span> → <span class="ui">Create Token</span>。値はこの画面でしか見られない</li>
+  </ol>
+<pre><code># 作ったトークンが有効か確かめる（"status": "active" なら OK）
+curl https://api.cloudflare.com/client/v4/user/tokens/verify \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+
+# アカウント API トークンはこちら
+curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/tokens/verify \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"</code></pre>
+  <p class="note">トークン作成用のトークン（テンプレート「Create additional tokens」）を作れば、<code>POST /user/tokens</code>・<code>POST /accounts/{account_id}/tokens</code> で API からトークンを発行できる。強い権限なので、ほかの権限を付けず IP か期限で絞る。値が漏れたらロール（値の再発行）する。</p>
+
+  <h2 id="rest-vs-graphql">REST と GraphQL</h2>
+  <p>GitHub と違い、Cloudflare の GraphQL は分析データの読み取り専用。設定を変える操作はすべて REST で行う。</p>
+  <div class="vs">
+    <div class="side">
+      <h3>REST API</h3>
+      <p class="ep"><code>https://api.cloudflare.com/client/v4/…</code></p>
+      <ul>
+        <li>DNS・キャッシュ・WAF・Workers・R2 など設定と管理のほぼ全部</li>
+        <li>レスポンスは決まった形の JSON（<code>success</code>・<code>result</code> など）</li>
+        <li>レート制限は 5 分 1,200 リクエスト</li>
+      </ul>
+<pre><code>GET  /zones?name=example.com
+POST /zones/{zone_id}/dns_records
+POST /zones/{zone_id}/purge_cache</code></pre>
+    </div>
+    <div class="side">
+      <h3>GraphQL Analytics API</h3>
+      <p class="ep"><code>POST https://api.cloudflare.com/client/v4/graphql</code></p>
+      <ul>
+        <li>HTTP リクエスト・ファイアウォールのイベント・Workers の実行など 100 以上のデータセットを集計して読む（Limits のページでは「70 以上」）</li>
+        <li>読み取りだけ（<code>query</code> のみで、mutation・subscription は無い）</li>
+        <li>既定で 5 分に 300 クエリまで（API 全体の制限に加えてかかる）</li>
+      </ul>
+<pre><code>query {
+  viewer {
+    zones(filter: {zoneTag: "…"}) {
+      httpRequestsAdaptiveGroups(limit: 10, filter: {…}) { count }
+    }
+  }
+}</code></pre>
+    </div>
+  </div>
+  <p class="note">以前の REST の分析エンドポイント（Zone Analytics など）からは、GraphQL へ移るよう移行ガイドが用意されている。</p>
+
+  <h2 id="use">REST API を呼ぶ</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="u-curl">curl</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-cf">cf CLI</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-sdk">SDK</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="u-legacy">Global API Key</button>
+  </div>
+  <div class="panel" id="u-curl">
+<pre><code>export CLOUDFLARE_API_TOKEN=cfut_xxxxxxxx
+
+# ドメイン名からゾーン ID を引く
+ZONE_ID=$(curl -s "https://api.cloudflare.com/client/v4/zones?name=example.com" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.result[0].id')
+
+# DNS レコードの一覧（100 件ずつ、2 ページ目）
+curl "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?per_page=100&amp;page=2" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq .
+
+# A レコードを作る（プロキシあり）
+curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"A","name":"test","content":"192.0.2.1","proxied":true,"ttl":1}'</code></pre>
+  </div>
+  <div class="panel" id="u-cf" hidden>
+    <p><code>cf</code> は 2026 年 9 月にベータで出た新しい CLI。OpenAPI のスキーマから生成した 2,900 以上のコマンドで、Cloudflare API のほぼ全体を扱える（Workers 専用の Wrangler とは別）。</p>
+<pre><code>npm i -g cf                      # cf と cloudflare の 2 つの名前で入る
+
+cf zones list --name example.com
+cf dns records list --zone example.com --type A
+cf dns records create --zone example.com \
+  --body '{"type":"A","name":"test","content":"192.0.2.1","proxied":true}'
+
+cf cli search "purge cached files for a URL"   # やりたいことからコマンドを探す
+cf schema zones create                         # 送る API リクエストの中身を見る
+cf dns records delete &lt;RECORD_ID&gt; --zone &lt;ZONE_ID&gt; --dry-run   # 送らずに確認</code></pre>
+    <p class="note">出力は JSON なので <code>jq</code> に渡せる。ベータなので、コマンドや設定は正式版までに変わることがある。設定ファイル <code>cloudflare.config.ts</code> は「<a href="cf-config.html">cf/config チートシート</a>」を参照。</p>
+  </div>
+  <div class="panel" id="u-sdk" hidden>
+<pre><code>// TypeScript: npm install cloudflare
+import Cloudflare from 'cloudflare';
+
+const client = new Cloudflare({
+  apiToken: process.env['CLOUDFLARE_API_TOKEN'],   // 既定でこの環境変数を読む
+});
+
+const zones = await client.zones.list({ name: 'example.com' });
+const zoneId = zones.result[0].id;
+
+// 自動でページを送りながら全件を回す
+for await (const record of client.dns.records.list({ zone_id: zoneId })) {
+  console.log(record.name, record.type);
+}</code></pre>
+    <p class="note">Go（<code>github.com/cloudflare/cloudflare-go</code>）・Python（<code>pip install cloudflare</code>）もあり、どれも同じ OpenAPI スキーマから生成されていて <code>client.dns.records.list(...)</code> のように名前がそろっている。SDK はレート制限のヘッダーを読んで自動で待つ。</p>
+  </div>
+  <div class="panel" id="u-legacy" hidden>
+<pre><code># 旧来の方式。ユーザーと同じ全権限になるので、新しくは使わない
+curl https://api.cloudflare.com/client/v4/user \
+  -H "X-Auth-Email: you@example.com" \
+  -H "X-Auth-Key: $CLOUDFLARE_API_KEY"</code></pre>
+    <p class="note">ほとんどの操作は API トークンでできる。組織 (Organization) の読み取り・更新・削除など、Global API Key が必要な操作がごく一部残っている。漏れたら My Profile → API Tokens の <span class="ui">API Keys</span> から <span class="ui">Change</span> する。</p>
+  </div>
+
+  <h2 id="response">REST のレスポンスとページ送り</h2>
+<pre><code>{
+  "success": true,            // 成否はまずここを見る
+  "errors": [],               // 失敗時は [{"code": 10000, "message": "Authentication error"}] など
+  "messages": [],
+  "result": [ … ],            // 本体
+  "result_info": { "page": 1, "per_page": 20, "count": 20, "total_count": 200, "total_pages": 10 }
+}</code></pre>
+  <ul class="plain">
+    <li>一覧は <code>page</code> と <code>per_page</code> で区切る。<code>per_page</code> を大きくしすぎるとタイムアウトすることがある</li>
+    <li>並び順は <code>order</code>（並べる項目）と <code>direction</code>（<code>asc</code>・<code>desc</code>）。使えるパラメータはエンドポイントごとにリファレンスで確かめる</li>
+    <li>KV のキー一覧のように、<code>cursor</code> で続きを取るエンドポイントもある（<code>result_info.cursor</code> を次のリクエストに渡す）</li>
+  </ul>
+
+  <h2 id="endpoints">よく使う REST エンドポイント</h2>
+  <input class="filter" type="search" id="ep-filter" placeholder="絞り込み（例: dns, workers, 書き込み）" aria-label="エンドポイントを絞り込む">
+  <div class="table-wrap stack">
+    <table id="ep-table">
+      <thead><tr><th>やりたいこと</th><th>メソッドとパス</th><th>トークンの権限</th></tr></thead>
+      <tbody>
+        <tr><td>トークンの確認</td><td data-l="パス"><code>GET /user/<wbr>tokens/<wbr>verify</code></td><td data-l="権限">なし</td></tr>
+        <tr><td>アカウント一覧</td><td data-l="パス"><code>GET /accounts</code></td><td data-l="権限">Account Settings（読み取り）</td></tr>
+        <tr><td>ゾーン一覧・ゾーン ID を引く</td><td data-l="パス"><code>GET /zones?<wbr>name=example.com</code></td><td data-l="権限">Zone（読み取り）</td></tr>
+        <tr><td>DNS レコード一覧</td><td data-l="パス"><code>GET /zones/<wbr>{zone_id}/<wbr>dns_records</code></td><td data-l="権限">DNS（読み取り）</td></tr>
+        <tr><td>DNS レコードを作る・変える（書き込み）</td><td data-l="パス"><code>POST /zones/<wbr>{zone_id}/<wbr>dns_records</code>・<code>PATCH …/<wbr>dns_records/<wbr>{id}</code></td><td data-l="権限">DNS（Edit）</td></tr>
+        <tr><td>キャッシュを消す（書き込み）</td><td data-l="パス"><code>POST /zones/<wbr>{zone_id}/<wbr>purge_cache</code></td><td data-l="権限">Cache Purge（Purge）</td></tr>
+        <tr><td>Workers のスクリプト一覧</td><td data-l="パス"><code>GET /accounts/<wbr>{account_id}/<wbr>workers/<wbr>scripts</code></td><td data-l="権限">Workers Scripts（読み取り）</td></tr>
+        <tr><td>KV の名前空間一覧</td><td data-l="パス"><code>GET /accounts/<wbr>{account_id}/<wbr>storage/<wbr>kv/<wbr>namespaces</code></td><td data-l="権限">Workers KV Storage（読み取り）</td></tr>
+        <tr><td>R2 のバケット一覧</td><td data-l="パス"><code>GET /accounts/<wbr>{account_id}/<wbr>r2/<wbr>buckets</code></td><td data-l="権限">Workers R2 Storage（読み取り）</td></tr>
+        <tr><td>D1 に SQL を投げる（書き込み）</td><td data-l="パス"><code>POST /accounts/<wbr>{account_id}/<wbr>d1/<wbr>database/<wbr>{database_id}/<wbr>query</code></td><td data-l="権限">D1（Edit）</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code># キャッシュを消す（URL 指定・全部）
+curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"files":["https://example.com/style.css"]}'      # 全部なら {"purge_everything":true}</code></pre>
+  <p class="note">全エンドポイントは API リファレンス（developers.cloudflare.com/api）にあり、各ページに必要な権限と curl・SDK の例が載っている。</p>
+
+  <h2 id="graphql">GraphQL Analytics API を呼ぶ</h2>
+  <ul class="plain">
+    <li>トークンに分析の読み取り権限を付ける。ゾーンのデータ（HTTP リクエスト・ファイアウォールなど）は <span class="ui">Zone</span> → <span class="ui">Analytics</span> → <span class="ui">Read</span>、アカウントのデータ（Workers など）は <span class="ui">Account</span> → <span class="ui">Account Analytics</span> → <span class="ui">Read</span></li>
+    <li>入口は <code>viewer</code> → <code>zones(filter: {zoneTag})</code> か <code>accounts(filter: {accountTag})</code> → データセット。1 クエリでゾーンは 10 個、アカウントは 1 個まで</li>
+    <li>データセットごとに <code>filter</code>（さかのぼれる期間・1 回で取れる期間に上限があるので、期間を指定するのが基本）・<code>limit</code>・<code>orderBy</code> を付ける。集計結果は <code>count</code>・<code>sum</code>・<code>avg</code> と、グループ分けの <code>dimensions</code></li>
+  </ul>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-panel="g-query">クエリ</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-curl">curl</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-page">ページ送り</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="g-limits">使える範囲を見る</button>
+  </div>
+  <div class="panel" id="g-query">
+<pre><code># 時間ごとのリクエスト数と転送量（ゾーン）
+query Traffic($zoneTag: string, $start: Time, $end: Time) {
+  viewer {
+    zones(filter: { zoneTag: $zoneTag }) {
+      httpRequestsAdaptiveGroups(
+        limit: 100
+        filter: { datetime_geq: $start, datetime_lt: $end }
+        orderBy: [datetimeHour_ASC]
+      ) {
+        count
+        sum { edgeResponseBytes }
+        dimensions { datetimeHour }
+      }
+    }
+  }
+}</code></pre>
+    <p class="note">フィルタの演算子は名前の後ろに付ける（<code>_gt</code>・<code>_lt</code>・<code>_geq</code>・<code>_leq</code>・<code>_neq</code>・<code>_in</code>）。<code>AND</code>・<code>OR</code> も使える。</p>
+  </div>
+  <div class="panel" id="g-curl" hidden>
+<pre><code>curl https://api.cloudflare.com/client/v4/graphql \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query($zoneTag: string, $start: Time, $end: Time) { viewer { zones(filter: {zoneTag: $zoneTag}) { httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $start, datetime_lt: $end}) { count } } } }",
+    "variables": { "zoneTag": "'"$ZONE_ID"'", "start": "2026-11-27T00:00:00Z", "end": "2026-11-28T00:00:00Z" }
+  }' | jq .</code></pre>
+    <p class="note">クエリの文字列は 1 行にする（改行を含めるならエスケープする）。長いクエリは GraphQL クライアントで組み立ててから貼る。</p>
+  </div>
+  <div class="panel" id="g-page" hidden>
+    <p>カーソルは無い。<code>orderBy</code> で並べ、最後に受け取った値より後ろをフィルタで指定して続きを取る（シーク方式）。並び順は細かく（複数の項目で）指定すると取りこぼしにくい。</p>
+<pre><code># 1 回目
+firewallEventsAdaptive(limit: 100, orderBy: [datetime_ASC, rayName_ASC],
+  filter: { datetime_geq: $start }) { datetime rayName action }
+
+# 2 回目以降: 前回の最後の datetime と rayName を使う
+firewallEventsAdaptive(limit: 100, orderBy: [datetime_ASC, rayName_ASC],
+  filter: { datetime_geq: $lastDatetime, rayName_gt: $lastRay }) { … }</code></pre>
+  </div>
+  <div class="panel" id="g-limits" hidden>
+    <p>データセットごとに、さかのぼれる期間・1 回で取れる期間・件数などの上限があり、プランで変わる。<code>settings</code> ノードで自分の上限を確かめられる。</p>
+<pre><code>query($zoneTag: string) {
+  viewer {
+    zones(filter: { zoneTag: $zoneTag }) {
+      settings {
+        firewallEventsAdaptive {
+          enabled            # 使えるか
+          notOlderThan       # 何秒前までさかのぼれるか
+          maxDuration        # 1 回で指定できる期間（秒）
+          maxPageSize        # 1 回で取れる件数
+          maxNumberOfFields
+        }
+      }
+    }
+  }
+}</code></pre>
+  </div>
+  <p class="note">GraphQL は失敗しても HTTP 200 で返ることがある。本文の <code>errors</code> が <code>null</code> でなければエラー（例: さかのぼれる期間を超えた）。複数のデータセットを 1 回で問い合わせて 1 つでも失敗すると、全体がエラーになる。</p>
+
+  <h2 id="ratelimit">レート制限</h2>
+  <div class="table-wrap stack">
+    <table>
+      <thead><tr><th>対象</th><th>上限</th></tr></thead>
+      <tbody>
+        <tr><td>REST（ユーザー・アカウントのトークンごと）</td><td data-l="上限">5 分に 1,200 リクエスト。ダッシュボード・API キー・トークンからのリクエストを合算</td></tr>
+        <tr><td>REST（IP アドレスごと）</td><td data-l="上限">1 秒に 200 リクエスト</td></tr>
+        <tr><td>GraphQL</td><td data-l="上限">クエリの重さで変わる。既定で 5 分に 300 クエリ（毎秒 1 回、または 300 回まとめて打って 5 分待つ。全体の Rate limits のページでは最大 320）。API 全体の制限に加えてかかる</td></tr>
+        <tr><td>個別の制限</td><td data-l="上限">キャッシュの削除・Rulesets・Lists などは別に上限がある</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ヘッダー（REST のみ）</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>Ratelimit</code></td><td>残り回数 <code>r</code> と、枠が戻るまでの秒数 <code>t</code>（例: <code>"default";r=50;t=30</code>）</td></tr>
+        <tr><td><code>Ratelimit-Policy</code></td><td>上限 <code>q</code> と枠の長さの秒数 <code>w</code>（例: <code>"burst";q=100;w=60</code>）</td></tr>
+        <tr><td><code>Retry-After</code></td><td>上限を超えたとき（429）だけ付く。待つ秒数</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">上限を超えると、その後 5 分間はすべての API 呼び出しが <code>429 Too Many Requests</code> になる。叩き続けず <code>Retry-After</code> の秒数だけ待つ。</p>
+
+  <h2 id="mcp">エージェントから使う</h2>
+  <p>Cloudflare API 全体を扱える公式の MCP サーバー（<code>https://mcp.cloudflare.com/mcp</code>）がある。2,500 以上のエンドポイントを <code>search()</code> と <code>execute()</code> の 2 つのツールに畳み込む「Code Mode」で、コンテキストを約 1,000 トークンしか使わない。コマンドで扱うなら、上の <code>cf</code> の <code>cf cli search</code> がエージェント向けに作られている。</p>
+
+  <h2 id="myths">よくある誤解</h2>
+  <details class="myth"><summary>API トークンには自動で有効期限が付く</summary><p>既定では無期限で、どの IP からでも使える。作成時に <span class="ui">Token expiration</span> と <span class="ui">Client IP Address Filtering</span> で絞る。</p></details>
+  <details class="myth"><summary>GraphQL API で設定も変えられる</summary><p>Cloudflare の GraphQL は分析データの読み取り専用。DNS・キャッシュ・WAF などの設定は REST API（か cf・SDK・Terraform）で変える。</p></details>
+  <details class="myth"><summary>Global API Key のほうが手軽なので使ってよい</summary><p>Global API Key はユーザーと同じ全権限を持ち、絞れない。ほとんどの操作は API トークンでできるので、必要な権限だけのトークンを使う。</p></details>
+  <details class="myth"><summary>アカウント API トークンなら作った人より強い権限を付けられる</summary><p>メンバーが付けられるのは自分の権限の範囲内だけ。違いは、作った人が組織を抜けても動き続ける点。</p></details>
+  <details class="myth"><summary>429 になったらすぐ再試行すればよい</summary><p>上限を超えると 5 分間すべての呼び出しが止められる。<code>Retry-After</code> を見て待つ。SDK は自動で待ってくれる。</p></details>
+
+  <h2 id="related">関連メモ</h2>
+  <ul class="related">
+    <li><a href="github-pat-api.html">GitHub PAT・API 使い方</a> — 同じ形でまとめた GitHub 版。GraphQL の位置づけが違う</li>
+    <li><a href="cloudflare-radar.html">Cloudflare Radar 使い方</a> — Radar API はこのページの API トークンで呼ぶ</li>
+    <li><a href="cf-config.html">cf/config チートシート</a> — cf で Workers をデプロイするときの設定ファイル</li>
+  </ul>
+
+  <h2 id="sources">参考</h2>
+  <ul class="sources">
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/">Create API token</a>・<a href="https://developers.cloudflare.com/fundamentals/api/get-started/account-owned-tokens/">Account API tokens</a></li>
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/">Token formats</a>・<a href="https://developers.cloudflare.com/fundamentals/api/get-started/keys/">Get Global API key (legacy)</a></li>
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/how-to/restrict-tokens/">Restrict tokens</a>・<a href="https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/">Create tokens via API</a></li>
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/how-to/make-api-calls/">Make API calls</a>・<a href="https://developers.cloudflare.com/api/">API reference</a></li>
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/reference/limits/">Rate limits</a></li>
+    <li><a href="https://developers.cloudflare.com/fundamentals/api/reference/sdks/">SDKs</a></li>
+    <li><a href="https://developers.cloudflare.com/cf/">Cloudflare CLI (cf)</a>・<a href="https://developers.cloudflare.com/cf/get-started/resources/">Manage resources with cf</a></li>
+    <li><a href="https://developers.cloudflare.com/analytics/graphql-api/">GraphQL Analytics API</a>（<a href="https://developers.cloudflare.com/analytics/graphql-api/getting-started/querying-basics/">Querying basics</a>・<a href="https://developers.cloudflare.com/analytics/graphql-api/features/pagination/">Pagination</a>・<a href="https://developers.cloudflare.com/analytics/graphql-api/limits/">Limits</a>・<a href="https://developers.cloudflare.com/analytics/graphql-api/errors/">Error responses</a>・<a href="https://developers.cloudflare.com/analytics/graphql-api/features/discovery/introspection/">Introspection</a>）</li>
+    <li><a href="https://developers.cloudflare.com/changelog/post/2026-03-19-service-key-authentication-deprecated/">Service Key authentication deprecated</a>（Changelog）</li>
+    <li><a href="https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/">MCP servers for Cloudflare</a></li>
+  </ul>
+  <p class="note">2026-11-28 に確認。</p>
+
+  <footer id="memo-backlink"><a href="index.html">&larr; 一覧に戻る</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.tabs').forEach(group => {
+  group.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    group.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.dataset.panel).hidden = !on;
+    });
+  });
+});
+const filter = document.getElementById('ep-filter');
+filter.addEventListener('input', () => {
+  const q = filter.value.trim().toLowerCase();
+  document.querySelectorAll('#ep-table tbody tr').forEach(tr => {
+    tr.hidden = q !== '' && !tr.textContent.toLowerCase().includes(q);
+  });
+});
+</script>
+
+</body>
+</html>
